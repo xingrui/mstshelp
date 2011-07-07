@@ -1,0 +1,70 @@
+任务模式需要获取以下内容
+
+前方应该到站的时间
+现在距前方到站距离
+前方到达的站台名称
+
+首先介绍一下我发现这个信息的思路
+
+1.我想要先去获取前方到站时间的信息
+--------到站时间信息可以采用多种存储方式，比如时分秒存储方式，32位整数值存储方式，float值存储方式。
+--------时分秒存储方式显然是不太合理的，因为需要在内存中节省存储空间。而且在任务的act文件中也发现了时间表
+--------32位整数值的存储方式是可以的，但是我搜索不到，而16位整数明显是不够的，16位表示不了一天完整时间
+--------于是只剩下了float值存储的方式，在搜索了内存以后，发现了它对应的地址。
+
+2.时间信息地址0x4098C0 4 8 4
+--------而0x8098C4 为前方到站的指针的地址
+--------*8098C0地方存的是三个指针的地址
+--------在Z10的任务中，这三个地址的内容是相同的，都是8098C0里面的内容
+--------在自由模式下，这三个地址的内容也是相同的，都是8098C0里面的内容
+--------在有到站的任务当中，*8098C0的地方存的是三个指针next, end, current
+
+遍历的方法
+
+struct SSchedule
+{
+	int m_nPlatformStartID;
+	float m_fArrivalTime;
+	float m_fActualArrivalTime;
+	float m_fDepartTime;
+	float m_fActualDepartTime;
+	float m_fDistanceDownPath;
+	float m_fUnknownData;
+	DWORD m_nSkipCount;
+	DWORD data6;
+	float m_fEddiciency;
+};
+
+struct SList
+{
+	SList* m_next;
+	SList* m_pre;
+	SSchedule *m_data;
+};
+
+SList *head = *8098C0;
+SList *pNode = head->m_next;
+
+while(pNode != head)
+{
+	SSchedule *pCurrent = pNode->m_data;
+	arrivalTime = pCurrent->m_fArrivalTime;
+	departTime = pCurrent->m_fDepartTime;
+	pNode = pNode->m_next;
+}
+
+紧接着这个双向链表后面还有另外两个双向链表。
+
+
+
+
+
+
+
+
+
+目前已经知道的数据
+0x8098C0 双链表对应的表头的地址
+0x8098C4 为前方到站的指针的地址
+0x809B08 从零点开始到当前时间的秒数，float类型
+0x809B70 距离前方到站的距离地址
