@@ -49,6 +49,7 @@ public:
 
 
 	static const int DATA_SPAN = 1000;
+	float m_fExpectedAccerlate;
 protected:
 	virtual void DoDataExchange(CDataExchange *pDX);	// DDX/DDV Ö§³Ö
 
