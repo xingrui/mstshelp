@@ -14,20 +14,6 @@
 #endif
 // CMSTSHelpDlg 对话框
 
-typedef void (*FunDef)(int x, int y, int c) ;
-
-static DWORD WINAPI MyFunc(LPVOID pData)
-{
-	FunDef fun = (FunDef)0x4842BD;
-	fun(1, 0, 0);
-	return 0;
-}
-
-static void AfterMyFunc(void)
-{
-
-}
-
 CMSTSHelpDlg::CMSTSHelpDlg(CWnd *pParent /*=NULL*/)
 	: CDialog(CMSTSHelpDlg::IDD, pParent)
 	, m_fCurrentSpeed(0)
@@ -190,8 +176,6 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 
 	//获取列车运行的数据
 	GetTrainData(m_hTrainProcess);
-	//获取游戏当中的当前时间
-	CHECK(ReadProcessMemory(m_hTrainProcess, (void *)0x809B08, (LPVOID)&m_fGameTime, 4, NULL));
 
 	if (m_lastSaveTime == -1)
 	{
@@ -199,10 +183,12 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 	}
 	else
 	{
-		if (m_fGameTime < m_lastSaveTime)
-			m_fGameTime += 3600 * 24;
+		float fGameTime = m_fGameTime;
 
-		if (m_fGameTime - m_lastSaveTime > 1800 && m_bAutoSave)
+		if (fGameTime < m_lastSaveTime)
+			fGameTime += 3600 * 24;
+
+		if (fGameTime - m_lastSaveTime > 1800 && m_bAutoSave)
 		{
 			PressKeyToTrainWnd(VK_F2);
 			m_lastSaveTime = m_fGameTime;
@@ -219,7 +205,7 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 			m_bIsProcessing = true;
 			m_listLimit.clear();
 
-			if (m_fCurrentSpeedLimit == 0 || m_cColor2 == 8)
+			if (m_fCurrentSpeedLimit == 0 || m_cColor1 == 8 && m_cColor2 == 8)
 			{
 				//限速为0，或者白灯无码
 				if (m_fCurrentSpeed > 1E-3 || m_fCurrentSpeed < -1E-3)
@@ -408,7 +394,7 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 		if (ite->m_fSpeedLimit > fCalculatedSpeedLimit)
 			break;
 
-		float fSpeedLimit = sqrt(ite->m_fSpeedLimit * ite->m_fSpeedLimit + 0.2F * ite->m_fDistance);
+		float fSpeedLimit = sqrt(ite->m_fSpeedLimit * ite->m_fSpeedLimit + 2 * m_fExpectedAccerlate * ite->m_fDistance);
 
 		if (fSpeedLimit < 1.0)
 			fSpeedLimit = 1.0;
@@ -452,7 +438,7 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 
 		if (m_fAcceleration > -0.4F)
 		{
-			if ((m_fCurrentSpeed - fCalculatedSpeedLimit) > 0.1 * fCalculatedSpeedLimit)
+			if (m_fCurrentSpeed > 1.1 * fCalculatedSpeedLimit)
 			{
 				//超速过多，而且刹车不快
 				ApplyBreak();
@@ -460,7 +446,16 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 			}
 		}
 
-		if (m_loco == Electric && m_fAcceleration < -0.4 && m_fBreakNum == 1)
+		if (m_fCurrentSpeed > 1.3 * fCalculatedSpeedLimit + 3)
+		{
+			ApplyBreak();
+		}
+		else if (m_fCurrentSpeed < 1.2 * fCalculatedSpeedLimit && m_fAcceleration < -0.45F)
+		{
+			ReleaseBreak();
+		}
+
+		else if (m_loco == Electric && m_fAcceleration < -0.45F && m_fBreakNum == 1)
 		{
 			ReleaseBreak();
 		}
@@ -470,6 +465,12 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 
 	if (m_fAcceleration < (fCalculatedSpeedLimit - m_fCurrentSpeed) / 50)
 	{
+		if(m_fCurrentSpeed < 0.1)
+		{
+			for (int i = 0; i < 20; ++i)
+				PressKeyToTrainWnd(VK_OEM_4);
+		}
+
 		// 列车加速度过小，需要加速
 		for (int i = 0; i < 20; ++i)
 			ReleaseBreak();
@@ -479,7 +480,7 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 
 		if (m_fCurrentPower < 1)
 		{
-			DWORD cbCodeSize = ((LPBYTE)AfterMyFunc - (LPBYTE)MyFunc);
+			/*DWORD cbCodeSize = ((LPBYTE)AfterMyFunc - (LPBYTE)MyFunc);
 			PDWORD pCodeRemote = (PDWORD)VirtualAllocEx(m_hTrainProcess, 0, cbCodeSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 			::WriteProcessMemory(m_hTrainProcess, pCodeRemote, &MyFunc, cbCodeSize, NULL);
 			CString msg;
@@ -494,8 +495,8 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 				TRACE("run and return %d", h);
 				::CloseHandle(hThread);
 			}
-			::VirtualFreeEx(m_hTrainProcess, pCodeRemote, cbCodeSize, MEM_RELEASE);
-			//PressKeyToTrainWnd('D');
+			::VirtualFreeEx(m_hTrainProcess, pCodeRemote, cbCodeSize, MEM_RELEASE);*/
+			PressKeyToTrainWnd('D');
 		}
 	}
 	else if (m_fAcceleration > (fCalculatedSpeedLimit - m_fCurrentSpeed) / 25)
@@ -609,13 +610,15 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	CHECK(ReadProcessMemory(hProcess, (void *)SPEED_LIMIT_MEM, (LPVOID)&m_fCurrentSpeedLimit, 4, NULL))
 	CHECK(ReadProcessMemory(hProcess, (void *)FOWARD_LIMIT_MEM, (LPVOID)&m_fForwardSignalLimit, 4, NULL))
 	CHECK(ReadProcessMemory(hProcess, (void *)SIG_DISTANT_MEM, (LPVOID)&m_fForwardSignalDistance, 4, NULL))
-	CHECK(ReadProcessMemory(hProcess, (void *)GAME_TIME_MEM, (LPVOID)&m_sGameTime, 12, NULL))
+	CHECK(ReadProcessMemory(hProcess, (void *)S_GAME_TIME_MEM, (LPVOID)&m_sGameTime, 12, NULL))
+	CHECK(ReadProcessMemory(hProcess, (void *)F_GAME_TIME_MEM, (LPVOID)&m_fGameTime, 4, NULL));
 	CString strTime;
 	strTime.Format(L"%02d:%02d:%02d", m_sGameTime.m_nHour, m_sGameTime.m_nMinute, m_sGameTime.m_nSecond);
 	CHECK(ReadProcessMemory(hProcess, (void *)LIGHT_COLOR_MEM, (LPVOID)&m_cColor1, 1, NULL))
 	strColor = changeColorToString(m_cColor1);
+	strColor += " : ";
 	CHECK(ReadProcessMemory(hProcess, (void *)LIGHT_COLOR_MEM_2, (LPVOID)&m_cColor2, 1, NULL))
-	//strColor += changeColorToString(m_cColor2);
+	strColor += changeColorToString(m_cColor2);
 	CHECK(ReadProcessMemory(hProcess, (void *)ACCER_MEM, (LPVOID)&m_fAcceleration, 4, NULL))
 	//CHECK(ReadProcessMemory(hProcess, (void *)FORWARD_TURNOFF_MEM, (LPVOID)&fForwardTurnOff, 4, NULL))
 	CHECK(ReadPointerMemory(hProcess, (LPCVOID)0x8099BC, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C))
@@ -636,6 +639,20 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	//m_listCtrl.SetItemText(FORWARD_TURNOFF_ITEM, 1, str);
 	m_listCtrl.SetItemText(CURRENT_TIME_ITEM, 1, strTime);
 	m_loco = GetLocomotive(hProcess);
+
+	switch (m_loco)
+	{
+	case Steam:
+		m_fExpectedAccerlate = 0.1F;
+		break;
+	case Diesel:
+		m_fExpectedAccerlate = 0.15F;
+		break;
+	case Electric:
+		m_fExpectedAccerlate = 0.2F;
+		break;
+	}
+
 	CString strLocoType = changeLocoTypeToString(m_loco);
 	m_listCtrl.SetItemText(LOCO_TYPE_ITEM, 1, strLocoType);
 	m_listCtrl.SetItemText(INFORMATION_ITEM, 1, L"成功获得数据");
@@ -835,17 +852,30 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 	float fNextStationDistance;
 	CHECK(ReadProcessMemory(hProcess, (void *)0x809B70, (LPVOID)&fNextStationDistance, 4, NULL))
 	UpdateScheduleInfo(fNextStationDistance);
-
+	ShowScheduleInfo(m_currentSchedule, m_fGameTime, fNextStationDistance);
 	//在这里根据时刻表直接进行一次筛选
-	if (m_currentSchedule.m_fActualArrivalTime != 0 && lessThan(m_fGameTime, m_currentSchedule.m_fDepartTime))
+
+	if (m_currentSchedule.m_fActualArrivalTime == 0)
 	{
-		//处理已经停车而且还没有到出发时间的情况
-		ShowScheduleInfo(m_currentSchedule, m_fGameTime, fNextStationDistance);
-		ApplyBreak();
+		//处理没有到达前方站台的情况
+		SForwardLimit limit;
+		limit.m_fDistance = fNextStationDistance;
+		limit.m_fSpeedLimit = 0;
+		m_listLimit.push_back(limit);
+	}
+	else if (m_currentSchedule.m_fActualArrivalTime != 0 && lessThan(m_fGameTime, m_currentSchedule.m_fDepartTime))
+	{
+		//处理已经到达站台但还没有到出发时间的情况
+		if (m_fCurrentSpeed > 1E-3)
+			ApplyBreak();
+
 		return;
 	}
+	else
+	{
+		//已经到达站台而且也已经到达出发的时间
+	}
 
-	ShowScheduleInfo(m_currentSchedule, m_fGameTime, fNextStationDistance);
 	////////////////////////////////////////////////////////////////////////////////
 	Direction currentDirection = GetDirection(m_loco, hProcess);
 
@@ -901,15 +931,6 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 		//前方限速为-1，表示没有前方信号限速
 	}
 
-	if (lessThan(m_fGameTime, m_currentSchedule.m_fDepartTime) || m_currentSchedule.m_fActualArrivalTime == 0)
-	{
-		//如果说出发时间未到，或者还没有到达前方站台
-		SForwardLimit limit;
-		limit.m_fDistance = fNextStationDistance;
-		limit.m_fSpeedLimit = 0;
-		m_listLimit.push_back(limit);
-	}
-
 	AdjustPowerAndBreak();
 }
 
@@ -959,9 +980,9 @@ void CMSTSHelpDlg::ApplyBreak()
 	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x8099BC, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
 	changeBitsLevelToString(nLevelBit);
 
-	if (m_nBreakLevel < 5 || m_fBreakNum != 1)
+	if (m_nBreakLevel == -1)
 		PressKeyToTrainWnd(AIR_BREAK_APPLY);
-	else if (m_nBreakLevel == -1)
+	else if (m_nBreakLevel < 5 || m_fBreakNum != 1)
 		PressKeyToTrainWnd(AIR_BREAK_APPLY);
 }
 
@@ -969,11 +990,12 @@ void CMSTSHelpDlg::ReleaseBreak()
 {
 	int nLevelBit;
 	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x8099BC, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x8099BC, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
 	changeBitsLevelToString(nLevelBit);
 
-	if (m_nBreakLevel > 5 || m_fBreakNum != 1)
+	if (m_nBreakLevel == -1)
 		PressKeyToTrainWnd(AIR_BREAK_RELEASE);
-	else if (m_nBreakLevel == -1)
+	else if (m_nBreakLevel > 5 || m_fBreakNum != 1)
 		PressKeyToTrainWnd(AIR_BREAK_RELEASE);
 }
 
