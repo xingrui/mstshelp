@@ -367,14 +367,7 @@ void CMSTSHelpDlg::StopAndPressEnter(void *pThis)
 void CMSTSHelpDlg::AdjustPowerAndBreak()
 {
 	CString str;
-	float fCalculatedSpeedLimit;
-
-	//略微下调限速，避免超速的问题
-	if (m_fCurrentSpeedLimit > 0.15F)
-		fCalculatedSpeedLimit = m_fCurrentSpeedLimit - 0.15F;
-	else
-		fCalculatedSpeedLimit = 0;
-
+	float fCalculatedSpeedLimit = m_fCurrentSpeedLimit;
 	list<SForwardLimit>::iterator ite = m_listLimit.begin();
 	bool bInBreaking = false;
 
@@ -425,30 +418,37 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 	//根据当前速度和算出来的限速速度调整功率和制动的值
 	if (m_fCurrentSpeed > fCalculatedSpeedLimit)
 	{
-		if (m_fAcceleration > -0.3F)
+		//降功率至0
+		if(m_fCurrentPower > 1E-3)
+			PressKeyToTrainWnd('A');
+
+		//加速度为正再降一次
+		if (m_fAcceleration > -1E-3)
+			PressKeyToTrainWnd('A');
+		else if (m_fAcceleration > -0.3F)
 		{
 			// 超速，需要进行刹车和减小功率
 			if ((m_fCurrentSpeed + m_fAcceleration * 3) > fCalculatedSpeedLimit)
 			{
-				// 三秒之内速度降不下来
-				PressKeyToTrainWnd('A');
-				CLogger::Log("%f", m_fAcceleration);
+				if(m_loco == Electric)
+					PressKeyToTrainWnd('A');
+				else
+					ApplyBreak();
 			}
 		}
 
-		if (m_fAcceleration > -0.4F)
-		{
-			if (m_fCurrentSpeed > 1.1 * fCalculatedSpeedLimit)
-			{
-				//超速过多，而且刹车不快
-				ApplyBreak();
-				CLogger::Log("%f", m_fAcceleration);
-			}
-		}
+		//判断是否要对刹车进行处理
 
 		if (m_fCurrentSpeed > 1.3 * fCalculatedSpeedLimit + 3)
 		{
+			//严重超速，刹车就算够了，也要继续增大刹车速度
 			ApplyBreak();
+		}else if((m_fCurrentSpeed > fCalculatedSpeedLimit + 1.38) 
+			|| m_fCurrentSpeed > 1.1 * fCalculatedSpeedLimit)
+		{
+			//超速较多，刹车加速度不够
+			if(m_fAcceleration > -0.4)
+				ApplyBreak();
 		}
 		else if (m_fCurrentSpeed < 1.2 * fCalculatedSpeedLimit && m_fAcceleration < -0.45F)
 		{
