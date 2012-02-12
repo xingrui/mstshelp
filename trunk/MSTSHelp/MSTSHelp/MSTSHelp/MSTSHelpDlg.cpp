@@ -982,7 +982,7 @@ void CMSTSHelpDlg::ApplyBreak()
 
 	if (m_nBreakLevel == -1)
 		PressKeyToTrainWnd(AIR_BREAK_APPLY);
-	else if (m_nBreakLevel < 5 || m_fBreakNum != 1)
+	else if (m_nBreakLevel < 8 || m_fBreakNum != 1)
 		PressKeyToTrainWnd(AIR_BREAK_APPLY);
 }
 
