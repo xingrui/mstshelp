@@ -151,6 +151,8 @@ private:
 	list<SForwardLimit> m_listLimit;
 	bool m_bIsProcessing;
 	float m_fCurrentPower;
+	BOOL m_isConnectMode;
+	afx_msg void OnIsConnectMode();
 };
 
 #define CHECK(A) if(!A){CLogger::Log("Read Memory Failed in %s line:%d", __FUNCTION__, __LINE__);}

@@ -28,6 +28,7 @@ CMSTSHelpDlg::CMSTSHelpDlg(CWnd *pParent /*=NULL*/)
 	, m_bAutoSkipError(FALSE)
 	, m_strManualLimit(_T(""))
 	, m_bAutoSave(FALSE)
+	, m_isConnectMode(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -44,6 +45,7 @@ void CMSTSHelpDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Check(pDX, IDC_CHECK6, m_bAutoSkipError);
 	DDX_Check(pDX, IDC_CHECK7, m_bAutoSave);
 	DDX_Text(pDX, IDC_EDIT3, m_strManualLimit);
+	DDX_Check(pDX, IDC_CHECK8, m_isConnectMode);
 }
 
 BEGIN_MESSAGE_MAP(CMSTSHelpDlg, CDialog)
@@ -61,6 +63,7 @@ BEGIN_MESSAGE_MAP(CMSTSHelpDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK5, &CMSTSHelpDlg::OnAutoEscMsg)
 	ON_BN_CLICKED(IDC_CHECK6, &CMSTSHelpDlg::OnAutoSkipError)
 	ON_BN_CLICKED(IDC_CHECK7, &CMSTSHelpDlg::OnAutoSave)
+	ON_BN_CLICKED(IDC_CHECK8, &CMSTSHelpDlg::OnIsConnectMode)
 END_MESSAGE_MAP()
 
 
@@ -847,6 +850,50 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 	if (hWnd != hForeGroundWindow)
 		return;
 
+	if(m_isConnectMode)
+	{
+		int mode;
+		CHECK(ReadProcessMemory(hProcess, (void*)0x799E3C, (LPVOID)&mode, 4, NULL))
+		PressKeyToTrainWnd('6');
+		if(mode == 8)
+		{
+			float distance;
+			CHECK(ReadProcessMemory(hProcess, (void*)0x79C798, (LPVOID)&distance, 4, NULL))
+			if(distance < 0)
+			{
+				SForwardLimit limit;
+				limit.m_fDistance = 20;
+				limit.m_fSpeedLimit = 1.0;
+				m_listLimit.push_back(limit);
+			}else
+			{
+				SForwardLimit limit;
+				if(distance < 10)
+					limit.m_fDistance = 0;
+				else
+					limit.m_fDistance = distance  / 3;
+				limit.m_fSpeedLimit = 1.0;
+				m_listLimit.push_back(limit);
+			}////////////////////////////////////////////////////////////////////////////////
+			Direction currentDirection = GetDirection(m_loco, hProcess);
+
+			if (currentDirection == Middle || currentDirection == Backward)
+			{
+				changeDirection(hProcess, Forward);
+				// 改变前进方向，此时的列车数据是已经发生了变化，因此继续执行没有什么意义。
+				return;
+			}
+
+			if (MakePowered(hProcess, true))
+			{
+				// 电源状况发生了变化，需要更新数据
+				return;
+			}
+			AdjustPowerAndBreak();
+			return;
+		}
+	}
+
 	///////////////////////////////////////////////////////////////////////////////
 	//如果是任务模式，需要得知前方到站的信息
 	float fNextStationDistance;
@@ -1168,5 +1215,11 @@ void CMSTSHelpDlg::OnAutoSkipError()
 
 void CMSTSHelpDlg::OnAutoSave()
 {
+	UpdateData();
+}
+
+void CMSTSHelpDlg::OnIsConnectMode()
+{
+	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
 }
