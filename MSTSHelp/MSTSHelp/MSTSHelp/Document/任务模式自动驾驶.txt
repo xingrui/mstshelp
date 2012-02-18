@@ -58,9 +58,97 @@ while(pNode != head)
 
 
 
+前方车站的名称
+*(*(*(*(*(*(*(0x80a038)+0xC)+0x20)+0)+4*Num)+0x28)+0)
+*(*(*(*(*(*(*(0x80a038)+0xC)+0x20)+0)+4*Num)+0x2C)+0)
+*(*(*(*(*(0x80a038)+0xC)+0x20)+0)+4*Num)指向一个数据结构
+该数据结构的定义如下
+SCrossoverItem{
+    int data1;
+    int data2;
+    int data3;
+    float TrItemSDataFirst;
+    int data5;
+    int CrossoverTrItemDataFirst;
+    int data7;
+    int CrossoverTrItemDataSecond;
+};
+SSignalItem{
+    int data1;
+    int data2;
+    int data3;
+    float TrItemSDataFirst;
+    int TrItemSDataSecond;
+    pointer namePointer;
+    int data7;
+    int data8;
+    int data9;
+    int data10;
+    int data11;
+    int data12;
+}
+SPlatformItem{
+    int (3);
+    int (2);
+    int (0x324);
+    float TrItemSDataFirst;
 
+    int TrItemSDataSecond;
+    float TrItemRDataFirst;
+    float TrItemRDataThird;
+    int TrItemRDataFourth;
 
+    int TrItemRDataFifth;
+    DWORD (0);
+    wchar_t* platformName;
+    wchar_t* stationName;
+};
+SSpeedPostItem{
+    int data1;
+    int data2;
+    int data3;
+    float TrItemSDataFirst;
+    int TrItemSDataSecond;
+    float TrItemPDataFirst;
+    float TrItemPDataSecond;
+    int TrItemPDataThird;
+    int TrItemPDataFourth;
+    int data10;
+    short SpeedpostTrItemDataFirst;
+    short SpeedpostTrItemDataSecond;
+    float SpeedpostTrItemDataThird;
+};
+SEmptyItem{
+};
 
+SLevelCrItem{
+    int data1;
+    int data2;
+    int data3;
+    float TrItemSDataFirst;
+    int TrItemSDataSecond;
+    float TrItemPDataFirst;
+    float TrItemPDataSecond;
+    int TrItemPDataThird;
+    int TrItemPDataFourth;
+    int data10;
+    int data11;
+    int data12;
+};
+SPickupItem{
+    int data1;
+    int data2;
+    int data3;
+    float TrItemSDataFirst;
+    int TrItemSDataSecond;
+    float TrItemPDataFirst;
+    float TrItemPDataSecond;
+    int TrItemPDataThird;
+    int TrItemPDataFourth;
+    int data10;
+    float PickupTrItemDataFirst;
+    int PickupTrItemDataSecond;
+};
 
 
 目前已经知道的数据
