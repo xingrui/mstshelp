@@ -39,7 +39,7 @@ struct SConnectNode
 	int   nTileZ;
 	short data;
 	short direction;
-	short direction2;
+	short direction2;// I use this direction2 but I do not know whether the difference of the direction.
 };
 struct SSectionArray;
 struct STrItemArray;
@@ -67,9 +67,9 @@ struct STrackNode
 {
 	DWORD data1;
 	DWORD data2;
-	SConnectNode* nodePtr1;
+	SConnectNode* connectNodePtr1;
 	DWORD data4;
-	SConnectNode* nodePtr2;
+	SConnectNode* connectNodePtr2;
 	DWORD data6;
 	SSectionArray* sectionArrayPtr;
 	int   nSectionNum;
@@ -88,14 +88,21 @@ struct STrackInfo
 	int             nDirection;
 	float           fNodeLeftLength;
 	float           fSectionLeftLength;
-};//0x8098DC and 0x809944
-// some other data I have not recognize them.
-
+};
+enum ItemType
+{
+	EmptyOrSignalItem = 0,
+	PickupItem = 2,
+	PlatFormItem = 3,
+	LevelCtItem = 7,
+	SpeedPostItem = 8,
+	CrossOverItem = 11,
+};
 struct SSpeedPostItem{
-	int type;//8
-	int subType;//2     | 7 ItemID 107
+	int nType;//8
+	int nSubType;//2     
 	int unknown3;//0
-	float TrItemSDataFirst;
+	float fLocationInTrackNode;//TrItemSDataFirst
 	int TrItemSDataSecond;
 	float TrItemPDataFirst;
 	float TrItemPDataSecond;
@@ -103,7 +110,7 @@ struct SSpeedPostItem{
 	int TrItemPDataFourth;
 	int variableData;
 	short SpeedpostTrItemDataFirst;
-	short SpeedpostTrItemDataSecond;//Really Limit
+	short SpeedpostTrItemDataSecond;//This is the Limit Number
 	float SpeedpostTrItemDataThird;
 	float SpeedpostTrItemDataFourth;
 	DWORD fData;//0
@@ -114,7 +121,7 @@ struct SPlatformItem
 	int type;//3
 	int subType;
 	int unknown;
-	float fTrItemSDataFirst;
+	float fLocationInTrackNode;//TrItemSDataFirst
 	int   nTrItemSDataSecond;
 	float fTrItemRDataFirst;
 	float fTrItemRDataThird;
@@ -144,6 +151,5 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 CString SpeedPostItemToString(const SSpeedPostItem& item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
-bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 
 #endif

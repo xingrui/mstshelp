@@ -39,34 +39,6 @@ bool GetTrainHandle(HANDLE &hProcess)
 	}
 }
 
-bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...)
-{
-	LPCVOID addressPointer = lpBaseAddress;
-	char *dataPointer;
-	va_list x;
-	va_start(x, num);
-
-	for (int i = 0; i < num; ++i)
-	{
-		int y = va_arg(x, int);
-
-		if (!ReadProcessMemory(hProcess, addressPointer, (LPVOID)&dataPointer, 4, NULL))
-		{
-			return false;
-		}
-
-		addressPointer = dataPointer + y;
-	}
-
-	va_end(x);
-
-	if (!ReadProcessMemory(hProcess, addressPointer, lpBuffer, nSize, NULL))
-	{
-		return false;
-	}
-
-	return true;
-}
 
 void *GetTrainPointer(HANDLE hProcess)
 {
@@ -91,7 +63,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 		{
 			int type;
 			ReadProcessMemory(handle, (LPCVOID)(*(memory + i)), (LPVOID)&type, 4, NULL);
-			if(type == 8)
+			if(type == SpeedPostItem)
 			{
 				SSpeedPostItem speedPostItem;
 				const void* address = (LPCVOID)*(memory + i);
@@ -102,10 +74,10 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 					float distanceToTrackStart;
 					if(!direction)
 					{
-						distanceToTrackStart = node.fSectionLength - speedPostItem.TrItemSDataFirst;
+						distanceToTrackStart = node.fSectionLength - speedPostItem.fLocationInTrackNode;
 					}else
 					{
-						distanceToTrackStart = speedPostItem.TrItemSDataFirst;
+						distanceToTrackStart = speedPostItem.fLocationInTrackNode;
 					}
 					if(currentDistance + distanceToTrackStart > 0)
 					limitVect.push_back(SSpeedPostLimit(currentDistance + 
@@ -128,7 +100,7 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 		{
 			int type;
 			ReadProcessMemory(handle, (LPCVOID)(*(memory + i)), (LPVOID)&type, 4, NULL);
-			if(type == 3)
+			if(type == PlatFormItem)
 			{
 				SPlatformItem platformItem;
 				const void* address = (LPCVOID)*(memory + i);
@@ -138,10 +110,10 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 				float distanceToTrackStart;
 				if(!direction)
 				{
-					distanceToTrackStart = node.fSectionLength - platformItem.fTrItemSDataFirst;
+					distanceToTrackStart = node.fSectionLength - platformItem.fLocationInTrackNode;
 				}else
 				{
-					distanceToTrackStart = platformItem.fTrItemSDataFirst;
+					distanceToTrackStart = platformItem.fLocationInTrackNode;
 				}
 				if(distanceToTrackStart + currentDistance > 0)
 					limitVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
@@ -155,9 +127,9 @@ CString SpeedPostItemToString(const SSpeedPostItem& item)
 {
 	CString result;
 	CString tmp;
-	tmp.Format(L"%d %d %d\r\n", item.type, item.subType, item.unknown3);
+	tmp.Format(L"%d %d %d\r\n", item.nType, item.nSubType, item.unknown3);
 	result += tmp;
-	tmp.Format(L"%f %d\r\n", item.TrItemSDataFirst, item.TrItemSDataSecond);
+	tmp.Format(L"%f %d\r\n", item.fLocationInTrackNode, item.TrItemSDataSecond);
 	result += tmp;
 	tmp.Format(L"%f %f %d %d\r\n", item.TrItemPDataFirst, item.TrItemPDataSecond, item.TrItemPDataThird,item.TrItemPDataFourth);
 	result += tmp;
