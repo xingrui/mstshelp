@@ -30,4 +30,8 @@ protected:
 	DECLARE_MESSAGE_MAP()
 public:
 	afx_msg void OnBnClickedOk();
+public:
+	CString m_textContent;
+public:
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
 };

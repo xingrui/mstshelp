@@ -48,6 +48,7 @@ END_MESSAGE_MAP()
 
 CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CSignSpeedLimitDlg::IDD, pParent)
+	, m_textContent(_T(""))
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -55,6 +56,7 @@ CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd* pParent /*=NULL*/)
 void CSignSpeedLimitDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
+	DDX_Text(pDX, IDC_EDIT1, m_textContent);
 }
 
 BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
@@ -63,6 +65,7 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CSignSpeedLimitDlg::OnBnClickedOk)
+	ON_WM_TIMER()
 END_MESSAGE_MAP()
 
 
@@ -96,7 +99,8 @@ BOOL CSignSpeedLimitDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 
 	// TODO: 在此添加额外的初始化代码
-
+	m_hTrainProcess = NULL;
+	SetTimer(0, 1000, NULL);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -157,28 +161,98 @@ CString showTrackInfo(const STrackInfo& trackInfo)
 	return msg;
 }
 
+STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
+					int direction, int&nextDirect)
+{
+	if(connectNode.nType == 2)
+	{
+		if(nodePtr == connectStruct.nodePtr1 && connectStruct.nDirect1 == direction)
+		{
+			if(connectNode.direction2 )
+			{
+				nextDirect = connectStruct.nDirect3;
+				return connectStruct.nodePtr3;
+			}else
+			{
+				nextDirect = connectStruct.nDirect2;
+				return connectStruct.nodePtr2;
+			}
+		}else if(nodePtr == connectStruct.nodePtr2 && connectStruct.nDirect2 == direction){
+			nextDirect = connectStruct.nDirect1;
+			return connectStruct.nodePtr1;
+		}else if(nodePtr == connectStruct.nodePtr3 && connectStruct.nDirect3 == direction){
+			nextDirect = connectStruct.nDirect1;
+			return connectStruct.nodePtr1;
+		}
+	}else if(connectNode.nType == 3)
+	{
+		if(connectStruct.nDirect1 == direction)
+			return NULL;
+	}
+	return NULL;
+}
+
+STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodePtr, int direction, int&nextDirect)
+{
+	SConnectNode connectNode;
+	SConnectStruct connectStruct;
+	STrackNode*next;
+	ReadProcessMemory(handle, (void *)node.nodePtr1, (LPVOID)&connectNode, sizeof(SConnectNode), NULL);
+	ReadProcessMemory(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct), NULL);
+	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
+	if(next)
+		return next;
+	ReadProcessMemory(handle, (void *)node.nodePtr2, (LPVOID)&connectNode, sizeof(SConnectNode), NULL);
+	ReadProcessMemory(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct), NULL);
+	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
+	return next;
+}
+
 void CSignSpeedLimitDlg::OnBnClickedOk()
 {
 	if (!GetTrainHandle(m_hTrainProcess))
 	{
-		MessageBox(L"等待MSTS启动");
+		m_textContent = L"等待MSTS启动";
+		UpdateData(FALSE);
 		return;
 	}
 
 	if (!GetTrainPointer(m_hTrainProcess))
 	{
-		MessageBox(L"等待MSTS任务运行");
+		m_textContent = L"等待MSTS任务运行";
+		UpdateData(FALSE);
 		return;
 	}
 	STrackInfo headInfo, tailInfo;
 	CString info;
 	ReadProcessMemory(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo), NULL);
 	info += showTrackInfo(headInfo);
-	STrackNode trackNode;
-	ReadProcessMemory(m_hTrainProcess, (void *)headInfo.trackNodePtr, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
-
+	//info.Format(L"section length : %f", trackNode.fSectionLength);
+	m_textContent.Format(L"0x%X ", headInfo.trackNodePtr);
+	STrackNode* nextNode = headInfo.trackNodePtr;
+	int nextDirect = !headInfo.nDirection;
+	for(int i = 0; i < 5; ++i)
+	{
+		STrackNode trackNode;
+		ReadProcessMemory(m_hTrainProcess, (void *)nextNode, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
+		int direct;
+		nextNode = GetNextNode(m_hTrainProcess, trackNode,nextNode, nextDirect,direct);
+		nextDirect = !direct;
+		CString msg;
+		msg.Format(L"0x%X ", nextNode);
+		m_textContent += msg;
+	}
+	UpdateData(FALSE);
 	info+=L"\n";
 	ReadProcessMemory(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&tailInfo, sizeof(STrackInfo), NULL);
 	info += showTrackInfo(tailInfo);
+
 	//MessageBox(info);
+}
+
+void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	CDialog::OnTimer(nIDEvent);
+	OnBnClickedOk();
 }
