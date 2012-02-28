@@ -1,6 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
-
+#include <vector>
+using std::vector;
 #define THIS_POINTER_MEM 0x7C2AC0
 #define HEAD_TRACK_MEM 0x8098DC
 #define TAIL_TRACK_MEM 0x809944
@@ -89,7 +90,60 @@ struct STrackInfo
 	float           fSectionLeftLength;
 };//0x8098DC and 0x809944
 // some other data I have not recognize them.
+
+struct SSpeedPostItem{
+	int type;//8
+	int subType;//2     | 7 ItemID 107
+	int unknown3;//0
+	float TrItemSDataFirst;
+	int TrItemSDataSecond;
+	float TrItemPDataFirst;
+	float TrItemPDataSecond;
+	int TrItemPDataThird;
+	int TrItemPDataFourth;
+	int variableData;
+	short SpeedpostTrItemDataFirst;
+	short SpeedpostTrItemDataSecond;//Really Limit
+	float SpeedpostTrItemDataThird;
+	float SpeedpostTrItemDataFourth;
+	DWORD fData;//0
+};
+
+struct SPlatformItem
+{
+	int type;//3
+	int subType;
+	int unknown;
+	float fTrItemSDataFirst;
+	int   nTrItemSDataSecond;
+	float fTrItemRDataFirst;
+	float fTrItemRDataThird;
+	int   nTrItemRDataFourth;
+	int   nTrItemRDataFifth;
+	DWORD data;
+	wchar_t* platformName;
+	wchar_t* stationName;
+};
+
+struct SSpeedPostLimit
+{
+	float fDistance;
+	int   LimitNum;
+	SSpeedPostLimit(float dis, int num):fDistance(dis),LimitNum(num){}
+};
+
+struct SStationItem
+{
+	float fDistance;
+	CString stationName;
+	SStationItem(float dis, CString sName):fDistance(dis),stationName(sName){}
+};
+
+void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction);
+void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& limitVect, HANDLE handle, int direction);
+CString SpeedPostItemToString(const SSpeedPostItem& item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
+bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 
 #endif

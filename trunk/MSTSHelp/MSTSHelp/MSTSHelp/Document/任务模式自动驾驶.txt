@@ -64,32 +64,34 @@ while(pNode != head)
 *(*(*(*(*(0x80a038)+0xC)+0x20)+0)+4*Num)指向一个数据结构
 该数据结构的定义如下
 SCrossoverItem{
-    int data1;
-    int data2;
-    int data3;
+    int data1;(0xB)------always
+    int data2;0
+    int data3;0
     float TrItemSDataFirst;
-    int data5;
-    int CrossoverTrItemDataFirst;
-    int data7;
+    int   TrItemSDataSecond;
+    int CrossoverTrItemDataFirst;//NOT SURE
+    int data7;0
     int CrossoverTrItemDataSecond;
+	STrackNode* nodePtr;
+	float fData;
 };
 SSignalItem{
-    int data1;
-    int data2;
-    int data3;
+    int data1;//0
+    int data2;// 0 2 7
+    int data3;0
     float TrItemSDataFirst;
     int TrItemSDataSecond;
     pointer namePointer;
-    int data7;
-    int data8;
-    int data9;
-    int data10;
-    int data11;
-    int data12;
+    int data7;0
+    int TrSignalTypeFirst;//0x8000 | num
+    int TrSingalTypeSecond;
+    int data10;0x0
+    int data11;0x0
+    int data12;//0073005f
 }
 SPlatformItem{
     int (3);
-    int (2);
+    int ;0 2//
     int (0x324);
     float TrItemSDataFirst;
 
@@ -104,25 +106,28 @@ SPlatformItem{
     wchar_t* stationName;
 };
 SSpeedPostItem{
-    int data1;
-    int data2;
-    int data3;
+    int data1;//8
+    int data2;//2     | 7 ItemID 107
+    int data3;//0
     float TrItemSDataFirst;
     int TrItemSDataSecond;
     float TrItemPDataFirst;
     float TrItemPDataSecond;
     int TrItemPDataThird;
     int TrItemPDataFourth;
-    int data10;
+    int data10;//0 0x11C | 
     short SpeedpostTrItemDataFirst;
-    short SpeedpostTrItemDataSecond;
+    short SpeedpostTrItemDataSecond;//Really Limit
     float SpeedpostTrItemDataThird;
+	float SpeedpostTrItemDataFourth;
+	DWORD data;//0
 };
 SEmptyItem{
+//0
 };
 
 SLevelCrItem{
-    int data1;
+    int data1;//7
     int data2;
     int data3;
     float TrItemSDataFirst;
@@ -136,7 +141,7 @@ SLevelCrItem{
     int data12;
 };
 SPickupItem{
-    int data1;
+    int data1;//2
     int data2;
     int data3;
     float TrItemSDataFirst;

@@ -34,4 +34,8 @@ public:
 	CString m_textContent;
 public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
+public:
+	int m_ItemNum;
+public:
+	afx_msg void OnBnClickedButton1();
 };

@@ -49,6 +49,7 @@ END_MESSAGE_MAP()
 CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CSignSpeedLimitDlg::IDD, pParent)
 	, m_textContent(_T(""))
+	, m_ItemNum(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -57,6 +58,8 @@ void CSignSpeedLimitDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT1, m_textContent);
+	DDX_Text(pDX, IDC_EDIT2, m_ItemNum);
+	DDV_MinMaxInt(pDX, m_ItemNum, 0, 10000);
 }
 
 BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
@@ -66,6 +69,7 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CSignSpeedLimitDlg::OnBnClickedOk)
 	ON_WM_TIMER()
+	ON_BN_CLICKED(IDC_BUTTON1, &CSignSpeedLimitDlg::OnBnClickedButton1)
 END_MESSAGE_MAP()
 
 
@@ -164,7 +168,7 @@ CString showTrackInfo(const STrackInfo& trackInfo)
 STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
 					int direction, int&nextDirect)
 {
-	if(connectNode.nType == 2)
+	if(connectNode.nType == 2)//JunctionNode
 	{
 		if(nodePtr == connectStruct.nodePtr1 && connectStruct.nDirect1 == direction)
 		{
@@ -184,11 +188,8 @@ STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, co
 			nextDirect = connectStruct.nDirect1;
 			return connectStruct.nodePtr1;
 		}
-	}else if(connectNode.nType == 3)
-	{
-		if(connectStruct.nDirect1 == direction)
-			return NULL;
 	}
+	//EndNode Or can not find the pointer in the struct.
 	return NULL;
 }
 
@@ -223,31 +224,66 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		UpdateData(FALSE);
 		return;
 	}
+	vector<SSpeedPostLimit> limitVect;
+	vector<SStationItem> stationVect;
 	STrackInfo headInfo, tailInfo;
 	CString info;
 	ReadProcessMemory(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo), NULL);
-	info += showTrackInfo(headInfo);
-	//info.Format(L"section length : %f", trackNode.fSectionLength);
 	m_textContent.Format(L"0x%X ", headInfo.trackNodePtr);
-	STrackNode* nextNode = headInfo.trackNodePtr;
-	int nextDirect = !headInfo.nDirection;
-	for(int i = 0; i < 5; ++i)
+	float forwardLength;
+	STrackNode trackNode;
+	int nDirectToFindInConnectNode = !headInfo.nDirection;
+	ReadProcessMemory(m_hTrainProcess, (void *)headInfo.trackNodePtr, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
+	int nDirectOfNextNode;
+	STrackNode* nextNodePtr = GetNextNode(m_hTrainProcess, trackNode,headInfo.trackNodePtr, nDirectToFindInConnectNode,nDirectOfNextNode);
+	if(headInfo.nDirection)
 	{
+		forwardLength = trackNode.fSectionLength - headInfo.fNodeLeftLength;
+	}else
+	{
+		forwardLength = headInfo.fNodeLeftLength;
+		//AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess);
+	}
+	AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess, headInfo.nDirection);
+	AddStationItem(forwardLength - trackNode.fSectionLength, trackNode, stationVect, m_hTrainProcess, headInfo.nDirection);
+	m_textContent.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
+	while (forwardLength < 4000 && nextNodePtr)
+	{
+		STrackNode* currentNodePtr = nextNodePtr;
 		STrackNode trackNode;
-		ReadProcessMemory(m_hTrainProcess, (void *)nextNode, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
-		int direct;
-		nextNode = GetNextNode(m_hTrainProcess, trackNode,nextNode, nextDirect,direct);
-		nextDirect = !direct;
+		ReadProcessMemory(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
+		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfNextNode);
+		AddStationItem(forwardLength, trackNode, stationVect, m_hTrainProcess,nDirectOfNextNode);
+		forwardLength += trackNode.fSectionLength;
+		//if(!nDirectOfNextNode)
+		//{
+			//AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess);
+		//}
+		/************************************************************************/
+		/* Get Next Node Pointer                                                */
+		/************************************************************************/
+		nDirectToFindInConnectNode = !nDirectOfNextNode;
+		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode,currentNodePtr, nDirectToFindInConnectNode,nDirectOfNextNode);
 		CString msg;
-		msg.Format(L"0x%X ", nextNode);
+		msg.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
+		m_textContent += msg;
+	}
+	for(size_t i = 0; i < limitVect.size(); ++i)
+	{
+		CString msg;
+		msg.Format(L"%f %d\r\n", limitVect[i].fDistance, limitVect[i].LimitNum);
+		m_textContent += msg;
+	}
+	for(size_t i = 0; i < stationVect.size(); ++i)
+	{
+		CString msg;
+		msg.Format(L"%f ", stationVect[i].fDistance);
+		msg += stationVect[i].stationName;
+		msg += L"\r\n";
 		m_textContent += msg;
 	}
 	UpdateData(FALSE);
-	info+=L"\n";
 	ReadProcessMemory(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&tailInfo, sizeof(STrackInfo), NULL);
-	info += showTrackInfo(tailInfo);
-
-	//MessageBox(info);
 }
 
 void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
@@ -255,4 +291,27 @@ void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CDialog::OnTimer(nIDEvent);
 	OnBnClickedOk();
+}
+
+void CSignSpeedLimitDlg::OnBnClickedButton1()
+{
+	if (!GetTrainHandle(m_hTrainProcess))
+	{
+		m_textContent = L"等待MSTS启动";
+		UpdateData(FALSE);
+		return;
+	}
+
+	if (!GetTrainPointer(m_hTrainProcess))
+	{
+		m_textContent = L"等待MSTS任务运行";
+		UpdateData(FALSE);
+		return;
+	}
+	SSpeedPostItem item;
+	UpdateData();
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80a038,&item, sizeof(SSpeedPostItem), 5, 0xC, 0x20, 0, 4 * m_ItemNum, 0x0);
+	m_textContent.Format(L"0x%X ", 4*m_ItemNum);
+	m_textContent += SpeedPostItemToString(item);
+	UpdateData(FALSE);
 }
