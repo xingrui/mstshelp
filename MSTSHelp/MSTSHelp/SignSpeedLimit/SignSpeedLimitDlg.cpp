@@ -229,7 +229,8 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	STrackInfo headInfo, tailInfo;
 	CString info;
 	ReadProcessMemory(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo), NULL);
-	m_textContent.Format(L"0x%X ", headInfo.trackNodePtr);
+	//m_textContent.Format(L"0x%X ", headInfo.trackNodePtr);
+	m_textContent = L"";
 	float forwardLength;
 	STrackNode trackNode;
 	int nDirectToFindInConnectNode = !headInfo.nDirection;
@@ -246,7 +247,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	}
 	AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess, headInfo.nDirection);
 	AddStationItem(forwardLength - trackNode.fSectionLength, trackNode, stationVect, m_hTrainProcess, headInfo.nDirection);
-	m_textContent.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
+	//m_textContent.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
 	while (forwardLength < 4000 && nextNodePtr)
 	{
 		STrackNode* currentNodePtr = nextNodePtr;
@@ -264,9 +265,9 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		/************************************************************************/
 		nDirectToFindInConnectNode = !nDirectOfNextNode;
 		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode,currentNodePtr, nDirectToFindInConnectNode,nDirectOfNextNode);
-		CString msg;
-		msg.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
-		m_textContent += msg;
+		//CString msg;
+		//msg.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
+		//m_textContent += msg;
 	}
 	for(size_t i = 0; i < limitVect.size(); ++i)
 	{
