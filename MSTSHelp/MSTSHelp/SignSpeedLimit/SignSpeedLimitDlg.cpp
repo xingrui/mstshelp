@@ -278,6 +278,12 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		msg += L"\r\n";
 		m_textContent += msg;
 	}
+	if(!nextNodePtr)
+	{
+		CString msg;
+		msg.Format(L"%.1f END", forwardLength);
+		m_textContent += msg;
+	}
 	UpdateData(FALSE);
 	ReadProcessMemory(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&tailInfo, sizeof(STrackInfo), NULL);
 }
