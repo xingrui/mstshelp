@@ -245,7 +245,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess, headInfo.nDirection);
 	AddStationItem(forwardLength - trackNode.fSectionLength, trackNode, stationVect, m_hTrainProcess, headInfo.nDirection);
 	//m_textContent.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
-	while (forwardLength < 4000 && nextNodePtr)
+	while (forwardLength < 400000 && nextNodePtr)
 	{
 		STrackNode* currentNodePtr = nextNodePtr;
 		STrackNode trackNode;
