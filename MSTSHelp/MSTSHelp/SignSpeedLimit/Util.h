@@ -94,8 +94,10 @@ enum ItemType
 	EmptyOrSignalItem = 0,
 	PickupItem = 2,
 	PlatFormItem = 3,
+	SidingItem = 6,
 	LevelCtItem = 7,
 	SpeedPostItem = 8,
+	SoundRegionItem = 10,
 	CrossOverItem = 11,
 };
 struct SSpeedPostItem{
@@ -130,6 +132,18 @@ struct SPlatformItem
 	DWORD data;
 	wchar_t* platformName;
 	wchar_t* stationName;
+};
+
+struct SSidingItem
+{
+	int type; // 6
+	int subType;
+	int unknown;
+	float fLocationInTrackNode;//TrItemSDataFirst
+	int   nTrItemSDataSecond;
+	wchar_t* sidingName;
+	int   nSidingTrItemDataFirst;
+	int   nSidingTrItemDataSecond;
 };
 
 struct SSpeedPostLimit

@@ -117,6 +117,23 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 				}
 				if(distanceToTrackStart + currentDistance > 0)
 					limitVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
+			}else if(type == SidingItem)
+			{
+				SSidingItem sidingItem;
+				const void* address = (LPCVOID)*(memory + i);
+				ReadProcessMemory(handle, address, (LPVOID)&sidingItem, sizeof(SSidingItem), NULL);
+				wchar_t stationName[0x400];
+				ReadProcessMemory(handle, sidingItem.sidingName, (LPVOID)stationName, 0x800, NULL);
+				float distanceToTrackStart;
+				if(!direction)
+				{
+					distanceToTrackStart = node.fSectionLength - sidingItem.fLocationInTrackNode;
+				}else
+				{
+					distanceToTrackStart = sidingItem.fLocationInTrackNode;
+				}
+				if(distanceToTrackStart + currentDistance > 0)
+					limitVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
 			}
 		}
 		delete[]memory;
