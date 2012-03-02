@@ -49,6 +49,10 @@ END_MESSAGE_MAP()
 CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd* pParent /*=NULL*/)
 	: CDialog(CSignSpeedLimitDlg::IDD, pParent)
 	, m_textContent(_T(""))
+	, m_bShowSpeedPost(FALSE)
+	, m_bShowStation(FALSE)
+	, m_bShowSiding(FALSE)
+	, m_uForwardDistance(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -57,6 +61,10 @@ void CSignSpeedLimitDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT1, m_textContent);
+	DDX_Check(pDX, IDC_CHECK1, m_bShowSpeedPost);
+	DDX_Check(pDX, IDC_CHECK2, m_bShowStation);
+	DDX_Check(pDX, IDC_CHECK3, m_bShowSiding);
+	DDX_Text(pDX, IDC_EDIT2, m_uForwardDistance);
 }
 
 BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
@@ -66,6 +74,9 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CSignSpeedLimitDlg::OnBnClickedOk)
 	ON_WM_TIMER()
+	ON_BN_CLICKED(IDC_CHECK1, &CSignSpeedLimitDlg::OnBnClickedCheck1)
+	ON_BN_CLICKED(IDC_CHECK2, &CSignSpeedLimitDlg::OnBnClickedCheck2)
+	ON_BN_CLICKED(IDC_CHECK3, &CSignSpeedLimitDlg::OnBnClickedCheck3)
 END_MESSAGE_MAP()
 
 
@@ -101,6 +112,10 @@ BOOL CSignSpeedLimitDlg::OnInitDialog()
 	// TODO: 在此添加额外的初始化代码
 	m_hTrainProcess = NULL;
 	SetTimer(0, 1000, NULL);
+	m_bShowSpeedPost = TRUE;
+	m_bShowStation = TRUE;
+	m_uForwardDistance = 4;
+	UpdateData(FALSE);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -228,6 +243,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	CString info;
 	ReadProcessMemory(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo), NULL);
 	//m_textContent.Format(L"0x%X ", headInfo.trackNodePtr);
+	UpdateData();
 	m_textContent = L"";
 	float forwardLength;
 	STrackNode trackNode;
@@ -245,7 +261,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess, headInfo.nDirection);
 	AddStationItem(forwardLength - trackNode.fSectionLength, trackNode, stationVect, m_hTrainProcess, headInfo.nDirection);
 	//m_textContent.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
-	while (forwardLength < 400000 && nextNodePtr)
+	while (forwardLength < m_uForwardDistance * 1000 && nextNodePtr)
 	{
 		STrackNode* currentNodePtr = nextNodePtr;
 		STrackNode trackNode;
@@ -262,22 +278,24 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		//msg.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
 		//m_textContent += msg;
 	}
-	for(size_t i = 0; i < limitVect.size(); ++i)
-	{
-		CString msg;
-		msg.Format(L"%.1f %d\r\n", limitVect[i].fDistance, limitVect[i].LimitNum);
-		m_textContent += msg;
-	}
-	if(limitVect.size()!=0 && stationVect.size()!=0)
+	if(m_bShowSpeedPost)
+		for(size_t i = 0; i < limitVect.size(); ++i)
+		{
+			CString msg;
+			msg.Format(L"%.1f %d\r\n", limitVect[i].fDistance, limitVect[i].LimitNum);
+			m_textContent += msg;
+		}
+	if(limitVect.size()!=0 && stationVect.size()!=0 && m_bShowSpeedPost && m_bShowStation)
 		m_textContent += L"****************************************************\r\n";
-	for(size_t i = 0; i < stationVect.size(); ++i)
-	{
-		CString msg;
-		msg.Format(L"%.1f ", stationVect[i].fDistance);
-		msg += stationVect[i].stationName;
-		msg += L"\r\n";
-		m_textContent += msg;
-	}
+	if(m_bShowStation)
+		for(size_t i = 0; i < stationVect.size(); ++i)
+		{
+			CString msg;
+			msg.Format(L"%.1f ", stationVect[i].fDistance);
+			msg += stationVect[i].stationName;
+			msg += L"\r\n";
+			m_textContent += msg;
+		}
 	if(!nextNodePtr)
 	{
 		CString msg;
@@ -293,4 +311,22 @@ void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CDialog::OnTimer(nIDEvent);
 	OnBnClickedOk();
+}
+
+void CSignSpeedLimitDlg::OnBnClickedCheck1()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData();
+}
+
+void CSignSpeedLimitDlg::OnBnClickedCheck2()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData();
+}
+
+void CSignSpeedLimitDlg::OnBnClickedCheck3()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData();
 }
