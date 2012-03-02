@@ -53,6 +53,7 @@ CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd* pParent /*=NULL*/)
 	, m_bShowStation(FALSE)
 	, m_bShowSiding(FALSE)
 	, m_uForwardDistance(0)
+	, m_bAutoGetData(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -65,6 +66,7 @@ void CSignSpeedLimitDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHECK2, m_bShowStation);
 	DDX_Check(pDX, IDC_CHECK3, m_bShowSiding);
 	DDX_Text(pDX, IDC_EDIT2, m_uForwardDistance);
+	DDX_Check(pDX, IDC_CHECK4, m_bAutoGetData);
 }
 
 BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
@@ -77,6 +79,7 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK1, &CSignSpeedLimitDlg::OnBnClickedCheck1)
 	ON_BN_CLICKED(IDC_CHECK2, &CSignSpeedLimitDlg::OnBnClickedCheck2)
 	ON_BN_CLICKED(IDC_CHECK3, &CSignSpeedLimitDlg::OnBnClickedCheck3)
+	ON_BN_CLICKED(IDC_CHECK4, &CSignSpeedLimitDlg::OnBnClickedCheck4)
 END_MESSAGE_MAP()
 
 
@@ -310,7 +313,8 @@ void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CDialog::OnTimer(nIDEvent);
-	OnBnClickedOk();
+	if(m_bAutoGetData)
+		OnBnClickedOk();
 }
 
 void CSignSpeedLimitDlg::OnBnClickedCheck1()
@@ -326,6 +330,12 @@ void CSignSpeedLimitDlg::OnBnClickedCheck2()
 }
 
 void CSignSpeedLimitDlg::OnBnClickedCheck3()
+{
+	// TODO: 在此添加控件通知处理程序代码
+	UpdateData();
+}
+
+void CSignSpeedLimitDlg::OnBnClickedCheck4()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
