@@ -36,4 +36,18 @@ public:
 	afx_msg void OnTimer(UINT_PTR nIDEvent);
 public:
 	afx_msg void OnBnClickedButton1();
+public:
+	BOOL m_bShowSpeedPost;
+public:
+	BOOL m_bShowStation;
+public:
+	BOOL m_bShowSiding;
+public:
+	UINT m_uForwardDistance;
+public:
+	afx_msg void OnBnClickedCheck1();
+public:
+	afx_msg void OnBnClickedCheck2();
+public:
+	afx_msg void OnBnClickedCheck3();
 };
