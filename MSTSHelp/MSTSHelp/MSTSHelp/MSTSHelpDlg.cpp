@@ -915,6 +915,12 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 		//处理已经到达站台但还没有到出发时间的情况
 		if (m_fCurrentSpeed > 1E-3)
 			ApplyBreak();
+		else if(m_fCurrentPower != 0)
+			for(int i = 0; i < 10; ++i)
+				PressKeyToTrainWnd('A');
+		else if(m_currentSchedule.m_fDepartTime - m_fGameTime < 20)
+			for(int i = 0; i < 30; ++i)
+				ReleaseBreak();
 
 		return;
 	}
