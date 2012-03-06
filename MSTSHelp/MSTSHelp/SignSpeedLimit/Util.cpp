@@ -68,8 +68,8 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 				SSpeedPostItem speedPostItem;
 				const void* address = (LPCVOID)*(memory + i);
 				ReadProcessMemory(handle, address, (LPVOID)&speedPostItem, sizeof(SSpeedPostItem), NULL);
-				int masked = speedPostItem.SpeedpostTrItemDataFirst & 0xf;
-				if(masked == 1 || masked == 2 || masked == 8)
+				int masked = speedPostItem.SpeedpostTrItemDataFirst & 0x7;
+				if(masked == 2)
 				{
 					float distanceToTrackStart;
 					if(!direction)

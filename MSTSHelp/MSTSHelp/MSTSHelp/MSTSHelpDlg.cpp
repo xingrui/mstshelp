@@ -248,7 +248,7 @@ void CMSTSHelpDlg::OnTimer(UINT_PTR nIDEvent)
 	case AUTO_ESC_MSG_TIMER:
 	{
 		int nFlag;
-		CHECK(ReadProcessMemory(m_hTrainProcess, (void *)0x783A98, (LPVOID)&nFlag, 4, NULL))
+		CHECK(ReadProcessMemory(m_hTrainProcess, (void *)PAUSE_BY_MSG_MEM, (LPVOID)&nFlag, 4, NULL))
 
 		if (!nFlag)
 		{
@@ -624,8 +624,8 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	strColor += changeColorToString(m_cColor2);
 	CHECK(ReadProcessMemory(hProcess, (void *)ACCER_MEM, (LPVOID)&m_fAcceleration, 4, NULL))
 	//CHECK(ReadProcessMemory(hProcess, (void *)FORWARD_TURNOFF_MEM, (LPVOID)&fForwardTurnOff, 4, NULL))
-	CHECK(ReadPointerMemory(hProcess, (LPCVOID)0x8099BC, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C))
-	CHECK(ReadPointerMemory(hProcess, (LPCVOID)0x8099BC, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248))
+	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C))
+	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248))
 	CString str;
 	str.Format(L"%.1f", m_fCurrentSpeed * 3.6F);
 	m_listCtrl.SetItemText(CURRENT_SPEED_ITEM, 1, str);
@@ -664,8 +664,8 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	str = changeBitsLevelToString(nLevelBit);
 	m_listCtrl.SetItemText(BREAK_LEVEL_ITEM, 1, str);
 	float fNum2;
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x7B6440, &m_fCurrentPower, 4, 1, 0x8C))
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x7B6440, &fNum2, 4, 1, 0x32C))
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)POWER_INFO_MEM, &m_fCurrentPower, 4, 1, 0x8C))
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)POWER_INFO_MEM, &fNum2, 4, 1, 0x32C))
 	str.Format(L"%.3f %.3f", m_fCurrentPower, fNum2);
 	m_listCtrl.SetItemText(POWER_AND_ELECTRIC_BREAK, 1, str);
 	float fRouteLimit;
@@ -678,8 +678,8 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	{
 		//仅仅获取数据，不改变成员变量的信息。
 		float fCurrentTime, fDistance;
-		CHECK(ReadProcessMemory(hProcess, (void *)0x809B08, (LPVOID)&fCurrentTime, 4, NULL))
-		CHECK(ReadProcessMemory(hProcess, (void *)0x809B70, (LPVOID)&fDistance, 4, NULL))
+		CHECK(ReadProcessMemory(hProcess, (void *)F_GAME_TIME_MEM, (LPVOID)&fCurrentTime, 4, NULL))
+		CHECK(ReadProcessMemory(hProcess, (void *)FOWARD_STATION_DIS_MEM, (LPVOID)&fDistance, 4, NULL))
 		ShowScheduleInfo(schedule, fCurrentTime, fDistance);
 	}
 }
@@ -689,7 +689,7 @@ void CMSTSHelpDlg::ShowScheduleInfo(const SSchedule &schedule, float fCurrentTim
 {
 	CString str;
 	wchar_t stationName[30];
-	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80a038, stationName, 30, 6, 0xC, 0x20, 0, 4 * schedule.m_nPlatformStartID, 0x28, 0);
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)TR_ITEM_ARRAY_MEM, stationName, 30, 6, 0xC, 0x20, 0, 4 * schedule.m_nPlatformStartID, 0x28, 0);
 	m_listCtrl.SetItemText(FOWARD_STATION_NAME, 1, stationName);
 
 	if (schedule.m_fActualArrivalTime != 0)
@@ -713,7 +713,7 @@ void CMSTSHelpDlg::changeDirection(HANDLE hProcess, Direction direction)
 
 	for (int i = 0; i < 20; ++i)
 	{
-		CHECK(ReadPointerMemory(hProcess, (LPCVOID)0x7B6440, &fNum1, 4, 1, 0x8C))
+		CHECK(ReadPointerMemory(hProcess, (LPCVOID)POWER_INFO_MEM, &fNum1, 4, 1, 0x8C))
 
 		if (fNum1 == 0)
 			break;
@@ -853,12 +853,12 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 	if(m_isConnectMode)
 	{
 		int mode;
-		CHECK(ReadProcessMemory(hProcess, (void*)0x799E3C, (LPVOID)&mode, 4, NULL))
+		CHECK(ReadProcessMemory(hProcess, (void*)VIEW_MODE_MEM, (LPVOID)&mode, 4, NULL))
 		PressKeyToTrainWnd('6');
 		if(mode == 8)
 		{
 			float distance;
-			CHECK(ReadProcessMemory(hProcess, (void*)0x79C798, (LPVOID)&distance, 4, NULL))
+			CHECK(ReadProcessMemory(hProcess, (void*)CONNECT_DIS_MEM, (LPVOID)&distance, 4, NULL))
 			if(distance < 0)
 			{
 				SForwardLimit limit;
@@ -897,7 +897,7 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 	///////////////////////////////////////////////////////////////////////////////
 	//如果是任务模式，需要得知前方到站的信息
 	float fNextStationDistance;
-	CHECK(ReadProcessMemory(hProcess, (void *)0x809B70, (LPVOID)&fNextStationDistance, 4, NULL))
+	CHECK(ReadProcessMemory(hProcess, (void *)FOWARD_STATION_DIS_MEM, (LPVOID)&fNextStationDistance, 4, NULL))
 	UpdateScheduleInfo(fNextStationDistance);
 	ShowScheduleInfo(m_currentSchedule, m_fGameTime, fNextStationDistance);
 	//在这里根据时刻表直接进行一次筛选
@@ -1029,8 +1029,8 @@ void CMSTSHelpDlg::AutoDrive(HANDLE hProcess)
 void CMSTSHelpDlg::ApplyBreak()
 {
 	int nLevelBit;
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x8099BC, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248));
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x8099BC, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
 	changeBitsLevelToString(nLevelBit);
 
 	if (m_nBreakLevel == -1)
@@ -1042,8 +1042,8 @@ void CMSTSHelpDlg::ApplyBreak()
 void CMSTSHelpDlg::ReleaseBreak()
 {
 	int nLevelBit;
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x8099BC, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248));
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x8099BC, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
 	changeBitsLevelToString(nLevelBit);
 
 	if (m_nBreakLevel == -1)
@@ -1060,7 +1060,7 @@ void CMSTSHelpDlg::ReleaseElectricBreak()
 
 		for (int i = 0; i < 20; ++i)
 		{
-			ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x7B6440, &fBreak, 4, 1, 0x32C);
+			ReadPointerMemory(m_hTrainProcess, (LPCVOID)POWER_INFO_MEM, &fBreak, 4, 1, 0x32C);
 
 			if (fBreak == 0)
 				break;
@@ -1074,7 +1074,7 @@ void CMSTSHelpDlg::ReleaseElectricBreak()
 bool CMSTSHelpDlg::GetCurrentSchedule(HANDLE hProcess, SSchedule **pSchedule, SSchedule &schedule)
 {
 	SHead head;
-	CHECK(ReadProcessMemory(hProcess, (void *)0x8098C0, (LPVOID)&head, sizeof(SHead), NULL))
+	CHECK(ReadProcessMemory(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead), NULL))
 
 	if (head.currentSchedule != NULL)
 	{
@@ -1093,7 +1093,7 @@ BOOL CMSTSHelpDlg::IsTaskMode(HANDLE hProcess)
 	//是否有前方到站信息
 	SHead head;
 	SList node;
-	CHECK(ReadProcessMemory(hProcess, (void *)0x8098C0, (LPVOID)&head, sizeof(SHead), NULL))
+	CHECK(ReadProcessMemory(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead), NULL))
 	CHECK(ReadProcessMemory(hProcess, (void *)head.head, (LPVOID)&node, sizeof(SList), NULL))
 	return node.m_next != head.head;
 }
@@ -1102,7 +1102,7 @@ void CMSTSHelpDlg::GetAllSchedule(HANDLE hProcess)
 {
 	SHead head;
 
-	if (!ReadProcessMemory(hProcess, (void *)0x8098C0, (LPVOID)&head, sizeof(SHead), NULL))
+	if (!ReadProcessMemory(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead), NULL))
 	{
 		CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 		return;
