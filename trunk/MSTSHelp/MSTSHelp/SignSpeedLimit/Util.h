@@ -6,6 +6,26 @@ using std::vector;
 #define HEAD_TRACK_MEM 0x8098DC
 #define TAIL_TRACK_MEM 0x809944
 struct STrackNode;
+
+struct SSectionData
+{
+	short       sectionIndex;//179
+	short       shapeIndex;  //32250
+	DWORD       data2;  //0
+	int         TileX;  //-846
+	int         TileY;  //0x3618
+	int         WorldFileUiD;  //0x77
+	DWORD       data6;  //0
+	int         TileX2;  //-846
+	int         TileZ2;  //0x3618
+	float       X;      //330.14
+	float       Y;      //103.58
+	float       Z;      //-152.46
+	float       AX;     //0
+	float       AY;     //5.16
+	float       AZ;     //0
+	float       unData; //-1, 0
+};
 struct SConnectStruct
 {
 	STrackNode* nodePtr1;
