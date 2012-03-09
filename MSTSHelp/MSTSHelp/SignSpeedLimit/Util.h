@@ -25,6 +25,7 @@ struct SSectionData
 	float       AY;     //5.16
 	float       AZ;     //0
 	float       unData; //-1, 0
+	float		unData2;
 };
 struct SConnectStruct
 {
@@ -61,7 +62,6 @@ struct SConnectNode
 	short direction;
 	short direction2;// I use this direction2 but I do not know whether the difference of the direction.
 };
-struct SSectionArray;
 struct STrItemArray;
 struct STrItem;
 struct SAllTrItem
@@ -91,7 +91,7 @@ struct STrackNode
 	DWORD data4;
 	SConnectNode* connectNodePtr2;
 	DWORD data6;
-	SSectionArray* sectionArrayPtr;
+	SSectionData* sectionArrayPtr;
 	int   nSectionNum;
 	STrItemArray*  trItemArrayPtr;
 	int   nTrItemNum;
@@ -185,5 +185,8 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 CString SpeedPostItemToString(const SSpeedPostItem& item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
+void process_AX(float* fArray, float AX);
+void process_AY(float* fArray, float AY);
+void process_AZ(float* fArray, float AZ);
 
 #endif
