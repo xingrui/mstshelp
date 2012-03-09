@@ -1,6 +1,6 @@
 #include "stdafx.h"
 #include "Util.h"
-
+#include <cmath>
 bool GetTrainHandle(HANDLE &hProcess)
 {
 	if (hProcess)
@@ -154,4 +154,95 @@ CString SpeedPostItemToString(const SSpeedPostItem& item)
 		item.SpeedpostTrItemDataThird, item.SpeedpostTrItemDataFourth, item.fData);
 	result += tmp;
 	return result;
+}
+
+void process_AX(float* fArray, float AX)
+{
+	float fTemp;
+	float sinValue = sin(AX);
+	float cosValue = cos(AX);
+	for(int i = 0; i < 3; ++i)
+	{
+		fTemp = cosValue * fArray[3 + i] + sinValue * fArray[6 + i];
+		fArray[6 + i] = cosValue * fArray[6 + i] - sinValue * fArray[3 + i];
+		fArray[3 + i] = fTemp;
+	}
+}
+void process_AY(float* fArray, float AY)
+{
+	float fTemp;
+	float sinValue = sin(AY);
+	float cosValue = cos(AY);
+	for(int i = 0; i < 3; ++i)
+	{
+		fTemp = cosValue * fArray[i] - sinValue * fArray[6 + i];
+		fArray[6+i] = sinValue * fArray[i] + cosValue * fArray[6 + i];
+		fArray[i] = fTemp;
+	}
+}
+void process_AZ(float* fArray, float AZ)
+{
+	float fTemp;
+	float sinValue = sin(AZ);
+	float cosValue = cos(AZ);
+	for(int i = 0; i < 3; ++i)
+	{
+		fTemp = cosValue * fArray[i] + sinValue * fArray[3 + i];
+		fArray[3+i] = cosValue * fArray[3 + i] - sinValue * fArray[i];
+		fArray[i] = fTemp;
+	}
+}
+
+float* process(HANDLE handle, float* fArray, float*fXYZ)
+{
+	ReadProcessMemory(handle, (LPCVOID)0x771680, (LPVOID)fArray, 0x24, NULL);
+	process_AY(fArray, fXYZ[1]);
+	process_AX(fArray, fXYZ[0]);
+	process_AZ(fArray, fXYZ[2]);
+	return fArray;
+}
+void getXYZ(HANDLE handle, float* fArray, const STrackNode& node, int sectionNum, int nDirection)
+{
+	float fDistance = 0;
+	size_t mem, basePtr;
+	int sNum = sectionNum;
+	ReadProcessMemory(handle, (LPCVOID)0x80A118, (LPVOID)&mem, 0x4, NULL);
+	mem += 12; 
+	ReadProcessMemory(handle, (LPCVOID)mem, (LPVOID)&basePtr, 0x4, NULL);
+	while (sectionNum)
+	{
+		--sectionNum;
+		const SSectionData* sectionPtr = node.sectionArrayPtr + sectionNum;
+		short num;
+		ReadProcessMemory(handle, (LPCVOID)sectionPtr, (LPVOID)&num, 0x2, NULL);
+		size_t subPtr = basePtr;
+		subPtr += 24 * num;
+		float fNum;
+		ReadProcessMemory(handle, (LPCVOID)subPtr, (LPVOID)&fNum, 0x2, NULL);
+		fDistance += fNum;
+	}
+	SSectionData* sectionPtr = node.sectionArrayPtr + sNum;
+	SSectionData sectionData;
+	ReadProcessMemory(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionData, sizeof(SSectionData), NULL);
+	fArray[6] = sectionData.AX;
+	fArray[7] = sectionData.AY;
+	fArray[8] = sectionData.AZ;
+	process(handle, fArray + 9, fArray + 6);
+}
+bool IsSpeedPostValid(HANDLE handle, float angle, int nDirection, const STrackNode& node)
+{
+	float tempArray[0x68];
+	float fDirection[3];
+	fDirection[0] = cos(angle);
+	fDirection[1] = 0;
+	fDirection[2] = sin(angle);
+	getXYZ(handle, tempArray, node, 0, 0);
+	if(nDirection)
+	{
+		tempArray[7] += 3.14159f;
+		getXYZ(handle, tempArray, node, 0, 0);
+	}
+	float* fArray = tempArray + 60;
+	float result = fDirection[0] * fArray[0] + fDirection[1] * fArray[1] + fDirection[2] * fArray[2];
+	return result > 0;
 }
