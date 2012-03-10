@@ -68,20 +68,33 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 				SSpeedPostItem speedPostItem;
 				const void* address = (LPCVOID)*(memory + i);
 				ReadProcessMemory(handle, address, (LPVOID)&speedPostItem, sizeof(SSpeedPostItem), NULL);
-				int masked = speedPostItem.SpeedpostTrItemDataFirst & 0x7;
-				if(masked == 2)
+				short subType = speedPostItem.SpeedpostTrItemDataFirst;
+				if((subType & 7) == 2)
 				{
+					size_t pointer;
+					ReadProcessMemory(handle, (LPCVOID)THIS_POINTER_MEM, &pointer, 4, NULL);
+					pointer += 230;
+					size_t memory;
+					ReadProcessMemory(handle, (LPCVOID)pointer, &memory, 4, NULL);
+					pointer = memory;
+					ReadProcessMemory(handle, (LPCVOID)pointer, &memory, 4, NULL);
 					float distanceToTrackStart;
-					if(!direction)
+					if((subType & 0x80) || subType & 0x20 && memory & 2 || subType & 0x40 && memory & 4)
 					{
-						distanceToTrackStart = node.fSectionLength - speedPostItem.fLocationInTrackNode;
-					}else
-					{
-						distanceToTrackStart = speedPostItem.fLocationInTrackNode;
+						if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !direction, node))
+						{
+							if(!direction)
+							{
+								distanceToTrackStart = node.fSectionLength - speedPostItem.fLocationInTrackNode;
+							}else
+							{
+								distanceToTrackStart = speedPostItem.fLocationInTrackNode;
+							}
+							if(currentDistance + distanceToTrackStart > 0)
+								limitVect.push_back(SSpeedPostLimit(currentDistance + 
+								distanceToTrackStart, speedPostItem.SpeedpostTrItemDataSecond));
+						}
 					}
-					if(currentDistance + distanceToTrackStart > 0)
-					limitVect.push_back(SSpeedPostLimit(currentDistance + 
-						distanceToTrackStart, speedPostItem.SpeedpostTrItemDataSecond));
 				}
 			}
 		}
@@ -151,7 +164,7 @@ CString SpeedPostItemToString(const SSpeedPostItem& item)
 	tmp.Format(L"%f %f %d %d\r\n", item.TrItemPDataFirst, item.TrItemPDataSecond, item.TrItemPDataThird,item.TrItemPDataFourth);
 	result += tmp;
 	tmp.Format(L"0x%X 0x%04X %d %f %f %X", item.variableData, item.SpeedpostTrItemDataFirst, item.SpeedpostTrItemDataSecond,
-		item.SpeedpostTrItemDataThird, item.SpeedpostTrItemDataFourth, item.fData);
+		item.SpeedpostTrItemDataThird, item.fAngle, item.fData);
 	result += tmp;
 	return result;
 }
@@ -201,10 +214,15 @@ float* process(HANDLE handle, float* fArray, float*fXYZ)
 	process_AZ(fArray, fXYZ[2]);
 	return fArray;
 }
-void getXYZ(HANDLE handle, float* fArray, const STrackNode& node, int sectionNum, int nDirection)
+void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& node, int sectionNum, float* fArray)
 {
 	float fDistance = 0;
 	size_t mem, basePtr;
+	processData.nodePtr0 = NULL;
+	processData.nSectionNum4 = sectionNum;
+	processData.sectionPtr8 = node.sectionArrayPtr + sectionNum;
+	processData.nData12 = 1;
+	processData.fData20 = 0;
 	int sNum = sectionNum;
 	ReadProcessMemory(handle, (LPCVOID)0x80A118, (LPVOID)&mem, 0x4, NULL);
 	mem += 12; 
@@ -218,31 +236,97 @@ void getXYZ(HANDLE handle, float* fArray, const STrackNode& node, int sectionNum
 		size_t subPtr = basePtr;
 		subPtr += 24 * num;
 		float fNum;
-		ReadProcessMemory(handle, (LPCVOID)subPtr, (LPVOID)&fNum, 0x2, NULL);
+		ReadProcessMemory(handle, (LPCVOID)subPtr, (LPVOID)&fNum, 0x4, NULL);
 		fDistance += fNum;
 	}
-	SSectionData* sectionPtr = node.sectionArrayPtr + sNum;
+	processData.fDistance16 = fDistance;
+	SSectionData* sectionPtr = processData.sectionPtr8;
 	SSectionData sectionData;
 	ReadProcessMemory(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionData, sizeof(SSectionData), NULL);
-	fArray[6] = sectionData.AX;
-	fArray[7] = sectionData.AY;
-	fArray[8] = sectionData.AZ;
-	process(handle, fArray + 9, fArray + 6);
+	int dword_79D118, dword_79D11C;
+	ReadProcessMemory(handle, (LPCVOID)0x79D118, (LPVOID)&dword_79D118, 4, NULL);
+	ReadProcessMemory(handle, (LPCVOID)0x79D11C, (LPVOID)&dword_79D11C, 4, NULL);
+	processData.fXYZ72[0] = (sectionData.TileX2 - dword_79D118) * 2048.0f + sectionData.X;
+	processData.fXYZ72[2] = (sectionData.TileZ2 - dword_79D11C) * 2048.0f + sectionData.Z;
+	processData.fXYZ72[1] = sectionData.Y;
+	processData.fAXYZ24[0] = sectionData.AX;
+	processData.fAXYZ24[1] = sectionData.AY;
+	processData.fAXYZ24[2] = sectionData.AZ;
+	processData.nData88 = 0;
+	processData.nData92 = 0;
+	processData.fData100 = -1.0;
+	process(handle, processData.fArray36, processData.fAXYZ24);
+	if(fArray)
+	{
+		if(inner_product(fArray, processData.fArray36 + 6))
+		{
+			processData.nData12 = processData.nData12 != 1;
+			processData.nData92 = -processData.nData92;
+			processData.fAXYZ24[1] += 3.14159f;
+			process(handle, processData.fArray36, processData.fAXYZ24);
+		}
+	}
 }
-bool IsSpeedPostValid(HANDLE handle, float angle, int nDirection, const STrackNode& node)
+/*int functionName(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation)
 {
-	float tempArray[0x68];
+	int result;
+	int nTemp = 0;
+	if(processData.nData12)
+	{
+		processData.fDistance16 += fLocation;
+		processData.fData20 += fLocation;
+	}else
+	{
+		processData.fDistance16 -= fLocation;
+		processData.fData20 -= fLocation;
+	}
+	if(processData.fDistance16 < 0)
+	{
+		STrItem** itemPtr = node.trItemArrayPtr;
+		float fDistance = processData.fDistance16;
+		int nFlag = processData.nData12;
+		if(someFunction(handle, processData, itemPtr, 0))
+		{
+			if(processData.nData12 !=1 )
+			{
+				if(processData.nData12 == nFlag)
+				{
+					fDistance = -fDistance;
+				}
+			}else if(processData.nData12 != nFlag)
+				fDistance = -fDistance;
+			result = functionName(handle, processData, node, fDistance);
+		}else
+		{
+			processData.fDistance16 = 0;
+			processData.fData20 = 0;
+			processData.nSectionNum4 = 0;
+			processData.sectionPtr8 = node.sectionArrayPtr;
+		}
+	}
+	return result;
+}*/
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node)
+{
+	SProcessData processData;
 	float fDirection[3];
 	fDirection[0] = cos(angle);
 	fDirection[1] = 0;
 	fDirection[2] = sin(angle);
-	getXYZ(handle, tempArray, node, 0, 0);
+	getSectionData(handle, processData, node, 0, 0);
 	if(nDirection)
 	{
-		tempArray[7] += 3.14159f;
-		getXYZ(handle, tempArray, node, 0, 0);
+		processData.nData12 = processData.nData12 != 1;
+		processData.nData92 = -processData.nData92;
+		processData.fAXYZ24[1] += 3.14159f;
+		process(handle, processData.fArray36, processData.fAXYZ24);
 	}
-	float* fArray = tempArray + 60;
-	float result = fDirection[0] * fArray[0] + fDirection[1] * fArray[1] + fDirection[2] * fArray[2];
+	float* fArray = processData.fArray36 + 6;
+	float result = inner_product(fDirection, fArray);
 	return result > 0;
 }
+
+/*int someFunction(HANDLE handle, SProcessData& processData, STrItem**itemPtr, int num)
+{
+	return 0;
+}*/
