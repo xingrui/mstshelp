@@ -62,7 +62,6 @@ struct SConnectNode
 	short direction;
 	short direction2;// I use this direction2 but I do not know whether the difference of the direction.
 };
-struct STrItemArray;
 struct STrItem;
 struct SAllTrItem
 {
@@ -85,15 +84,15 @@ struct STDBFile
 };
 struct STrackNode
 {
-	DWORD data1;
-	DWORD data2;
+	DWORD data0;
+	int data4;
 	SConnectNode* connectNodePtr1;
-	DWORD data4;
+	DWORD data12;
 	SConnectNode* connectNodePtr2;
-	DWORD data6;
+	DWORD data20;
 	SSectionData* sectionArrayPtr;
 	int   nSectionNum;
-	STrItemArray*  trItemArrayPtr;
+	STrItem**  trItemArrayPtr;
 	int   nTrItemNum;
 	float fSectionLength;
 	void* pPtr;
@@ -134,7 +133,7 @@ struct SSpeedPostItem{
 	short SpeedpostTrItemDataFirst;
 	short SpeedpostTrItemDataSecond;//This is the Limit Number
 	float SpeedpostTrItemDataThird;
-	float SpeedpostTrItemDataFourth;
+	float fAngle;
 	DWORD fData;//0
 };
 
@@ -180,13 +179,38 @@ struct SStationItem
 	SStationItem(float dis, CString sName):fDistance(dis),stationName(sName){}
 };
 
+struct SProcessData
+{
+	STrackNode* nodePtr0;
+	int nSectionNum4;
+	SSectionData* sectionPtr8;
+	int nData12;
+	float fDistance16;
+	float fData20;
+	float fAXYZ24[3];
+	float fArray36[9];
+	float fXYZ72[3];// 72 76 80
+	DWORD nData84;
+	int nData88;
+	int nData92;
+	DWORD nData96;
+	float fData100;
+};
+
 void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction);
 void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& limitVect, HANDLE handle, int direction);
 CString SpeedPostItemToString(const SSpeedPostItem& item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
+
 void process_AX(float* fArray, float AX);
 void process_AY(float* fArray, float AY);
 void process_AZ(float* fArray, float AZ);
-
+inline float inner_product(float* fArray1, float* fArray2)
+{
+	return fArray1[0] * fArray2[0] + fArray1[1]*fArray2[1]+fArray1[2]*fArray2[2];
+}
+int functionName(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation);
+int someFunction(HANDLE handle, SProcessData& processData, STrItem**itemPtr, int num);
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node);
 #endif
