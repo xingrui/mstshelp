@@ -285,6 +285,20 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		//msg.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
 		//m_textContent += msg;
 	}
+	float* fTempLimitPtr;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x809B48, &fTempLimitPtr, 4, NULL);
+	float fTempLimit;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4, NULL);
+	int nType;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x78C390, &nType, 4, NULL);
+	CString strSpeed;
+	if(nType)
+	{
+		m_textContent.Format(L"Temp Speed Limit %.0f km\r\n", fTempLimit * 3.6);
+	}else
+	{
+		m_textContent.Format(L"Temp Speed Limit %.0f mile\r\n", fTempLimit * 2.237);
+	}
 	for(size_t i = 0; i < tempLimitVect.size(); ++i)
 	{
 		CString msg;
