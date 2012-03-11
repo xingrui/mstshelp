@@ -54,4 +54,6 @@ public:
 	BOOL m_bAutoGetData;
 public:
 	afx_msg void OnBnClickedCheck4();
+public:
+	afx_msg void OnBnClickedTest();
 };

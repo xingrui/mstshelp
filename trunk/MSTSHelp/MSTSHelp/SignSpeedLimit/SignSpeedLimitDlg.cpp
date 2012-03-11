@@ -80,6 +80,7 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK2, &CSignSpeedLimitDlg::OnBnClickedCheck2)
 	ON_BN_CLICKED(IDC_CHECK3, &CSignSpeedLimitDlg::OnBnClickedCheck3)
 	ON_BN_CLICKED(IDC_CHECK4, &CSignSpeedLimitDlg::OnBnClickedCheck4)
+	ON_BN_CLICKED(IDC_BUTTON3, &CSignSpeedLimitDlg::OnBnClickedTest)
 END_MESSAGE_MAP()
 
 
@@ -240,6 +241,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	}
 	vector<SSpeedPostLimit> limitVect;
 	vector<SStationItem> stationVect;
+	vector<STempSpeedLimit> tempLimitVect;
 	STrackInfo headInfo, tailInfo;
 	//headInfo is the information of the head of the train.
 	//tailInfo is the information of the tail of the train.
@@ -261,6 +263,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	{
 		forwardLength = headInfo.fNodeLeftLength;
 	}
+	AddTempSpeedLimit(forwardLength - trackNode.fSectionLength, headInfo.trackNodePtr, tempLimitVect, m_hTrainProcess, headInfo.nDirection);
 	AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess, headInfo.nDirection);
 	AddStationItem(forwardLength - trackNode.fSectionLength, trackNode, stationVect, m_hTrainProcess, headInfo.nDirection);
 	//m_textContent.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
@@ -269,6 +272,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		STrackNode* currentNodePtr = nextNodePtr;
 		STrackNode trackNode;
 		ReadProcessMemory(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
+		AddTempSpeedLimit(forwardLength, currentNodePtr, tempLimitVect, m_hTrainProcess, nDirectOfNextNode);
 		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfNextNode);
 		AddStationItem(forwardLength, trackNode, stationVect, m_hTrainProcess,nDirectOfNextNode);
 		forwardLength += trackNode.fSectionLength;
@@ -281,6 +285,13 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		//msg.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
 		//m_textContent += msg;
 	}
+	for(size_t i = 0; i < tempLimitVect.size(); ++i)
+	{
+		CString msg;
+		msg.Format(L"%.1f %.1f\r\n", tempLimitVect[i].fDistanceStart, tempLimitVect[i].fDistanceEnd);
+		m_textContent += msg;
+	}
+	m_textContent += L"****************************************************\r\n";
 	if(m_bShowSpeedPost)
 		for(size_t i = 0; i < limitVect.size(); ++i)
 		{
@@ -339,4 +350,55 @@ void CSignSpeedLimitDlg::OnBnClickedCheck4()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
+}
+
+CString baseFunc(HANDLE handle, void* ptr)
+{
+	CString str;
+	str.Format(L"%x", ptr);
+	return str;
+}
+CString TempSpeedFunc(HANDLE handle, void* ptr)
+{
+	CString str;
+	char* cPtr = (char*)ptr;
+	STempSpeed speed;
+	ReadProcessMemory(handle, cPtr + 32, &speed, sizeof(STempSpeed), NULL);
+	str.Format(L"%x %x %.1f %.1f", ptr, speed.nodePtr, speed.fStart, speed.fEnd);
+	return str;
+}
+void CSignSpeedLimitDlg::OnBnClickedTest()
+{
+	if (!GetTrainHandle(m_hTrainProcess))
+	{
+		m_textContent = L"等待MSTS启动";
+		UpdateData(FALSE);
+		return;
+	}
+
+	if (!GetTrainPointer(m_hTrainProcess))
+	{
+		m_textContent = L"等待MSTS任务运行";
+		UpdateData(FALSE);
+		return;
+	}
+	//0x809B38
+	CString strResult = IteratorList(m_hTrainProcess, (LPVOID)0x809B38, TempSpeedFunc);
+	float* fTempLimitPtr;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x809B48, &fTempLimitPtr, 4, NULL);
+	float fTempLimit;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4, NULL);
+	int nType;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x78C390, &nType, 4, NULL);
+	m_textContent = strResult;
+	CString strSpeed;
+	if(nType)
+	{
+		strSpeed.Format(L"Temp Speed Limit %.0f km\r\n", fTempLimit * 3.6);
+	}else
+	{
+		strSpeed.Format(L"Temp Speed Limit %.0f mile\r\n", fTempLimit * 2.237);
+	}
+	m_textContent += strSpeed;
+	UpdateData(false);
 }
