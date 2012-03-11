@@ -172,6 +172,13 @@ struct SSpeedPostLimit
 	SSpeedPostLimit(float dis, int num):fDistance(dis),LimitNum(num){}
 };
 
+struct STempSpeedLimit
+{
+	float fDistanceStart;
+	float fDistanceEnd;
+	STempSpeedLimit(float f1, float f2):fDistanceStart(f1), fDistanceEnd(f2){}
+};
+
 struct SStationItem
 {
 	float fDistance;
@@ -197,6 +204,13 @@ struct SProcessData
 	float fData100;
 };
 
+struct STempSpeed
+{
+	STrackNode* nodePtr;
+	float fStart;
+	float fEnd;
+};
+void AddTempSpeedLimit(float currentDistance, STrackNode* node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
 void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction);
 void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& limitVect, HANDLE handle, int direction);
 CString SpeedPostItemToString(const SSpeedPostItem& item);
@@ -213,4 +227,5 @@ inline float inner_product(float* fArray1, float* fArray2)
 int functionName(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation);
 int someFunction(HANDLE handle, SProcessData& processData, STrItem**itemPtr, int num);
 bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node);
+CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
 #endif

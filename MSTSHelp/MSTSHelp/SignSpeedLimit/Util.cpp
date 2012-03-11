@@ -78,11 +78,11 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 					ReadProcessMemory(handle, (LPCVOID)pointer, &memory, 4, NULL);
 					pointer = memory;
 					ReadProcessMemory(handle, (LPCVOID)pointer, &memory, 4, NULL);
-					float distanceToTrackStart;
 					if((subType & 0x80) || subType & 0x20 && memory & 2 || subType & 0x40 && memory & 4)
 					{
 						if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !direction, node))
 						{
+							float distanceToTrackStart;
 							if(!direction)
 							{
 								distanceToTrackStart = node.fSectionLength - speedPostItem.fLocationInTrackNode;
@@ -99,6 +99,41 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 			}
 		}
 		delete[]memory;
+	}
+}
+
+void AddTempSpeedLimit(float currentDistance, STrackNode* nodePtr, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction)
+{
+	void* ite, *head;
+	STrackNode node;
+	ReadProcessMemory(handle, (void *)nodePtr, (LPVOID)&node, sizeof(STrackNode), NULL);
+	ReadProcessMemory(handle, (LPCVOID)0x809B38, &head, 4, NULL);
+	ReadProcessMemory(handle, head, &ite, 4, NULL);
+	while(ite != head)
+	{
+		void* data;
+		ReadProcessMemory(handle, (DWORD*)ite + 2, &data, 4, NULL);
+		STempSpeed speed;
+		ReadProcessMemory(handle, (char*)data + 32, &speed, sizeof(STempSpeed), NULL);
+		if(nodePtr == speed.nodePtr)
+		{
+			float fBegin, fEnd;
+			if(!direction)
+			{
+				fBegin = node.fSectionLength - speed.fStart;
+				fEnd = node.fSectionLength - speed.fEnd;
+			}else
+			{
+				fBegin = speed.fStart;
+				fEnd = speed.fEnd;
+			}
+			if(fBegin < fEnd)
+			limitVect.push_back(STempSpeedLimit(fBegin + currentDistance, fEnd + currentDistance));
+			break;
+		}
+		void* next;
+		ReadProcessMemory(handle, ite, &next, 4, NULL);
+		ite = next;
 	}
 }
 
@@ -325,7 +360,25 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 	float result = inner_product(fDirection, fArray);
 	return result > 0;
 }
-
+CString IteratorList(HANDLE handle, void* headPtr, CString (*func)(HANDLE, void*))
+{
+	//head 0x809B38 temp speed limit
+	void* ite, *head;
+	CString strResult = L"Iterator Result:\r\n";
+	ReadProcessMemory(handle, headPtr, &head, 4, NULL);
+	ReadProcessMemory(handle, head, &ite, 4, NULL);
+	while(ite != head)
+	{
+		void* data;
+		ReadProcessMemory(handle, (DWORD*)ite + 2, &data, 4, NULL);
+		strResult += func(handle, data);
+		strResult += "\r\n";
+		void* next;
+		ReadProcessMemory(handle, ite, &next, 4, NULL);
+		ite = next;
+	}
+	return strResult;
+}
 /*int someFunction(HANDLE handle, SProcessData& processData, STrItem**itemPtr, int num)
 {
 	return 0;
