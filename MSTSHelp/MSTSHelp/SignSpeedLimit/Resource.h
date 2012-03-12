@@ -8,12 +8,12 @@
 #define IDD_SIGNSPEEDLIMIT_DIALOG       102
 #define IDR_MAINFRAME                   128
 #define IDC_EDIT1                       1000
+#define IDC_EDIT2                       1001
 #define IDC_CHECK1                      1003
 #define IDC_CHECK2                      1004
 #define IDC_CHECK3                      1005
-#define IDC_EDIT2                       1006
-#define IDC_CHECK4                      1007
-#define IDC_BUTTON3                     1008
+#define IDC_CHECK4                      1006
+#define IDC_CHECK5                      1007
 
 // Next default values for new objects
 // 

@@ -54,6 +54,7 @@ CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd* pParent /*=NULL*/)
 	, m_bShowSiding(FALSE)
 	, m_uForwardDistance(0)
 	, m_bAutoGetData(FALSE)
+	, m_bShowTaskLimit(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -62,11 +63,12 @@ void CSignSpeedLimitDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT1, m_textContent);
+	DDX_Text(pDX, IDC_EDIT2, m_uForwardDistance);
 	DDX_Check(pDX, IDC_CHECK1, m_bShowSpeedPost);
 	DDX_Check(pDX, IDC_CHECK2, m_bShowStation);
 	DDX_Check(pDX, IDC_CHECK3, m_bShowSiding);
-	DDX_Text(pDX, IDC_EDIT2, m_uForwardDistance);
 	DDX_Check(pDX, IDC_CHECK4, m_bAutoGetData);
+	DDX_Check(pDX, IDC_CHECK5, m_bShowTaskLimit);
 }
 
 BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
@@ -80,7 +82,7 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK2, &CSignSpeedLimitDlg::OnBnClickedCheck2)
 	ON_BN_CLICKED(IDC_CHECK3, &CSignSpeedLimitDlg::OnBnClickedCheck3)
 	ON_BN_CLICKED(IDC_CHECK4, &CSignSpeedLimitDlg::OnBnClickedCheck4)
-	ON_BN_CLICKED(IDC_BUTTON3, &CSignSpeedLimitDlg::OnBnClickedTest)
+	ON_BN_CLICKED(IDC_CHECK5, &CSignSpeedLimitDlg::OnBnClickedCheck5)
 END_MESSAGE_MAP()
 
 
@@ -118,11 +120,33 @@ BOOL CSignSpeedLimitDlg::OnInitDialog()
 	SetTimer(0, 1000, NULL);
 	m_bShowSpeedPost = TRUE;
 	m_bShowStation = TRUE;
+	m_bShowTaskLimit = TRUE;
+	m_bShowSiding = TRUE;
 	m_uForwardDistance = 4;
 	UpdateData(FALSE);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
+void CSignSpeedLimitDlg::OnDestroy()
+{
+	if (m_hTrainProcess)
+		CloseHandle(m_hTrainProcess);
+}
 
+BOOL CSignSpeedLimitDlg::PreTranslateMessage(MSG *pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		switch (pMsg->wParam)
+		{
+		case VK_RETURN:   //屏蔽Enter
+			return true;
+		case VK_ESCAPE:   //屏蔽Esc
+			return true;
+		}
+	}
+
+	return CDialog::PreTranslateMessage(pMsg);
+}
 void CSignSpeedLimitDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
@@ -172,60 +196,9 @@ HCURSOR CSignSpeedLimitDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-CString showTrackInfo(const STrackInfo& trackInfo)
-{
-	CString msg;
-	msg.Format(L"nLeftNodeNum : %d, Direct %d, LeftLen : %f, SectLen : %f",
-		trackInfo.nLeftNodeNum, trackInfo.nDirection, trackInfo.fNodeLeftLength, trackInfo.fSectionLeftLength);
-	return msg;
-}
-
-STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
-					int direction, int&nextDirect)
-{
-	if(connectNode.nType == 2)//JunctionNode
-	{
-		if(nodePtr == connectStruct.nodePtr1 && connectStruct.nDirect1 == direction)
-		{
-			if(connectNode.direction2 )
-			{
-				nextDirect = connectStruct.nDirect3;
-				return connectStruct.nodePtr3;
-			}else
-			{
-				nextDirect = connectStruct.nDirect2;
-				return connectStruct.nodePtr2;
-			}
-		}else if(nodePtr == connectStruct.nodePtr2 && connectStruct.nDirect2 == direction){
-			nextDirect = connectStruct.nDirect1;
-			return connectStruct.nodePtr1;
-		}else if(nodePtr == connectStruct.nodePtr3 && connectStruct.nDirect3 == direction){
-			nextDirect = connectStruct.nDirect1;
-			return connectStruct.nodePtr1;
-		}
-	}
-	//EndNode Or can not find the pointer in the struct.
-	return NULL;
-}
-
-STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodePtr, int direction, int&nextDirect)
-{
-	SConnectNode connectNode;
-	SConnectStruct connectStruct;
-	STrackNode*next;
-	ReadProcessMemory(handle, (void *)node.connectNodePtr1, (LPVOID)&connectNode, sizeof(SConnectNode), NULL);
-	ReadProcessMemory(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct), NULL);
-	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
-	if(next)
-		return next;
-	ReadProcessMemory(handle, (void *)node.connectNodePtr2, (LPVOID)&connectNode, sizeof(SConnectNode), NULL);
-	ReadProcessMemory(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct), NULL);
-	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
-	return next;
-}
-
 void CSignSpeedLimitDlg::OnBnClickedOk()
 {
+	UpdateData();
 	if (!GetTrainHandle(m_hTrainProcess))
 	{
 		m_textContent = L"等待MSTS启动";
@@ -241,31 +214,43 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 	}
 	vector<SSpeedPostLimit> limitVect;
 	vector<SStationItem> stationVect;
+	vector<SStationItem> sidingVect;
 	vector<STempSpeedLimit> tempLimitVect;
-	STrackInfo headInfo, tailInfo;
+	STrackInfo headInfo;
 	//headInfo is the information of the head of the train.
 	//tailInfo is the information of the tail of the train.
-	CString info;
-	ReadProcessMemory(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo), NULL);
-	//m_textContent.Format(L"0x%X ", headInfo.trackNodePtr);
-	UpdateData();
 	m_textContent = L"";
+	size_t data;
+	ReadProcessMemory(m_hTrainProcess, (void *)0x809890, (LPVOID)&data, 4, NULL);
+	BOOL bIsForward = TRUE;
+	if(data & 0x80)
+	{
+		ReadProcessMemory(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo), NULL);
+		bIsForward = FALSE;
+	}else
+	{
+		ReadProcessMemory(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo), NULL);
+		bIsForward = TRUE;
+	}
+	//m_textContent.Format(L"0x%X ", headInfo.trackNodePtr);
 	float forwardLength;
 	STrackNode trackNode;
-	int nDirectToFindInConnectNode = !headInfo.nDirection;
+	int nDirectOfHeadNode = headInfo.nDirection == bIsForward;
 	ReadProcessMemory(m_hTrainProcess, (void *)headInfo.trackNodePtr, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
-	int nDirectOfNextNode;
-	STrackNode* nextNodePtr = GetNextNode(m_hTrainProcess, trackNode,headInfo.trackNodePtr, nDirectToFindInConnectNode,nDirectOfNextNode);
-	if(headInfo.nDirection)
+	if(nDirectOfHeadNode)
 	{
 		forwardLength = trackNode.fSectionLength - headInfo.fNodeLeftLength;
 	}else
 	{
 		forwardLength = headInfo.fNodeLeftLength;
 	}
-	AddTempSpeedLimit(forwardLength - trackNode.fSectionLength, headInfo.trackNodePtr, tempLimitVect, m_hTrainProcess, headInfo.nDirection);
-	AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess, headInfo.nDirection);
-	AddStationItem(forwardLength - trackNode.fSectionLength, trackNode, stationVect, m_hTrainProcess, headInfo.nDirection);
+	AddTempSpeedLimit(forwardLength - trackNode.fSectionLength, headInfo.trackNodePtr, tempLimitVect, m_hTrainProcess, nDirectOfHeadNode);
+	AddSpeedPostLimit(forwardLength - trackNode.fSectionLength, trackNode, limitVect, m_hTrainProcess, nDirectOfHeadNode);
+	AddStationItem(forwardLength - trackNode.fSectionLength, trackNode, stationVect, sidingVect, m_hTrainProcess, nDirectOfHeadNode);
+
+	int nDirectToFindInConnectNode = !nDirectOfHeadNode;
+	int nDirectOfNextNode;
+	STrackNode* nextNodePtr = GetNextNode(m_hTrainProcess, trackNode,headInfo.trackNodePtr, nDirectToFindInConnectNode,nDirectOfNextNode);
 	//m_textContent.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
 	while (forwardLength < m_uForwardDistance * 1000 && nextNodePtr)
 	{
@@ -274,7 +259,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		ReadProcessMemory(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode), NULL);
 		AddTempSpeedLimit(forwardLength, currentNodePtr, tempLimitVect, m_hTrainProcess, nDirectOfNextNode);
 		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfNextNode);
-		AddStationItem(forwardLength, trackNode, stationVect, m_hTrainProcess,nDirectOfNextNode);
+		AddStationItem(forwardLength, trackNode, stationVect, sidingVect, m_hTrainProcess,nDirectOfNextNode);
 		forwardLength += trackNode.fSectionLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -285,37 +270,56 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 		//msg.Format(L"0x%X %f\r\n", nextNodePtr, forwardLength);
 		//m_textContent += msg;
 	}
-	float* fTempLimitPtr;
-	ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x809B48, &fTempLimitPtr, 4, NULL);
-	float fTempLimit;
-	ReadProcessMemory(m_hTrainProcess, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4, NULL);
-	int nType;
-	ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x78C390, &nType, 4, NULL);
-	CString strSpeed;
-	if(nType)
+
+	int nIsKiloMeter;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x78C390, &nIsKiloMeter, 4, NULL);
+	if(m_bShowTaskLimit)
 	{
-		m_textContent.Format(L"Temp Speed Limit %.0f km\r\n", fTempLimit * 3.6);
-	}else
-	{
-		m_textContent.Format(L"Temp Speed Limit %.0f mile\r\n", fTempLimit * 2.237);
+		float* fTempLimitPtr;
+		ReadProcessMemory(m_hTrainProcess, (LPCVOID)0x809B48, &fTempLimitPtr, 4, NULL);
+		float fTempLimit;
+		ReadProcessMemory(m_hTrainProcess, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4, NULL);
+		CString strSpeed;
+		if(nIsKiloMeter)
+		{
+			strSpeed.Format(L"任务临时限速 %.0f 公里/时\r\n", fTempLimit * 3.6);
+		}else
+		{
+			strSpeed.Format(L"任务临时限速 %.0f 英里/时\r\n", fTempLimit * 2.237);
+		}
+		m_textContent += strSpeed;
+		for(size_t i = 0; i < tempLimitVect.size(); ++i)
+		{
+			CString msg;
+			msg.Format(L"%.1f %.1f\r\n", tempLimitVect[i].fDistanceStart, tempLimitVect[i].fDistanceEnd);
+			m_textContent += msg;
+		}
+		m_textContent += L"****************************************************\r\n";
 	}
-	for(size_t i = 0; i < tempLimitVect.size(); ++i)
-	{
-		CString msg;
-		msg.Format(L"%.1f %.1f\r\n", tempLimitVect[i].fDistanceStart, tempLimitVect[i].fDistanceEnd);
-		m_textContent += msg;
-	}
-	m_textContent += L"****************************************************\r\n";
 	if(m_bShowSpeedPost)
+	{
+		CString temp;
+		float fRate = 1.0f;
+		if(nIsKiloMeter)
+		{
+			temp = L"前方标志限速(公里/时)\r\n";
+		}else
+		{
+			temp = L"前方标志限速(英里/时)\r\n";
+			fRate = 1.609f;
+		}
+		m_textContent += temp;
 		for(size_t i = 0; i < limitVect.size(); ++i)
 		{
 			CString msg;
-			msg.Format(L"%.1f %d\r\n", limitVect[i].fDistance, limitVect[i].LimitNum);
+			msg.Format(L"%.1f %.0f\r\n", limitVect[i].fDistance, limitVect[i].LimitNum / fRate);
 			m_textContent += msg;
 		}
-	if(limitVect.size()!=0 && stationVect.size()!=0 && m_bShowSpeedPost && m_bShowStation)
 		m_textContent += L"****************************************************\r\n";
+	}
 	if(m_bShowStation)
+	{
+		m_textContent += L"前方车站名称\r\n";
 		for(size_t i = 0; i < stationVect.size(); ++i)
 		{
 			CString msg;
@@ -324,14 +328,28 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 			msg += L"\r\n";
 			m_textContent += msg;
 		}
+		m_textContent += L"****************************************************\r\n";
+	}
+	if(m_bShowSiding)
+	{
+		m_textContent += L"前方边线名称\r\n";
+		for(size_t i = 0; i < sidingVect.size(); ++i)
+		{
+			CString msg;
+			msg.Format(L"%.1f ", sidingVect[i].fDistance);
+			msg += sidingVect[i].stationName;
+			msg += L"\r\n";
+			m_textContent += msg;
+		}
+		m_textContent += L"****************************************************\r\n";
+	}
 	if(!nextNodePtr)
 	{
 		CString msg;
-		msg.Format(L"%.1f END", forwardLength);
+		msg.Format(L"%.1f 铁轨尽头", forwardLength);
 		m_textContent += msg;
 	}
 	UpdateData(FALSE);
-	ReadProcessMemory(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&tailInfo, sizeof(STrackInfo), NULL);
 }
 
 void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
@@ -344,34 +362,30 @@ void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
 
 void CSignSpeedLimitDlg::OnBnClickedCheck1()
 {
-	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
 }
 
 void CSignSpeedLimitDlg::OnBnClickedCheck2()
 {
-	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
 }
 
 void CSignSpeedLimitDlg::OnBnClickedCheck3()
 {
-	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
 }
 
 void CSignSpeedLimitDlg::OnBnClickedCheck4()
 {
-	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
 }
 
-CString baseFunc(HANDLE handle, void* ptr)
+
+void CSignSpeedLimitDlg::OnBnClickedCheck5()
 {
-	CString str;
-	str.Format(L"%x", ptr);
-	return str;
+	UpdateData();
 }
+
 CString TempSpeedFunc(HANDLE handle, void* ptr)
 {
 	CString str;
@@ -381,6 +395,8 @@ CString TempSpeedFunc(HANDLE handle, void* ptr)
 	str.Format(L"%x %x %.1f %.1f", ptr, speed.nodePtr, speed.fStart, speed.fEnd);
 	return str;
 }
+
+//Remain This Method For Test
 void CSignSpeedLimitDlg::OnBnClickedTest()
 {
 	if (!GetTrainHandle(m_hTrainProcess))

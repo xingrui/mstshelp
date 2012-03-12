@@ -90,9 +90,12 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 							{
 								distanceToTrackStart = speedPostItem.fLocationInTrackNode;
 							}
+							float speed = speedPostItem.SpeedpostTrItemDataSecond;
+							if(subType & 0x100)
+								speed *= 1.609f;
 							if(currentDistance + distanceToTrackStart > 0)
 								limitVect.push_back(SSpeedPostLimit(currentDistance + 
-								distanceToTrackStart, speedPostItem.SpeedpostTrItemDataSecond));
+								distanceToTrackStart, speed));
 						}
 					}
 				}
@@ -138,7 +141,7 @@ void AddTempSpeedLimit(float currentDistance, STrackNode* nodePtr, vector<STempS
 	}
 }
 
-void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& limitVect, HANDLE handle, int direction)
+void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction)
 {
 	int num = node.nTrItemNum;
 	if(num > 0)
@@ -165,7 +168,7 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 					distanceToTrackStart = platformItem.fLocationInTrackNode;
 				}
 				if(distanceToTrackStart + currentDistance > 0)
-					limitVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
+					stationVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
 			}else if(type == SidingItem)
 			{
 				SSidingItem sidingItem;
@@ -182,13 +185,57 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 					distanceToTrackStart = sidingItem.fLocationInTrackNode;
 				}
 				if(distanceToTrackStart + currentDistance > 0)
-					limitVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
+					sidingVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
 			}
 		}
 		delete[]memory;
 	}
 }
 
+
+STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
+					int direction, int&nextDirect)
+{
+	if(connectNode.nType == 2)//JunctionNode
+	{
+		if(nodePtr == connectStruct.nodePtr1 && connectStruct.nDirect1 == direction)
+		{
+			if(connectNode.direction2 )
+			{
+				nextDirect = connectStruct.nDirect3;
+				return connectStruct.nodePtr3;
+			}else
+			{
+				nextDirect = connectStruct.nDirect2;
+				return connectStruct.nodePtr2;
+			}
+		}else if(nodePtr == connectStruct.nodePtr2 && connectStruct.nDirect2 == direction){
+			nextDirect = connectStruct.nDirect1;
+			return connectStruct.nodePtr1;
+		}else if(nodePtr == connectStruct.nodePtr3 && connectStruct.nDirect3 == direction){
+			nextDirect = connectStruct.nDirect1;
+			return connectStruct.nodePtr1;
+		}
+	}
+	//EndNode Or can not find the pointer in the struct.
+	return NULL;
+}
+
+STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodePtr, int direction, int&nextDirect)
+{
+	SConnectNode connectNode;
+	SConnectStruct connectStruct;
+	STrackNode*next;
+	ReadProcessMemory(handle, (void *)node.connectNodePtr1, (LPVOID)&connectNode, sizeof(SConnectNode), NULL);
+	ReadProcessMemory(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct), NULL);
+	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
+	if(next)
+		return next;
+	ReadProcessMemory(handle, (void *)node.connectNodePtr2, (LPVOID)&connectNode, sizeof(SConnectNode), NULL);
+	ReadProcessMemory(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct), NULL);
+	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
+	return next;
+}
 CString SpeedPostItemToString(const SSpeedPostItem& item)
 {
 	CString result;
