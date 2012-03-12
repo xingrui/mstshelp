@@ -127,7 +127,7 @@ void AddTempSpeedLimit(float currentDistance, STrackNode* nodePtr, vector<STempS
 				fBegin = speed.fStart;
 				fEnd = speed.fEnd;
 			}
-			if(fBegin < fEnd && fEnd > 0)
+			if(fBegin < fEnd && fEnd + currentDistance > 0)
 			{
 				limitVect.push_back(STempSpeedLimit(fBegin + currentDistance, fEnd + currentDistance));
 			}
