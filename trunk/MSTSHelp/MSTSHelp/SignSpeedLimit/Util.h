@@ -168,8 +168,8 @@ struct SSidingItem
 struct SSpeedPostLimit
 {
 	float fDistance;
-	int   LimitNum;
-	SSpeedPostLimit(float dis, int num):fDistance(dis),LimitNum(num){}
+	float   LimitNum;
+	SSpeedPostLimit(float dis, float num):fDistance(dis),LimitNum(num){}
 };
 
 struct STempSpeedLimit
@@ -212,10 +212,13 @@ struct STempSpeed
 };
 void AddTempSpeedLimit(float currentDistance, STrackNode* node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
 void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction);
-void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& limitVect, HANDLE handle, int direction);
+void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
 CString SpeedPostItemToString(const SSpeedPostItem& item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
+STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
+					int direction, int&nextDirect);
+STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodePtr, int direction, int&nextDirect);
 
 void process_AX(float* fArray, float AX);
 void process_AY(float* fArray, float AY);
@@ -223,6 +226,15 @@ void process_AZ(float* fArray, float AZ);
 inline float inner_product(float* fArray1, float* fArray2)
 {
 	return fArray1[0] * fArray2[0] + fArray1[1]*fArray2[1]+fArray1[2]*fArray2[2];
+}
+
+
+inline CString showTrackInfo(const STrackInfo& trackInfo)
+{
+	CString msg;
+	msg.Format(L"nLeftNodeNum : %d, Direct %d, LeftLen : %f, SectLen : %f",
+		trackInfo.nLeftNodeNum, trackInfo.nDirection, trackInfo.fNodeLeftLength, trackInfo.fSectionLeftLength);
+	return msg;
 }
 int functionName(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation);
 int someFunction(HANDLE handle, SProcessData& processData, STrItem**itemPtr, int num);

@@ -24,6 +24,8 @@ protected:
 	HANDLE m_hTrainProcess;
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
+	virtual void OnDestroy();
+	BOOL PreTranslateMessage(MSG *pMsg);
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
@@ -56,4 +58,8 @@ public:
 	afx_msg void OnBnClickedCheck4();
 public:
 	afx_msg void OnBnClickedTest();
+public:
+	BOOL m_bShowTaskLimit;
+public:
+	afx_msg void OnBnClickedCheck5();
 };
