@@ -54,11 +54,11 @@ void *GetTrainPointer(HANDLE hProcess)
 
 void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int direction)
 {
-	int num = node.nTrItemNum;
+	int num = node.nTrItemNum36;
 	if(num > 0)
 	{
 		size_t* memory = new size_t[num];
-		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr, (LPVOID)memory, num * 4);
+		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr32, (LPVOID)memory, num * 4);
 		for(int i = 0; i < num; ++i)
 		{
 			int type;
@@ -85,7 +85,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 							float distanceToTrackStart;
 							if(!direction)
 							{
-								distanceToTrackStart = node.fSectionLength - speedPostItem.fLocationInTrackNode;
+								distanceToTrackStart = node.fTrackNodeLength40 - speedPostItem.fLocationInTrackNode;
 							}else
 							{
 								distanceToTrackStart = speedPostItem.fLocationInTrackNode;
@@ -123,8 +123,8 @@ void AddTempSpeedLimit(float currentDistance, STrackNode* nodePtr, vector<STempS
 			float fBegin, fEnd;
 			if(!direction)
 			{
-				fBegin = node.fSectionLength - speed.fStart;
-				fEnd = node.fSectionLength - speed.fEnd;
+				fBegin = node.fTrackNodeLength40 - speed.fStart;
+				fEnd = node.fTrackNodeLength40 - speed.fEnd;
 			}else
 			{
 				fBegin = speed.fStart;
@@ -143,11 +143,11 @@ void AddTempSpeedLimit(float currentDistance, STrackNode* nodePtr, vector<STempS
 
 void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction)
 {
-	int num = node.nTrItemNum;
+	int num = node.nTrItemNum36;
 	if(num > 0)
 	{
 		size_t* memory = new size_t[num];
-		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr, (LPVOID)memory, num * 4);
+		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr32, (LPVOID)memory, num * 4);
 		for(int i = 0; i < num; ++i)
 		{
 			int type;
@@ -162,7 +162,7 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 				float distanceToTrackStart;
 				if(!direction)
 				{
-					distanceToTrackStart = node.fSectionLength - platformItem.fLocationInTrackNode;
+					distanceToTrackStart = node.fTrackNodeLength40 - platformItem.fLocationInTrackNode;
 				}else
 				{
 					distanceToTrackStart = platformItem.fLocationInTrackNode;
@@ -179,7 +179,7 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 				float distanceToTrackStart;
 				if(!direction)
 				{
-					distanceToTrackStart = node.fSectionLength - sidingItem.fLocationInTrackNode;
+					distanceToTrackStart = node.fTrackNodeLength40 - sidingItem.fLocationInTrackNode;
 				}else
 				{
 					distanceToTrackStart = sidingItem.fLocationInTrackNode;
@@ -196,25 +196,25 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
 					int direction, int&nextDirect)
 {
-	if(connectNode.nType == 2)//JunctionNode
+	if(connectNode.nType0 == 2)//JunctionNode
 	{
-		if(nodePtr == connectStruct.nodePtr1 && connectStruct.nDirect1 == direction)
+		if(nodePtr == connectStruct.subStruct[0].nodePtr && connectStruct.subStruct[0].nDirect == direction)
 		{
-			if(connectNode.direction2 )
+			if(connectNode.direction80 )
 			{
-				nextDirect = connectStruct.nDirect3;
-				return connectStruct.nodePtr3;
+				nextDirect = connectStruct.subStruct[2].nDirect;
+				return connectStruct.subStruct[2].nodePtr;
 			}else
 			{
-				nextDirect = connectStruct.nDirect2;
-				return connectStruct.nodePtr2;
+				nextDirect = connectStruct.subStruct[1].nDirect;
+				return connectStruct.subStruct[1].nodePtr;
 			}
-		}else if(nodePtr == connectStruct.nodePtr2 && connectStruct.nDirect2 == direction){
-			nextDirect = connectStruct.nDirect1;
-			return connectStruct.nodePtr1;
-		}else if(nodePtr == connectStruct.nodePtr3 && connectStruct.nDirect3 == direction){
-			nextDirect = connectStruct.nDirect1;
-			return connectStruct.nodePtr1;
+		}else if(nodePtr == connectStruct.subStruct[1].nodePtr && connectStruct.subStruct[1].nDirect == direction){
+			nextDirect = connectStruct.subStruct[0].nDirect;
+			return connectStruct.subStruct[0].nodePtr;
+		}else if(nodePtr == connectStruct.subStruct[2].nodePtr && connectStruct.subStruct[2].nDirect == direction){
+			nextDirect = connectStruct.subStruct[0].nDirect;
+			return connectStruct.subStruct[0].nodePtr;
 		}
 	}
 	//EndNode Or can not find the pointer in the struct.
@@ -227,12 +227,12 @@ STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodeP
 	SConnectStruct connectStruct;
 	STrackNode*next;
 	ReadTrainProcess(handle, (void *)node.connectNodePtr1, (LPVOID)&connectNode, sizeof(SConnectNode));
-	ReadTrainProcess(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct));
+	ReadTrainProcess(handle, (void *)connectNode.nodePointer20, (LPVOID)&connectStruct, sizeof(SConnectStruct));
 	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
 	if(next)
 		return next;
 	ReadTrainProcess(handle, (void *)node.connectNodePtr2, (LPVOID)&connectNode, sizeof(SConnectNode));
-	ReadTrainProcess(handle, (void *)connectNode.nodePointer, (LPVOID)&connectStruct, sizeof(SConnectStruct));
+	ReadTrainProcess(handle, (void *)connectNode.nodePointer20, (LPVOID)&connectStruct, sizeof(SConnectStruct));
 	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
 	return next;
 }
@@ -300,75 +300,74 @@ float* process(HANDLE handle, float* fArray, float*fXYZ)
 void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& node, int sectionNum, float* fArray)
 {
 	float fDistance = 0;
-	size_t mem, basePtr;
-	processData.nodePtr0 = NULL;
 	processData.nSectionNum4 = sectionNum;
-	processData.sectionPtr8 = node.sectionArrayPtr + sectionNum;
+	processData.sectionPtr8 = node.sectionArrayPtr24 + sectionNum;
 	processData.nData12 = 1;
-	processData.fData20 = 0;
+	processData.fDistanceFromSectionStart20 = 0;
 	int sNum = sectionNum;
-	ReadTrainProcess(handle, (LPCVOID)0x80A118, (LPVOID)&mem, 0x4);
+	size_t mem, basePtr;
+	ReadTrainProcess(handle, (LPCVOID)0x80A118, (LPVOID)&mem, 4);
 	mem += 12; 
-	ReadTrainProcess(handle, (LPCVOID)mem, (LPVOID)&basePtr, 0x4);
+	ReadTrainProcess(handle, (LPCVOID)mem, (LPVOID)&basePtr, 4);
 	while (sectionNum)
 	{
 		--sectionNum;
-		const SSectionData* sectionPtr = node.sectionArrayPtr + sectionNum;
-		short num;
-		ReadTrainProcess(handle, (LPCVOID)sectionPtr, (LPVOID)&num, 0x2);
+		const SSectionData* sectionPtr = node.sectionArrayPtr24 + sectionNum;
+		short sectionIndex;
+		ReadTrainProcess(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionIndex, 2);
 		size_t subPtr = basePtr;
-		subPtr += 24 * num;
-		float fNum;
-		ReadTrainProcess(handle, (LPCVOID)subPtr, (LPVOID)&fNum, 0x4);
-		fDistance += fNum;
+		subPtr += 24 * sectionIndex;
+		float fLength;
+		ReadTrainProcess(handle, (LPCVOID)subPtr, (LPVOID)&fLength, 4);
+		fDistance += fLength;
 	}
-	processData.fDistance16 = fDistance;
+	processData.fDistanceFromNodeStart16 = fDistance;
 	SSectionData* sectionPtr = processData.sectionPtr8;
 	SSectionData sectionData;
 	ReadTrainProcess(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionData, sizeof(SSectionData));
-	int dword_79D118, dword_79D11C;
-	ReadTrainProcess(handle, (LPCVOID)0x79D118, (LPVOID)&dword_79D118, 4);
-	ReadTrainProcess(handle, (LPCVOID)0x79D11C, (LPVOID)&dword_79D11C, 4);
-	processData.fXYZ72[0] = (sectionData.TileX2 - dword_79D118) * 2048.0f + sectionData.X;
-	processData.fXYZ72[2] = (sectionData.TileZ2 - dword_79D11C) * 2048.0f + sectionData.Z;
+	int nCurrentTileX, nCurrentTileY;
+	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_X_MEM, (LPVOID)&nCurrentTileX, 4);
+	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_Y_MEM, (LPVOID)&nCurrentTileY, 4);
+	processData.fXYZ72[0] = (sectionData.TileX2 - nCurrentTileX) * 2048.0f + sectionData.X;
+	processData.fXYZ72[2] = (sectionData.TileZ2 - nCurrentTileY) * 2048.0f + sectionData.Z;
 	processData.fXYZ72[1] = sectionData.Y;
-	processData.fAXYZ24[0] = sectionData.AX;
-	processData.fAXYZ24[1] = sectionData.AY;
-	processData.fAXYZ24[2] = sectionData.AZ;
+	processData.fAngle24[0] = sectionData.AX;
+	processData.fAngle24[1] = sectionData.AY;
+	processData.fAngle24[2] = sectionData.AZ;
 	processData.nData88 = 0;
 	processData.nData92 = 0;
 	processData.fData100 = -1.0;
-	process(handle, processData.fMatrix, processData.fAXYZ24);
+	process(handle, processData.fMatrix, processData.fAngle24);
 	if(fArray)
 	{
 		if(inner_product(fArray, processData.fMatrix + 6))
 		{
 			processData.nData12 = processData.nData12 != 1;
 			processData.nData92 = -processData.nData92;
-			processData.fAXYZ24[1] += 3.14159f;
-			process(handle, processData.fMatrix, processData.fAXYZ24);
+			processData.fAngle24[1] += 3.14159f;
+			process(handle, processData.fMatrix, processData.fAngle24);
 		}
 	}
 }
-/*int functionName(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation)
+int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation)
 {
 	int result;
 	int nTemp = 0;
 	if(processData.nData12)
 	{
-		processData.fDistance16 += fLocation;
-		processData.fData20 += fLocation;
+		processData.fDistanceFromNodeStart16 += fLocation;
+		processData.fDistanceFromSectionStart20 += fLocation;
 	}else
 	{
-		processData.fDistance16 -= fLocation;
-		processData.fData20 -= fLocation;
+		processData.fDistanceFromNodeStart16 -= fLocation;
+		processData.fDistanceFromSectionStart20 -= fLocation;
 	}
-	if(processData.fDistance16 < 0)
+	if(processData.fDistanceFromNodeStart16 < 0)
 	{
-		STrItem** itemPtr = node.trItemArrayPtr;
-		float fDistance = processData.fDistance16;
-		int nFlag = processData.nData12;
-		if(someFunction(handle, processData, itemPtr, 0))
+		SConnectNode* connectNode = node.connectNodePtr1;
+		float fDistance = processData.fDistanceFromNodeStart16;
+		size_t nFlag = processData.nData12;
+		if(GetPrevNode(handle, processData, connectNode, 0))
 		{
 			if(processData.nData12 !=1 )
 			{
@@ -378,17 +377,21 @@ void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& 
 				}
 			}else if(processData.nData12 != nFlag)
 				fDistance = -fDistance;
-			result = functionName(handle, processData, node, fDistance);
+			result = AdjustAngle(handle, processData, node, fDistance);
 		}else
 		{
-			processData.fDistance16 = 0;
-			processData.fData20 = 0;
+			processData.fDistanceFromNodeStart16 = 0;
+			processData.fDistanceFromSectionStart20 = 0;
 			processData.nSectionNum4 = 0;
-			processData.sectionPtr8 = node.sectionArrayPtr;
+			processData.sectionPtr8 = node.sectionArrayPtr24 + processData.nSectionNum4;
 		}
+		return result;
 	}
-	return result;
-}*/
+	if(processData.fDistanceFromNodeStart16 <= node.fTrackNodeLength40)
+	{
+
+	}
+}
 bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node)
 {
 	SProcessData processData;
@@ -397,12 +400,14 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 	fDirection[1] = 0;
 	fDirection[2] = sin(angle);
 	getSectionData(handle, processData, node, 0, 0);
+	AdjustAngle(handle, processData, node, fLocationInTrackNode);
+	processData.nodePtr0 = &node;
 	if(nDirection)
 	{
 		processData.nData12 = processData.nData12 != 1;
 		processData.nData92 = -processData.nData92;
-		processData.fAXYZ24[1] += 3.14159f;
-		process(handle, processData.fMatrix, processData.fAXYZ24);
+		processData.fAngle24[1] += 3.14159f;
+		process(handle, processData.fMatrix, processData.fAngle24);
 	}
 	float* fArray = processData.fMatrix + 6;
 	float result = inner_product(fDirection, fArray);
@@ -427,7 +432,80 @@ CString IteratorList(HANDLE handle, void* headPtr, CString (*func)(HANDLE, void*
 	}
 	return strResult;
 }
-/*int someFunction(HANDLE handle, SProcessData& processData, STrItem**itemPtr, int num)
+STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode* connectNodePtr, int nDirection)
 {
-	return 0;
-}*/
+	SConnectNode connectNode;
+	ReadTrainProcess(handle, connectNodePtr, &connectNode, sizeof(SConnectNode));
+	STrackNode* prevNode = NULL;
+	size_t nTemp;
+	SConnectStruct connectStruct;
+	ReadTrainProcess(handle, (void *)connectNode.nodePointer20, (LPVOID)&connectStruct, sizeof(SConnectStruct));
+
+	if(connectNode.nType0 == 2)
+	{
+		for(size_t i = 0; i < connectNode.nTrPinsSecond16 + connectNode.nTrPinsFirst12; ++i)
+		{
+			if(connectStruct.subStruct[i].nodePtr == processData.nodePtr0
+				&& connectStruct.subStruct[i].nDirect != nDirection)
+			{
+				if(i >= processData.nData12)
+				{
+					nTemp = 0;
+				}else
+				{
+					nTemp = connectNode.direction80 + connectNode.nTrPinsFirst12;
+				}
+				if(nTemp >= connectNode.nTrPinsSecond16 + connectNode.nTrPinsFirst12)
+					prevNode = NULL;
+				else
+					prevNode = connectStruct.subStruct[nTemp].nodePtr;
+				break;
+			}
+		}
+	}else if(connectNode.nType0 == 3)
+	{
+		prevNode = NULL;
+	}else
+	{
+		nTemp = connectStruct.subStruct[0].nodePtr == processData.nodePtr0;
+		prevNode = connectStruct.subStruct[nTemp].nodePtr;
+		if(!prevNode)
+			return NULL;
+	}
+	if(!prevNode)
+		return NULL;
+	int nDirect = connectStruct.subStruct[nTemp].nDirect;
+	processData.nodePtr0 = prevNode;
+	STrackNode trackNode;
+	ReadTrainProcess(handle, prevNode, &trackNode, sizeof(STrackNode));
+	if(nDirect == 1)
+	{
+		if(nDirection != nDirect)
+			processData.nData12 = !processData.nData12;
+		processData.fDistanceFromNodeStart16 = 0;
+		processData.nSectionNum4 = 0;
+		processData.sectionPtr8 = trackNode.sectionArrayPtr24 + processData.nSectionNum4;
+		processData.fDistanceFromSectionStart20 = 0;
+	}else
+	{
+		if(nDirection != nDirect)
+			processData.nData12 = !processData.nData12;
+
+		processData.fDistanceFromNodeStart16 = trackNode.fTrackNodeLength40;
+		processData.nSectionNum4 = trackNode.nSectionNum28 - 1;
+		processData.sectionPtr8 = trackNode.sectionArrayPtr24 + processData.nSectionNum4;
+
+		size_t mem, basePtr;
+		ReadTrainProcess(handle, (LPCVOID)0x80A118, (LPVOID)&mem, 4);
+		mem += 12; 
+		ReadTrainProcess(handle, (LPCVOID)mem, (LPVOID)&basePtr, 4);
+		short sectionIndex;
+		ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
+		size_t subPtr = basePtr;
+		subPtr += 24 * sectionIndex;
+		float fLength;
+		ReadTrainProcess(handle, (LPCVOID)subPtr, (LPVOID)&fLength, 4);
+		processData.fDistanceFromSectionStart20 = fLength;
+	}
+	return prevNode;
+}

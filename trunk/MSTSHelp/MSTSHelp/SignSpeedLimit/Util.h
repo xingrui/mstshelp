@@ -4,6 +4,8 @@
 using std::vector;
 #define IDENTITY_MATRIX_MEM 0x771680
 #define DISTANCE_TYPE_MEM 0x78C390
+#define CURRENT_TILE_X_MEM 0x79D118
+#define CURRENT_TILE_Y_MEM 0x79D11C
 #define THIS_POINTER_MEM 0x7C2AC0
 #define TASK_LIMIT_HEAD_MEM 0x809B38
 #define TASK_LIMIT_MEM 0x809B48
@@ -32,40 +34,45 @@ struct SSectionData
 	float       unData; //-1, 0
 	float		unData2;
 };
+struct SSubConnectStruct
+{
+	STrackNode* nodePtr;
+	int nDirect;
+};
 struct SConnectStruct
 {
-	STrackNode* nodePtr1;
-	int         nDirect1;
-	STrackNode* nodePtr2;
-	int         nDirect2;
-	STrackNode* nodePtr3;
-	int         nDirect3;
+	SSubConnectStruct subStruct[3];
 };
 struct STDBFile;
 struct SConnectNode
 {
-	int nType;// 2 JunctionNode || 3 EndNode
-	DWORD data2;
-	DWORD data3;
-	int   nTrPinsFirst;
-	int   nTrPinsSecond;
-	SConnectStruct* nodePointer;
+	int nType0;// 2 JunctionNode || 3 EndNode
+	DWORD data4;
+	DWORD data8;
+	size_t   nTrPinsFirst12;
+	//////////////////////////////////
+	size_t   nTrPinsSecond16;
+	SConnectStruct* nodePointer20;
 	int   nWorldTileX;
 	int   nWorldTileY;
+	//////////////////////////////////
 	int   nWorldFileUid;
 	STDBFile* tdbFilePtr;
 	DWORD data11;
 	float X;
+	//////////////////////////////////
 	float Y;
 	float Z;
 	float AX;
 	float AY;
+	//////////////////////////////////
 	float AZ;
 	int   nTileX;
 	int   nTileZ;
 	short data;
 	short direction;
-	short direction2;// I use this direction2 but I do not know whether the difference of the direction.
+	//////////////////////////////////
+	short direction80;// I use this direction2 but I do not know whether the difference of the direction.
 };
 struct STrItem;
 struct SAllTrItem
@@ -95,13 +102,13 @@ struct STrackNode
 	DWORD data12;
 	SConnectNode* connectNodePtr2;
 	DWORD data20;
-	SSectionData* sectionArrayPtr;
-	int   nSectionNum;
-	STrItem**  trItemArrayPtr;
-	int   nTrItemNum;
-	float fSectionLength;
-	void* pPtr;
-	STDBFile* tdbFilePtr;
+	SSectionData* sectionArrayPtr24;
+	int   nSectionNum28;
+	STrItem**  trItemArrayPtr32;
+	int   nTrItemNum36;
+	float fTrackNodeLength40;
+	void* pPtr44;
+	STDBFile* tdbFilePtr48;
 };
 struct STrackSection;
 struct STrackInfo
@@ -193,13 +200,13 @@ struct SStationItem
 
 struct SProcessData
 {
-	STrackNode* nodePtr0;
+	const STrackNode* nodePtr0;
 	int nSectionNum4;
 	SSectionData* sectionPtr8;
-	int nData12;
-	float fDistance16;
-	float fData20;
-	float fAXYZ24[3];
+	size_t nData12;
+	float fDistanceFromNodeStart16;
+	float fDistanceFromSectionStart20;
+	float fAngle24[3];
 	float fMatrix[9];
 	float fXYZ72[3];// 72 76 80
 	DWORD nData84;
@@ -249,8 +256,8 @@ inline CString showTrackInfo(const STrackInfo& trackInfo)
 		trackInfo.nLeftNodeNum, trackInfo.nDirection, trackInfo.fNodeLeftLength, trackInfo.fSectionLeftLength);
 	return msg;
 }
-int functionName(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation);
-int someFunction(HANDLE handle, SProcessData& processData, STrItem**itemPtr, int num);
+int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation);
+STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode *connectNode, int nDirection);
 bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node);
 CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
 #endif
