@@ -2,7 +2,12 @@
 #define UTIL_H
 #include <vector>
 using std::vector;
+#define IDENTITY_MATRIX_MEM 0x771680
+#define DISTANCE_TYPE_MEM 0x78C390
 #define THIS_POINTER_MEM 0x7C2AC0
+#define TASK_LIMIT_HEAD_MEM 0x809B38
+#define TASK_LIMIT_MEM 0x809B48
+#define TRAIN_INFO_MEM 0x809890
 #define HEAD_TRACK_MEM 0x8098DC
 #define TAIL_TRACK_MEM 0x809944
 struct STrackNode;
@@ -168,8 +173,8 @@ struct SSidingItem
 struct SSpeedPostLimit
 {
 	float fDistance;
-	float   LimitNum;
-	SSpeedPostLimit(float dis, float num):fDistance(dis),LimitNum(num){}
+	float   fLimitNum;
+	SSpeedPostLimit(float dis, float num):fDistance(dis),fLimitNum(num){}
 };
 
 struct STempSpeedLimit
@@ -195,7 +200,7 @@ struct SProcessData
 	float fDistance16;
 	float fData20;
 	float fAXYZ24[3];
-	float fArray36[9];
+	float fMatrix[9];
 	float fXYZ72[3];// 72 76 80
 	DWORD nData84;
 	int nData88;
@@ -223,6 +228,14 @@ STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodeP
 void process_AX(float* fArray, float AX);
 void process_AY(float* fArray, float AY);
 void process_AZ(float* fArray, float AZ);
+
+inline void ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
+{
+	if(!ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, NULL))
+		throw 1;
+
+}
+
 inline float inner_product(float* fArray1, float* fArray2)
 {
 	return fArray1[0] * fArray2[0] + fArray1[1]*fArray2[1]+fArray1[2]*fArray2[2];

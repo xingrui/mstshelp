@@ -62,4 +62,5 @@ public:
 	BOOL m_bShowTaskLimit;
 public:
 	afx_msg void OnBnClickedCheck5();
+	void OnGetData();
 };
