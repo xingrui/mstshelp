@@ -6,6 +6,7 @@ using std::vector;
 #define DISTANCE_TYPE_MEM 0x78C390
 #define CURRENT_TILE_X_MEM 0x79D118
 #define CURRENT_TILE_Y_MEM 0x79D11C
+#define IDENTITY2_MATRIX_MEM 0x7A8A20
 #define THIS_POINTER_MEM 0x7C2AC0
 #define TASK_LIMIT_HEAD_MEM 0x809B38
 #define TASK_LIMIT_MEM 0x809B48
@@ -21,19 +22,28 @@ struct SSectionData
 	DWORD       data2;  //0
 	int         TileX;  //-846
 	int         TileY;  //0x3618
+	///////////////////////////////////////////
 	int         WorldFileUiD;  //0x77
 	DWORD       data6;  //0
 	int         TileX2;  //-846
 	int         TileZ2;  //0x3618
+	///////////////////////////////////////////
 	float       X;      //330.14
 	float       Y;      //103.58
 	float       Z;      //-152.46
 	float       AX;     //0
+	///////////////////////////////////////////
 	float       AY;     //5.16
 	float       AZ;     //0
 	float       unData; //-1, 0
 	float		unData2;
 };
+
+struct SSectionTypeData
+{
+	float fData[6];
+};
+
 struct SSubConnectStruct
 {
 	STrackNode* nodePtr;
@@ -98,9 +108,9 @@ struct STrackNode
 {
 	DWORD data0;
 	int data4;
-	SConnectNode* connectNodePtr1;
+	SConnectNode* connectNodePtr8;
 	DWORD data12;
-	SConnectNode* connectNodePtr2;
+	SConnectNode* connectNodePtr16;
 	DWORD data20;
 	SSectionData* sectionArrayPtr24;
 	int   nSectionNum28;
@@ -256,8 +266,8 @@ inline CString showTrackInfo(const STrackInfo& trackInfo)
 		trackInfo.nLeftNodeNum, trackInfo.nDirection, trackInfo.fNodeLeftLength, trackInfo.fSectionLeftLength);
 	return msg;
 }
-int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation);
-STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode *connectNode, int nDirection);
+int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
+STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode *connectNode, int nDirection, SSectionTypeData* basePtr);
 bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node);
 CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
 #endif
