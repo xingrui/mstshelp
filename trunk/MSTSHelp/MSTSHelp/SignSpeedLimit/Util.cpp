@@ -52,7 +52,7 @@ void *GetTrainPointer(HANDLE hProcess)
 	return pointer;
 }
 
-void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int direction)
+void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int direction,STrackNode* nodePtr)
 {
 	int num = node.nTrItemNum36;
 	if(num > 0)
@@ -80,7 +80,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 					ReadTrainProcess(handle, (LPCVOID)pointer, &memory, 4);
 					if((subType & 0x80) || subType & 0x20 && memory & 2 || subType & 0x40 && memory & 4)
 					{
-						if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !direction, node))
+						if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !direction, node, nodePtr))
 						{
 							float distanceToTrackStart;
 							if(!direction)
@@ -352,9 +352,38 @@ void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& 
 		}
 	}
 }
+float* sub_5B3DF7(float* fTempArray, float a, float b, float c)
+{
+	fTempArray[0] = a;
+	fTempArray[1] = b;
+	fTempArray[2] = c;
+	return fTempArray;
+}
+float* sub_5B3F03(float* fArray, float* fMatrix, float* fArray2)
+{
+	fArray2[0] = fMatrix[0] * fArray[0] + fMatrix[3] * fArray[1] + fMatrix[6] * fArray[2] + fMatrix[9];
+	fArray2[1] = fMatrix[1] * fArray[0] + fMatrix[4] * fArray[1] + fMatrix[7] * fArray[2] + fMatrix[10];
+	fArray2[2] = fMatrix[2] * fArray[0] + fMatrix[5] * fArray[1] + fMatrix[8] * fArray[2] + fMatrix[11];
+	return fArray2;
+}
 float* sub_5B3EB5(float* fArray, float* fMatrix, float* fArray2)
 {
+	sub_5B3F03(fArray, fMatrix, fArray2);
+	fArray[0] = fArray2[0];
+	fArray[1] = fArray2[1];
+	fArray[2] = fArray2[2];
 	return fArray2;
+}
+
+float* sub_5B3E21(float* fArray1, float* fArray2, float* fArray3)
+{
+	fArray1[0] += fArray2[0];
+	fArray1[1] += fArray2[1];
+	fArray1[2] += fArray2[2];
+	fArray3[0] = fArray1[0];
+	fArray3[1] = fArray1[1];
+	fArray3[2] = fArray1[2];
+	return fArray3;
 }
 int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr)
 {
@@ -459,10 +488,9 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 				processData.nSectionNum4 = nCurrentNum;
 				fDistance -= fLength;
 				processData.sectionPtr8 = node.sectionArrayPtr24 + nCurrentNum;
-				short sectionIndex;
-				ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
-				float fLength;
-				ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fLength, 4);
+				short sectionIndex2;
+				ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex2, 2);
+				ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex2), (LPVOID)&fLength, 4);
 			}
 		}
 		processData.fDistanceFromSectionStart20 = fDistance;
@@ -486,27 +514,55 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 	float fTempArray[3];
 	float fTransformMatrix[12];
 	float fArray2[3];
+	float fTempResult[3];
 	if(typeData.fData[1] == 0)
 	{
 		if(typeData.fData[4] == 0)
 		{
-			fTempArray[0] = 0;
-			fTempArray[1] = 0;
-			fTempArray[2] = processData.fDistanceFromSectionStart20; 
-			process(handle, fTransformMatrix, &sectionData.X);
+			sub_5B3DF7(fTempArray, 0, 0, processData.fDistanceFromSectionStart20);
+			process30(handle, fTransformMatrix, &sectionData.AX);
 			sub_5B3EB5(fTempArray, fTransformMatrix, fArray2);
+			sub_5B3E21(processData.fXYZ72, fTempArray, fTempResult);
+			processData.nData92 = sectionData.AX;
+			processData.nData88 = 0;
 		}else
 		{
-
+			process30(handle, fTransformMatrix, &sectionData.AX);
+			sub_5B3DF7(fTempArray, 0, 0, processData.fDistanceFromSectionStart20);
+			process30(handle, fTransformMatrix, &sectionData.AX);
+			sub_5B3EB5(fTempArray, fTransformMatrix, fArray2);
+			sub_5B3E21(processData.fXYZ72, fTempArray, fTempResult);
+			processData.nData92 = sectionData.AX;
+			processData.nData88 = 0;
 		}
 	}else
 	{
-
+		float fNum = processData.fDistanceFromSectionStart20 / typeData.fData[1];
+		float sinValue = sin(fNum);
+		float cosValue = cos(fNum);
+		float fSin = sinValue * typeData.fData[1];
+		float fCos = typeData.fData[1] - cosValue * typeData.fData[1];
+		sub_5B3DF7(fTempArray,fCos, 0, fSin);
+		if(typeData.fData[2] < 0)
+		{
+			fTempArray[0] = -fTempArray[0];
+			processData.fAngle24[1] -= fNum;
+		}
+		else
+		{
+			processData.fAngle24[1] += fNum;
+		}
+		process30(handle, fTransformMatrix, &sectionData.AX);
+		sub_5B3EB5(fTempArray, fTransformMatrix, fTempResult);
+		sub_5B3E21(processData.fXYZ72, fTempArray, fTempResult);
+		processData.nData92 = sectionData.AX;
+		processData.nData88 = sectionData.unData56;
+		processData.fData100 = sectionData.unData60;
 	}
 	process(handle, processData.fMatrix, processData.fAngle24);
 	return result;
 }
-bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node)
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node, STrackNode* nodePtr)
 {
 	SProcessData processData;
 	float fDirection[3];
@@ -514,13 +570,13 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 	fDirection[1] = 0;
 	fDirection[2] = sin(angle);
 	size_t mem;
-	SSectionTypeData* sectionType;
+	SSectionTypeData* sectionTypePtr;
 	ReadTrainProcess(handle, (LPCVOID)0x80A118, (LPVOID)&mem, 4);
 	mem += 12; 
-	ReadTrainProcess(handle, (LPCVOID)mem, (LPVOID)&sectionType, 4);
-	getSectionData(handle, processData, node, 0, 0, sectionType);
-	AdjustAngle(handle, processData, node, fLocationInTrackNode, sectionType);
-	processData.nodePtr0 = &node;
+	ReadTrainProcess(handle, (LPCVOID)mem, (LPVOID)&sectionTypePtr, 4);
+	processData.nodePtr0 = nodePtr;
+	getSectionData(handle, processData, node, 0, 0, sectionTypePtr);
+	AdjustAngle(handle, processData, node, fLocationInTrackNode, sectionTypePtr);
 	if(nDirection)
 	{
 		processData.nData12 = processData.nData12 != 1;

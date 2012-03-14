@@ -239,7 +239,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		STrackNode trackNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
 		AddTempSpeedLimit(forwardLength, currentNodePtr, tempLimitVect, m_hTrainProcess, nDirectOfCurrentNode);
-		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfCurrentNode);
+		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr);
 		AddStationItem(forwardLength, trackNode, stationVect, sidingVect, m_hTrainProcess,nDirectOfCurrentNode);
 		forwardLength += trackNode.fTrackNodeLength40;
 		/************************************************************************/
