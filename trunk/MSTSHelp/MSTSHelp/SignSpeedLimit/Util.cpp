@@ -80,22 +80,24 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 					ReadTrainProcess(handle, (LPCVOID)pointer, &memory, 4);
 					if((subType & 0x80) || subType & 0x20 && memory & 2 || subType & 0x40 && memory & 4)
 					{
-						if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !nDirection, node, nodePtr))
+						float distanceToTrackStart;
+						if(!nDirection)
 						{
-							float distanceToTrackStart;
-							if(!nDirection)
+							distanceToTrackStart = node.fTrackNodeLength40 - speedPostItem.fLocationInTrackNode;
+						}else
+						{
+							distanceToTrackStart = speedPostItem.fLocationInTrackNode;
+						}
+						if(currentDistance + distanceToTrackStart > 0)
+						{
+							if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !nDirection, node, nodePtr))
 							{
-								distanceToTrackStart = node.fTrackNodeLength40 - speedPostItem.fLocationInTrackNode;
-							}else
-							{
-								distanceToTrackStart = speedPostItem.fLocationInTrackNode;
-							}
-							float speed = speedPostItem.SpeedpostTrItemDataSecond;
-							if(subType & 0x100)
-								speed *= 1.609f;
-							if(currentDistance + distanceToTrackStart > 0)
+								float speed = speedPostItem.SpeedpostTrItemDataSecond;
+								if(subType & 0x100)
+									speed *= 1.609f;
 								limitVect.push_back(SSpeedPostLimit(currentDistance + 
-								distanceToTrackStart, speed));
+									distanceToTrackStart, speed));
+							}
 						}
 					}
 				}
@@ -311,7 +313,7 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 	mem += 12; 
 	ReadTrainProcess(handle, (LPCVOID)mem, (LPVOID)&sectionTypePtr, 4);
 	processData.nodePtr0 = nodePtr;
-	getSectionData_Modified(handle, processData, node, sectionTypePtr);
+	getSectionData_Modified(handle, processData, node, 0, 0, sectionTypePtr);
 	AdjustAngle_Modified(handle, processData, node, fLocationInTrackNode, sectionTypePtr);
 	if(nDirection)
 	{
@@ -344,7 +346,7 @@ CString IteratorList(HANDLE handle, void* headPtr, CString (*func)(HANDLE, void*
 	return strResult;
 }
 
-void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, SSectionTypeData* basePtr)
+void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, int, int, SSectionTypeData* basePtr)
 {
 	processData.nSectionNum4 = 0;
 	processData.sectionPtr8 = node.sectionArrayPtr24;
