@@ -235,6 +235,7 @@ struct STempSpeed
 void AddTempSpeedLimit(float currentDistance, STrackNode* node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
 void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode*);
 void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
+
 CString SpeedPostItemToString(const SSpeedPostItem& item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
@@ -245,6 +246,13 @@ STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodeP
 void process_AX(float* fArray, float AX);
 void process_AY(float* fArray, float AY);
 void process_AZ(float* fArray, float AZ);
+float* process(HANDLE handle, float* fMatrix, float*fXYZ);
+float* process30(HANDLE handle, float* fMatrix, float*fXYZ);
+
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node, STrackNode* nodePtr);
+CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
+void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, SSectionTypeData* basePtr);
+int AdjustAngle_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
 
 inline void ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
 {
@@ -266,8 +274,5 @@ inline CString showTrackInfo(const STrackInfo& trackInfo)
 		trackInfo.nLeftNodeNum, trackInfo.nDirection, trackInfo.fNodeLeftLength, trackInfo.fSectionLeftLength);
 	return msg;
 }
-int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
-STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode *connectNode, int nDirection, SSectionTypeData* basePtr);
-bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node, STrackNode* nodePtr);
-CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
+
 #endif
