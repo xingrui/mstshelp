@@ -251,8 +251,11 @@ float* process30(HANDLE handle, float* fMatrix, float*fXYZ);
 
 bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node, STrackNode* nodePtr);
 CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
-void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, SSectionTypeData* basePtr);
+void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node,int, int , SSectionTypeData* basePtr);
 int AdjustAngle_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
+
+void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& node, int sectionNum, float* fArray, SSectionTypeData* basePtr);
+int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
 
 inline void ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
 {
