@@ -52,7 +52,7 @@ void *GetTrainPointer(HANDLE hProcess)
 	return pointer;
 }
 
-void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int direction,STrackNode* nodePtr)
+void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int nDirection,STrackNode* nodePtr)
 {
 	int num = node.nTrItemNum36;
 	if(num > 0)
@@ -80,10 +80,10 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 					ReadTrainProcess(handle, (LPCVOID)pointer, &memory, 4);
 					if((subType & 0x80) || subType & 0x20 && memory & 2 || subType & 0x40 && memory & 4)
 					{
-						if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !direction, node, nodePtr))
+						if(IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !nDirection, node, nodePtr))
 						{
 							float distanceToTrackStart;
-							if(!direction)
+							if(!nDirection)
 							{
 								distanceToTrackStart = node.fTrackNodeLength40 - speedPostItem.fLocationInTrackNode;
 							}else
@@ -319,9 +319,8 @@ void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& 
 		const SSectionData* sectionPtr = node.sectionArrayPtr24 + sectionNum;
 		short sectionIndex;
 		ReadTrainProcess(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionIndex, 2);
-		SSectionTypeData* tempSectionType = basePtr + sectionIndex;
 		float fLength;
-		ReadTrainProcess(handle, (LPCVOID)tempSectionType, (LPVOID)&fLength, 4);
+		ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fLength, 4);
 		fDistance += fLength;
 	}
 	processData.fDistanceFromNodeStart16 = fDistance;
