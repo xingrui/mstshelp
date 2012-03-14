@@ -35,8 +35,8 @@ struct SSectionData
 	///////////////////////////////////////////
 	float       AY;     //5.16
 	float       AZ;     //0
-	float       unData; //-1, 0
-	float		unData2;
+	int       unData56; //-1, 0
+	float		unData60;
 };
 
 struct SSectionTypeData
@@ -221,7 +221,7 @@ struct SProcessData
 	float fXYZ72[3];// 72 76 80
 	DWORD nData84;
 	int nData88;
-	int nData92;
+	float nData92;
 	DWORD nData96;
 	float fData100;
 };
@@ -233,7 +233,7 @@ struct STempSpeed
 	float fEnd;
 };
 void AddTempSpeedLimit(float currentDistance, STrackNode* node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
-void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction);
+void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode*);
 void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
 CString SpeedPostItemToString(const SSpeedPostItem& item);
 bool GetTrainHandle(HANDLE &hProcess);
@@ -268,6 +268,6 @@ inline CString showTrackInfo(const STrackInfo& trackInfo)
 }
 int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
 STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode *connectNode, int nDirection, SSectionTypeData* basePtr);
-bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node);
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node, STrackNode* nodePtr);
 CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
 #endif
