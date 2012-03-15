@@ -245,8 +245,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
 		/************************************************************************/
-		int nDirectToFindInConnectNode = !nDirectOfCurrentNode;
-		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode,currentNodePtr, nDirectToFindInConnectNode,nDirectOfNextNode);
+		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode,currentNodePtr, nDirectOfCurrentNode,nDirectOfNextNode);
 	}
 
 	int nIsKiloMeter;
