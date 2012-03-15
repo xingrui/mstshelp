@@ -196,25 +196,18 @@ void AddStationItem(float currentDistance, const STrackNode& node, vector<SStati
 
 
 STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
-					int direction, int&nextDirect)
+					int&nextDirect)
 {
 	if(connectNode.nType0 == 2)//JunctionNode
 	{
-		if(nodePtr == connectStruct.subStruct[0].nodePtr && connectStruct.subStruct[0].nDirect == direction)
+		if(nodePtr == connectStruct.subStruct[0].nodePtr)
 		{
-			if(connectNode.direction80 )
-			{
-				nextDirect = connectStruct.subStruct[2].nDirect;
-				return connectStruct.subStruct[2].nodePtr;
-			}else
-			{
-				nextDirect = connectStruct.subStruct[1].nDirect;
-				return connectStruct.subStruct[1].nodePtr;
-			}
-		}else if(nodePtr == connectStruct.subStruct[1].nodePtr && connectStruct.subStruct[1].nDirect == direction){
+			nextDirect = connectStruct.subStruct[1 + connectNode.direction80].nDirect;
+			return connectStruct.subStruct[1 + connectNode.direction80].nodePtr;
+		}else if(nodePtr == connectStruct.subStruct[1].nodePtr){
 			nextDirect = connectStruct.subStruct[0].nDirect;
 			return connectStruct.subStruct[0].nodePtr;
-		}else if(nodePtr == connectStruct.subStruct[2].nodePtr && connectStruct.subStruct[2].nDirect == direction){
+		}else if(nodePtr == connectStruct.subStruct[2].nodePtr){
 			nextDirect = connectStruct.subStruct[0].nDirect;
 			return connectStruct.subStruct[0].nodePtr;
 		}
@@ -228,14 +221,10 @@ STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodeP
 	SConnectNode connectNode;
 	SConnectStruct connectStruct;
 	STrackNode*next;
-	ReadTrainProcess(handle, (void *)node.connectNodePtr8, (LPVOID)&connectNode, sizeof(SConnectNode));
+	SConnectNode* connectNodePtr = direction ? node.connectNodePtr16 : node.connectNodePtr8;
+	ReadTrainProcess(handle, (void *)connectNodePtr, (LPVOID)&connectNode, sizeof(SConnectNode));
 	ReadTrainProcess(handle, (void *)connectNode.nodePointer20, (LPVOID)&connectStruct, sizeof(SConnectStruct));
-	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
-	if(next)
-		return next;
-	ReadTrainProcess(handle, (void *)node.connectNodePtr16, (LPVOID)&connectNode, sizeof(SConnectNode));
-	ReadTrainProcess(handle, (void *)connectNode.nodePointer20, (LPVOID)&connectStruct, sizeof(SConnectStruct));
-	next = GetNext(nodePtr, connectStruct, connectNode, direction, nextDirect);
+	next = GetNext(nodePtr, connectStruct, connectNode, nextDirect);
 	return next;
 }
 CString SpeedPostItemToString(const SSpeedPostItem& item)
