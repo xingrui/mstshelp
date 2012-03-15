@@ -669,7 +669,7 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	str.Format(L"%.3f %.3f", m_fCurrentPower, fNum2);
 	m_listCtrl.SetItemText(POWER_AND_ELECTRIC_BREAK, 1, str);
 	float fRouteLimit;
-	CHECK(ReadProcessMemory(hProcess, (LPCVOID)ROUTE_SPEED_LIMIT_MEM, (LPVOID)&fRouteLimit, 4, NULL))
+	CHECK(ReadPointerMemory(hProcess, (LPCVOID)ROUTE_SPEED_LIMIT_MEM, (LPVOID)&fRouteLimit, 4, 1, 0x64))
 	str.Format(L"%.1f", fRouteLimit * 3.6);
 	m_listCtrl.SetItemText(ROUTE_SPEED_LIMIT, 1, str);
 	SSchedule schedule;
