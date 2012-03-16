@@ -337,7 +337,6 @@ CString IteratorList(HANDLE handle, void* headPtr, CString (*func)(HANDLE, void*
 
 void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, int, int, SSectionTypeData* basePtr)
 {
-	processData.nSectionNum4 = 0;
 	processData.sectionPtr8 = node.sectionArrayPtr24;
 	SSectionData sectionData;
 	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SSectionData));
