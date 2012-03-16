@@ -68,7 +68,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSp
 				SSpeedPostItem speedPostItem;
 				const void* address = (LPCVOID)*(memory + i);
 				ReadTrainProcess(handle, address, (LPVOID)&speedPostItem, sizeof(SSpeedPostItem));
-				short subType = speedPostItem.SpeedpostTrItemDataFirst;
+				unsigned short subType = speedPostItem.SpeedpostTrItemDataFirst;
 				if((subType & 7) == 2)
 				{
 					size_t pointer;
@@ -349,7 +349,7 @@ void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STr
 int AdjustAngle_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr)
 {
 	float fRemainDistance = fLocation;
-	short sectionIndex;
+	unsigned short sectionIndex;
 	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 	float fCurrentSectionLength;
 	ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fCurrentSectionLength, 4);
