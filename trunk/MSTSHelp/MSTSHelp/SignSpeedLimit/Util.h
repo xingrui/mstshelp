@@ -17,8 +17,8 @@ struct STrackNode;
 
 struct SSectionData
 {
-	short       sectionIndex;//179
-	short       shapeIndex;  //32250
+	unsigned short       sectionIndex;//179
+	unsigned short       shapeIndex;  //32250
 	DWORD       data2;  //0
 	int         TileX;  //-846
 	int         TileY;  //0x3618
@@ -79,10 +79,10 @@ struct SConnectNode
 	float AZ;
 	int   nTileX;
 	int   nTileZ;
-	short data;
-	short direction;
+	unsigned short data;
+	unsigned short direction;
 	//////////////////////////////////
-	short direction80;// I use this direction2 but I do not know whether the difference of the direction.
+	unsigned short direction80;// I use this direction2 but I do not know whether the difference of the direction.
 };
 struct STrItem;
 struct SAllTrItem
@@ -152,8 +152,8 @@ struct SSpeedPostItem{
 	int TrItemPDataThird;
 	int TrItemPDataFourth;
 	int variableData;
-	short SpeedpostTrItemDataFirst;
-	short SpeedpostTrItemDataSecond;//This is the Limit Number
+	unsigned short SpeedpostTrItemDataFirst;
+	unsigned short SpeedpostTrItemDataSecond;//This is the Limit Number
 	float SpeedpostTrItemDataThird;
 	float fAngle;
 	DWORD fData;//0

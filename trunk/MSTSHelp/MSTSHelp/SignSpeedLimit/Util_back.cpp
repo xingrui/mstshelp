@@ -56,7 +56,7 @@ void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& 
 	{
 		--sectionNum;
 		const SSectionData* sectionPtr = node.sectionArrayPtr24 + sectionNum;
-		short sectionIndex;
+		unsigned short sectionIndex;
 		ReadTrainProcess(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionIndex, 2);
 		float fLength;
 		ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fLength, 4);
@@ -154,7 +154,7 @@ STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode* 
 		processData.fDistanceFromNodeStart16 = trackNode.fTrackNodeLength40;
 		processData.nSectionNum4 = trackNode.nSectionNum28 - 1;
 		processData.sectionPtr8 = trackNode.sectionArrayPtr24 + processData.nSectionNum4;
-		short sectionIndex;
+		unsigned short sectionIndex;
 		ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 		SSectionTypeData* sectionTypePtr = basePtr + sectionIndex;
 		float fLength;
@@ -224,7 +224,7 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 			processData.fDistanceFromNodeStart16 = node.fTrackNodeLength40;
 			processData.nSectionNum4 = node.nSectionNum28 - 1;
 			processData.sectionPtr8 = node.sectionArrayPtr24 + processData.nSectionNum4;
-			short sectionIndex;
+			unsigned short sectionIndex;
 			ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 			float fLength;
 			ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fLength, 4);
@@ -234,7 +234,7 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 	}else
 	{
 		float fDistance = processData.fDistanceFromSectionStart20;
-		short sectionIndex;
+		unsigned short sectionIndex;
 		ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 		float fLength;
 		ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fLength, 4);
@@ -249,7 +249,7 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 					break;
 				processData.nSectionNum4 = nCurrentNum;
 				processData.sectionPtr8 = node.sectionArrayPtr24 + nCurrentNum;
-				short sectionIndex;
+				unsigned short sectionIndex;
 				ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 				float fLength;
 				ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fLength, 4);
@@ -267,7 +267,7 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 				processData.nSectionNum4 = nCurrentNum;
 				fDistance -= fLength;
 				processData.sectionPtr8 = node.sectionArrayPtr24 + nCurrentNum;
-				short sectionIndex2;
+				unsigned short sectionIndex2;
 				ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex2, 2);
 				ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex2), (LPVOID)&fLength, 4);
 			}
