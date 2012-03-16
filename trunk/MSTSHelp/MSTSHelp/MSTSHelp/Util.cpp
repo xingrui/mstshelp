@@ -113,6 +113,37 @@ bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, 
 	return true;
 }
 
+bool WritePointerMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, int num, ...)
+{
+	LPVOID addressPointer = lpBaseAddress;
+	char *dataPointer;
+	va_list x;
+	va_start(x, num);
+
+	for (int i = 0; i < num; ++i)
+	{
+		int y = va_arg(x, int);
+
+		if (!ReadProcessMemory(hProcess, addressPointer, (LPVOID)&dataPointer, 4, NULL))
+		{
+			CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
+			return false;
+		}
+
+		addressPointer = dataPointer + y;
+	}
+
+	va_end(x);
+
+	if (!WriteProcessMemory(hProcess, addressPointer, lpBuffer, nSize, NULL))
+	{
+		CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
+		return false;
+	}
+
+	return true;
+}
+
 Direction GetDirection(Locomotive loco, HANDLE hProcess)
 {
 	float fDirection;
