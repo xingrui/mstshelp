@@ -100,6 +100,7 @@ struct SHead
 };
 
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
+bool WritePointerMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, int num, ...);
 bool GetTrainHandle(HANDLE &hProcess);
 Direction GetDirection(Locomotive loco, HANDLE hProcess);
 
