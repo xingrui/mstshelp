@@ -49,13 +49,13 @@ void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& 
 {
 	float fDistance = 0;
 	processData.nSectionNum4 = sectionNum;
-	processData.sectionPtr8 = node.sectionArrayPtr24 + sectionNum;
+	processData.sectionPtr8 = node.sectionArrayPtr + sectionNum;
 	processData.nData12 = 1;
 	processData.fDistanceFromSectionStart20 = 0;
 	while (sectionNum)
 	{
 		--sectionNum;
-		const SSectionData* sectionPtr = node.sectionArrayPtr24 + sectionNum;
+		const SSectionData* sectionPtr = node.sectionArrayPtr + sectionNum;
 		unsigned short sectionIndex;
 		ReadTrainProcess(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionIndex, 2);
 		float fLength;
@@ -144,16 +144,16 @@ STrackNode* GetPrevNode(HANDLE handle, SProcessData& processData, SConnectNode* 
 			processData.nData12 = !processData.nData12;
 		processData.fDistanceFromNodeStart16 = 0;
 		processData.nSectionNum4 = 0;
-		processData.sectionPtr8 = trackNode.sectionArrayPtr24 + processData.nSectionNum4;
+		processData.sectionPtr8 = trackNode.sectionArrayPtr + processData.nSectionNum4;
 		processData.fDistanceFromSectionStart20 = 0;
 	}else
 	{
 		if(nDirection != nDirect)
 			processData.nData12 = !processData.nData12;
 
-		processData.fDistanceFromNodeStart16 = trackNode.fTrackNodeLength40;
-		processData.nSectionNum4 = trackNode.nSectionNum28 - 1;
-		processData.sectionPtr8 = trackNode.sectionArrayPtr24 + processData.nSectionNum4;
+		processData.fDistanceFromNodeStart16 = trackNode.fTrackNodeLength;
+		processData.nSectionNum4 = trackNode.nSectionNum - 1;
+		processData.sectionPtr8 = trackNode.sectionArrayPtr + processData.nSectionNum4;
 		unsigned short sectionIndex;
 		ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 		SSectionTypeData* sectionTypePtr = basePtr + sectionIndex;
@@ -178,7 +178,7 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 	}
 	if(processData.fDistanceFromNodeStart16 < 0)
 	{
-		SConnectNode* connectNode = node.connectNodePtr8;
+		SConnectNode* connectNode = node.InConnectNodePtr;
 		float fDistance = processData.fDistanceFromNodeStart16;
 		size_t nFlag = processData.nData12;
 		if(GetPrevNode(handle, processData, connectNode, 0, basePtr))
@@ -197,16 +197,16 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 			processData.fDistanceFromNodeStart16 = 0;
 			processData.fDistanceFromSectionStart20 = 0;
 			processData.nSectionNum4 = 0;
-			processData.sectionPtr8 = node.sectionArrayPtr24 + processData.nSectionNum4;
+			processData.sectionPtr8 = node.sectionArrayPtr + processData.nSectionNum4;
 			result = 0;
 		}
 		return result;
 	}
 	result = 1;
-	if(processData.fDistanceFromNodeStart16 > node.fTrackNodeLength40)
+	if(processData.fDistanceFromNodeStart16 > node.fTrackNodeLength)
 	{
-		SConnectNode* connectNode = node.connectNodePtr16;
-		float fDistanceRemain = processData.fDistanceFromNodeStart16 - node.fTrackNodeLength40;
+		SConnectNode* connectNode = node.OutConnectNodePtr;
+		float fDistanceRemain = processData.fDistanceFromNodeStart16 - node.fTrackNodeLength;
 		size_t nTemp = processData.nData12;
 		if(GetPrevNode(handle, processData, connectNode, 1, basePtr))
 		{
@@ -221,9 +221,9 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 			return AdjustAngle(handle, processData, node, fDistanceRemain, basePtr);
 		}else
 		{
-			processData.fDistanceFromNodeStart16 = node.fTrackNodeLength40;
-			processData.nSectionNum4 = node.nSectionNum28 - 1;
-			processData.sectionPtr8 = node.sectionArrayPtr24 + processData.nSectionNum4;
+			processData.fDistanceFromNodeStart16 = node.fTrackNodeLength;
+			processData.nSectionNum4 = node.nSectionNum - 1;
+			processData.sectionPtr8 = node.sectionArrayPtr + processData.nSectionNum4;
 			unsigned short sectionIndex;
 			ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 			float fLength;
@@ -245,10 +245,10 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 				int nCurrentNum = processData.nSectionNum4 - 1;
 				if(nCurrentNum < 0)
 					break;
-				if(nCurrentNum >= node.nSectionNum28)
+				if(nCurrentNum >= node.nSectionNum)
 					break;
 				processData.nSectionNum4 = nCurrentNum;
-				processData.sectionPtr8 = node.sectionArrayPtr24 + nCurrentNum;
+				processData.sectionPtr8 = node.sectionArrayPtr + nCurrentNum;
 				unsigned short sectionIndex;
 				ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex, 2);
 				float fLength;
@@ -262,11 +262,11 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 				int nCurrentNum = processData.nSectionNum4 + 1;
 				if(nCurrentNum < 0)
 					break;
-				if(nCurrentNum >= node.nSectionNum28)
+				if(nCurrentNum >= node.nSectionNum)
 					break;
 				processData.nSectionNum4 = nCurrentNum;
 				fDistance -= fLength;
-				processData.sectionPtr8 = node.sectionArrayPtr24 + nCurrentNum;
+				processData.sectionPtr8 = node.sectionArrayPtr + nCurrentNum;
 				unsigned short sectionIndex2;
 				ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionIndex2, 2);
 				ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex2), (LPVOID)&fLength, 4);
