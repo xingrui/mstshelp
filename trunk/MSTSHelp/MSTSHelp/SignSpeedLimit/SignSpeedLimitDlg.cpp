@@ -225,9 +225,9 @@ void CSignSpeedLimitDlg::OnGetData()
 	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.trackNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
 
 	if(nDirectOfHeadNode)
-		forwardLength = - headInfo.fNodeLeftLength;
+		forwardLength = - headInfo.fLocationInNode;
 	else
-		forwardLength = headInfo.fNodeLeftLength - trackNode.fTrackNodeLength40;
+		forwardLength = headInfo.fLocationInNode - trackNode.fTrackNodeLength;
 
 	int nDirectOfNextNode = nDirectOfHeadNode;
 	STrackNode* nextNodePtr = headInfo.trackNodePtr;
@@ -241,7 +241,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		AddTempSpeedLimit(forwardLength, currentNodePtr, tempLimitVect, m_hTrainProcess, nDirectOfCurrentNode);
 		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr);
 		AddStationItem(forwardLength, trackNode, stationVect, sidingVect, m_hTrainProcess,nDirectOfCurrentNode);
-		forwardLength += trackNode.fTrackNodeLength40;
+		forwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
 		/************************************************************************/

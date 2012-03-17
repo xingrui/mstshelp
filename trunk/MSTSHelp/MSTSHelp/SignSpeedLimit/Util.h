@@ -19,23 +19,20 @@ struct SSectionData
 {
 	unsigned short       sectionIndex;//179
 	unsigned short       shapeIndex;  //32250
-	DWORD       data2;  //0
+	DWORD       data4;  //0
 	int         TileX;  //-846
 	int         TileY;  //0x3618
-	///////////////////////////////////////////
 	int         WorldFileUiD;  //0x77
-	DWORD       data6;  //0
+	DWORD       data20;  //0
 	int         TileX2;  //-846
 	int         TileZ2;  //0x3618
-	///////////////////////////////////////////
 	float       X;      //330.14
 	float       Y;      //103.58
 	float       Z;      //-152.46
 	float       AX;     //0
-	///////////////////////////////////////////
 	float       AY;     //5.16
 	float       AZ;     //0
-	int       unData56; //-1, 0
+	int         unData56; //-1, 0
 	float		unData60;
 };
 
@@ -57,32 +54,34 @@ struct STDBFile;
 struct SConnectNode
 {
 	int nType0;// 2 JunctionNode || 3 EndNode
-	DWORD data4;
-	DWORD data8;
-	size_t   nTrPinsFirst12;
-	//////////////////////////////////
-	size_t   nTrPinsSecond16;
-	SConnectStruct* nodePointer20;
+	DWORD data4; // 不知道是什么意思
+	DWORD data8; // 不知道是什么意思
+	size_t   nTrPinsFirst12; // TrPins的第一数据 总是1
+	size_t   nTrPinsSecond16; // TrPins的第二个数据 JunctionNode是2 EndNode是0
+	SConnectStruct* nodePointer20; // 卧槽，又是指针，等着吧，下面继续又是结构体
 	int   nWorldTileX;
 	int   nWorldTileY;
-	//////////////////////////////////
 	int   nWorldFileUid;
 	STDBFile* tdbFilePtr;
 	DWORD data11;
 	float X;
-	//////////////////////////////////
 	float Y;
 	float Z;
 	float AX;
 	float AY;
-	//////////////////////////////////
 	float AZ;
 	int   nTileX;
 	int   nTileZ;
 	unsigned short data;
 	unsigned short direction;
-	//////////////////////////////////
-	unsigned short direction80;// I use this direction2 but I do not know whether the difference of the direction.
+	unsigned short direction80;//这个数据非常重要，这个是真正决定道岔走向的数据，只在是JunctionNode的时候有效
+	// 还记得我们的JunctionNode里面的TrPins数据吧，不记得到前面的TDB文件介绍看看
+	// JunctionNode里面会有三个 这个东西 TrPin ( ConnectNodeIndex Direction ) 
+	// 这个东西就是存储在nodePointer20指针(本结构体的第六个数据)指向的内容里面的。
+	// 第一个TrPin是道岔的一个出口方向，第二个TrPin和第三个TrPin是可以选择的。
+	// 也就是说这个JunctionNode可以是由第一个连接到第二个，也可以是由第一个连接到第三个
+	// 如果direction80为0， 表示道岔连接第二个TrPin，如果direction80为1，表示道岔连接第三个TrPin
+	// 希望我描述得足够明白了。
 };
 struct STrItem;
 struct SAllTrItem
@@ -108,27 +107,26 @@ struct STrackNode
 {
 	DWORD data0;
 	int data4;
-	SConnectNode* connectNodePtr8;
+	SConnectNode* InConnectNodePtr;
 	DWORD data12;
-	SConnectNode* connectNodePtr16;
+	SConnectNode* OutConnectNodePtr;
 	DWORD data20;
-	SSectionData* sectionArrayPtr24;
-	int   nSectionNum28;
-	STrItem**  trItemArrayPtr32;
-	int   nTrItemNum36;
-	float fTrackNodeLength40;
+	SSectionData* sectionArrayPtr;
+	int   nSectionNum;
+	STrItem**  trItemArrayPtr;
+	int   nTrItemNum;
+	float fTrackNodeLength;
 	void* pPtr44;
-	STDBFile* tdbFilePtr48;
+	STDBFile* tdbFilePtr;
 };
-struct STrackSection;
 struct STrackInfo
 {
 	STrackNode*     trackNodePtr;
-	int             nLeftNodeNum;
-	STrackSection*  sectionPtr;
+	int             nCurrentSectionNum;
+	SSectionData*  sectionPtr;
 	int             nDirection;
-	float           fNodeLeftLength;
-	float           fSectionLeftLength;
+	float           fLocationInNode;
+	float           fLocationInSection;
 };
 enum ItemType
 {
@@ -142,20 +140,27 @@ enum ItemType
 	CrossOverItem = 11,
 };
 struct SSpeedPostItem{
-	int nType;//8
-	int nSubType;//2     
-	int unknown3;//0
-	float fLocationInTrackNode;//TrItemSDataFirst
+	ItemType nType;//8
+	int nSubType; //2     
+	int unknown3; //0
+	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	int TrItemSDataSecond;
 	float TrItemPDataFirst;
 	float TrItemPDataSecond;
 	int TrItemPDataThird;
 	int TrItemPDataFourth;
 	int variableData;
-	unsigned short SpeedpostTrItemDataFirst;
-	unsigned short SpeedpostTrItemDataSecond;//This is the Limit Number
+	unsigned short sSpeedPostType; // 这个是该标志限速的类型
+	// 这个类型很复杂，重点介绍一下吧。
+	// 1. & 就是按位与 ( sSpeedPostType & 7) 的结果是2的时候，这个Item才是标志限速
+	// 如果是其他数值就表示是里程表之类的。
+	// 2. sSpeedPostType  & 0x80 为1表示这个限速对客车货车都有效
+	// 3. sSpeedPostType  & 0x20 为1表示这个限速对客车有效 (*0x809890)&6 为2表示当前车辆是客车
+	// 4. sSpeedPostType  & 0x40 为1表示这个限速对货车有效 (*0x809890)&6 为4表示当前车辆是货车
+	// 5. sSpeedPostType  & 0x100 为1表示限速的单位为英里/小时，为0表示限速的单位为公里/小时
+	unsigned short SpeedpostTrItemDataSecond;// 这个是该标志限速的数值
 	float SpeedpostTrItemDataThird;
-	float fAngle;
+	float fAngle; // 这个是该标志限速相对于原始坐标系在XZ平面上面旋转的角度
 	DWORD fData;//0
 };
 
@@ -164,15 +169,15 @@ struct SPlatformItem
 	int type;//3
 	int subType;
 	int unknown;
-	float fLocationInTrackNode;//TrItemSDataFirst
-	int   nTrItemSDataSecond;
-	float fTrItemRDataFirst;
+	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
+	int   nTrItemSDataSecond;   // TrItemSData的第二个数据
+	float fTrItemRDataFirst;    // 同上面的，顾名思义吧
 	float fTrItemRDataThird;
 	int   nTrItemRDataFourth;
 	int   nTrItemRDataFifth;
 	DWORD data;
-	wchar_t* platformName;
-	wchar_t* stationName;
+	wchar_t* platformName;      // 指向站台名称
+	wchar_t* stationName;       // 指向车站名称
 };
 
 struct SSidingItem
@@ -180,9 +185,9 @@ struct SSidingItem
 	int type; // 6
 	int subType;
 	int unknown;
-	float fLocationInTrackNode;//TrItemSDataFirst
+	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;
-	wchar_t* sidingName;
+	wchar_t* sidingName;   // 指向边线的名称
 	int   nSidingTrItemDataFirst;
 	int   nSidingTrItemDataSecond;
 };
@@ -232,6 +237,12 @@ struct STempSpeed
 	float fStart;
 	float fEnd;
 };
+struct SNode
+{
+	SNode* next;
+	SNode* prev;
+	void* pointer;
+};
 void AddTempSpeedLimit(float currentDistance, STrackNode* node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
 void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode*);
 void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
@@ -274,7 +285,7 @@ inline CString showTrackInfo(const STrackInfo& trackInfo)
 {
 	CString msg;
 	msg.Format(L"nLeftNodeNum : %d, Direct %d, LeftLen : %f, SectLen : %f",
-		trackInfo.nLeftNodeNum, trackInfo.nDirection, trackInfo.fNodeLeftLength, trackInfo.fSectionLeftLength);
+		trackInfo.nCurrentSectionNum, trackInfo.nDirection, trackInfo.fLocationInNode, trackInfo.fLocationInSection);
 	return msg;
 }
 
