@@ -624,8 +624,8 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	strColor += changeColorToString(m_cColor2);
 	CHECK(ReadProcessMemory(hProcess, (void *)ACCER_MEM, (LPVOID)&m_fAcceleration, 4, NULL))
 	//CHECK(ReadProcessMemory(hProcess, (void *)FORWARD_TURNOFF_MEM, (LPVOID)&fForwardTurnOff, 4, NULL))
-	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C))
-	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248))
+	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 4, 0, 0x8, 0x10, 0x24C))
+	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 4, 0, 0x8, 0x10, 0x248))
 	CString str;
 	str.Format(L"%.1f", m_fCurrentSpeed * 3.6F);
 	m_listCtrl.SetItemText(CURRENT_SPEED_ITEM, 1, str);
@@ -1029,8 +1029,8 @@ void CMSTSHelpDlg::AutoDrive(HANDLE hProcess)
 void CMSTSHelpDlg::ApplyBreak()
 {
 	int nLevelBit;
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248));
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 4, 0, 0x8, 0x10, 0x248));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 4, 0, 0x8, 0x10, 0x24C));
 	changeBitsLevelToString(nLevelBit);
 
 	if (m_nBreakLevel == -1)
@@ -1042,8 +1042,8 @@ void CMSTSHelpDlg::ApplyBreak()
 void CMSTSHelpDlg::ReleaseBreak()
 {
 	int nLevelBit;
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 5, 0, 0, 0x8, 0x10, 0x248));
-	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 5, 0, 0, 0x8, 0x10, 0x24C));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 4, 0, 0x8, 0x10, 0x248));
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 4, 0, 0x8, 0x10, 0x24C));
 	changeBitsLevelToString(nLevelBit);
 
 	if (m_nBreakLevel == -1)
