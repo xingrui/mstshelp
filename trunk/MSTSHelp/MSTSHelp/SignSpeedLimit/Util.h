@@ -3,16 +3,35 @@
 #include <vector>
 using std::vector;
 #define IDENTITY_MATRIX_MEM 0x771680
+// 单位矩阵[1,0,0,0,1,0,0,0,1]其实没有必要从这里读，直接在程序中初始化就可以
+
 #define DISTANCE_TYPE_MEM 0x78C390
+// 距离单位的类型 1为公里 0为英里
+
 #define CURRENT_TILE_X_MEM 0x79D118
-#define CURRENT_TILE_Y_MEM 0x79D11C
+#define CURRENT_TILE_Z_MEM 0x79D11C
+// 这两个数据程序中没有用到，应该是当前的X值和Z值，线路设计中经常看到
+
 #define IDENTITY2_MATRIX_MEM 0x7A8A20
+// 又是一个矩阵[1,0,0,0,1,0,0,0,1,0,0,0]
+
 #define THIS_POINTER_MEM 0x7C2AC0
+// 很重要的指针，此处为空表示没有任务运行，不为空表示任务正在运行
+
 #define TASK_LIMIT_HEAD_MEM 0x809B38
+// 任务中的临时限速的链表表头，就是F4左边用红色线显示的那个
+
 #define TASK_LIMIT_MEM 0x809B48
+// 任务的临时限速值，线路限速值等信息的存放地方
+
 #define TRAIN_INFO_MEM 0x809890
+// 火车车头的一些信息值的存放地方
+
 #define HEAD_TRACK_MEM 0x8098DC
+// 车头所在的TrackNode的地址
+
 #define TAIL_TRACK_MEM 0x809944
+// 车尾所在的TrackNode的地址
 struct STrackNode;
 
 struct SSectionData

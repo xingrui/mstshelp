@@ -68,7 +68,7 @@ void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& 
 	ReadTrainProcess(handle, (LPCVOID)sectionPtr, (LPVOID)&sectionData, sizeof(SSectionData));
 	int nCurrentTileX, nCurrentTileY;
 	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_X_MEM, (LPVOID)&nCurrentTileX, 4);
-	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_Y_MEM, (LPVOID)&nCurrentTileY, 4);
+	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_Z_MEM, (LPVOID)&nCurrentTileY, 4);
 	processData.fXYZ72[0] = (sectionData.TileX2 - nCurrentTileX) * 2048.0f + sectionData.X;
 	processData.fXYZ72[2] = (sectionData.TileZ2 - nCurrentTileY) * 2048.0f + sectionData.Z;
 	processData.fXYZ72[1] = sectionData.Y;
@@ -277,12 +277,12 @@ int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node
 	SSectionData sectionData;
 	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SSectionData));
 	SSectionTypeData* typePtr = basePtr + sectionData.sectionIndex;
-	int nCurrentTileX, nCurrentTileY;
+	int nCurrentTileX, nCurrentTileZ;
 	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_X_MEM, (LPVOID)&nCurrentTileX, 4);
-	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_Y_MEM, (LPVOID)&nCurrentTileY, 4);
+	ReadTrainProcess(handle, (LPCVOID)CURRENT_TILE_Z_MEM, (LPVOID)&nCurrentTileZ, 4);
 	processData.fXYZ72[0] = (sectionData.TileX2 - nCurrentTileX) * 2048.0f + sectionData.X;
 	processData.fXYZ72[1] = sectionData.Y;
-	processData.fXYZ72[2] = (sectionData.TileZ2 - nCurrentTileY) * 2048.0f + sectionData.Z;
+	processData.fXYZ72[2] = (sectionData.TileZ2 - nCurrentTileZ) * 2048.0f + sectionData.Z;
 	processData.fAngle24[0] = sectionData.AX;
 	processData.fAngle24[1] = sectionData.AY;
 	processData.fAngle24[2] = sectionData.AZ;
