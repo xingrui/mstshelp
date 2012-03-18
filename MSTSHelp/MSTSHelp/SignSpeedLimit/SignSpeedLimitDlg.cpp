@@ -326,6 +326,11 @@ void CSignSpeedLimitDlg::OnGetData()
 		msg.Format(L"%.1f Ìú¹ì¾¡Í·", forwardLength);
 		m_textContent += msg;
 	}
+	wchar_t name[0x100];
+	size_t mem;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), name, 200);
+	MessageBox(CString(name));
 }
 
 void CSignSpeedLimitDlg::OnBnClickedOk()
@@ -399,6 +404,11 @@ CString TempSpeedFunc(HANDLE handle, void* ptr)
 	ReadTrainProcess(handle, cPtr + 32, &speed, sizeof(STempSpeed));
 	str.Format(L"%x %x %.1f %.1f", ptr, speed.nodePtr, speed.fStart, speed.fEnd);
 	return str;
+}
+
+void CSignSpeedLimitDlg::GetTrainData(void* startLocation)
+{
+
 }
 
 //Remain This Method For Test
