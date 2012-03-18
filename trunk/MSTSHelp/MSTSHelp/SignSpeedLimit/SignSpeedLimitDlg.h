@@ -63,4 +63,5 @@ public:
 public:
 	afx_msg void OnBnClickedCheck5();
 	void OnGetData();
+	void GetTrainData(void* startLocation);
 };
