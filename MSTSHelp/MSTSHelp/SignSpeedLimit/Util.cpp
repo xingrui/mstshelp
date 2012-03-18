@@ -317,19 +317,17 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 CString IteratorList(HANDLE handle, void* headPtr, CString (*func)(HANDLE, void*))
 {
 	//head 0x809B38 temp speed limit
-	void* ite, *head;
+	SNode *head;
+	SNode iteNode;
 	CString strResult = L"Iterator Result:\r\n";
 	ReadTrainProcess(handle, headPtr, &head, 4);
-	ReadTrainProcess(handle, head, &ite, 4);
-	while(ite != head)
+	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
+	while(iteNode.next != head)
 	{
-		void* data;
-		ReadTrainProcess(handle, (DWORD*)ite + 2, &data, 4);
-		strResult += func(handle, data);
+		SNode* next = iteNode.next;
+		ReadTrainProcess(handle, next, &iteNode, 4);
+		strResult += func(handle, iteNode.pointer);
 		strResult += "\r\n";
-		void* next;
-		ReadTrainProcess(handle, ite, &next, 4);
-		ite = next;
 	}
 	return strResult;
 }
