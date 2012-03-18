@@ -196,6 +196,18 @@ HCURSOR CSignSpeedLimitDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+CString DefaultHandle(HANDLE handle, void*pointer)
+{
+	size_t mem;
+	wchar_t name[0x20];
+	ReadTrainProcess(handle, (char*)pointer + 0x11C, &mem, 4);
+	ReadTrainProcess(handle, (LPCVOID)(mem + 8), name, 0x40);
+	ReadTrainProcess(handle, (char*)pointer + 76, &mem, 4);
+	CString result;
+	result.Format(L"0x%X ", mem);
+	return result + name;
+}
+
 void CSignSpeedLimitDlg::OnGetData()
 {
 	vector<SSpeedPostLimit> limitVect;
@@ -331,6 +343,8 @@ void CSignSpeedLimitDlg::OnGetData()
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), name, 200);
 	MessageBox(CString(name));
+	CString strResult = IteratorList(m_hTrainProcess, (LPVOID)0x809AF8, DefaultHandle);
+	m_textContent = strResult;
 }
 
 void CSignSpeedLimitDlg::OnBnClickedOk()
