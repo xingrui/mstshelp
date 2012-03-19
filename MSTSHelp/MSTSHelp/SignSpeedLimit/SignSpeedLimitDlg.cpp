@@ -203,9 +203,19 @@ CString DefaultHandle(HANDLE handle, void*pointer)
 	ReadTrainProcess(handle, (char*)pointer + 0x11C, &mem, 4);
 	ReadTrainProcess(handle, (LPCVOID)(mem + 8), name, 0x40);
 	ReadTrainProcess(handle, (char*)pointer + 76, &mem, 4);
+	size_t mem2;
+	wchar_t trainTrips[0x20];
+	ReadTrainProcess(handle, (char*)pointer + 8, &mem2, 0x40);
+	ReadTrainProcess(handle, (LPCVOID)mem2, trainTrips, 0x40);
 	CString result;
-	result.Format(L"0x%X ", mem);
-	return result + name;
+	result.Format(L"0x%X %s %s\r\n", mem, name, trainTrips);
+	if(mem == NULL)
+	{
+		return CString();
+	}else
+	{
+		return result;
+	}
 }
 
 void CSignSpeedLimitDlg::OnGetData()
@@ -342,9 +352,10 @@ void CSignSpeedLimitDlg::OnGetData()
 	size_t mem;
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), name, 200);
-	MessageBox(CString(name));
+	m_textContent = name;
+	m_textContent += L"\r\n";
 	CString strResult = IteratorList(m_hTrainProcess, (LPVOID)0x809AF8, DefaultHandle);
-	m_textContent = strResult;
+	m_textContent += strResult;
 }
 
 void CSignSpeedLimitDlg::OnBnClickedOk()

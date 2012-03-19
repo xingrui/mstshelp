@@ -327,7 +327,6 @@ CString IteratorList(HANDLE handle, void* headPtr, CString (*func)(HANDLE, void*
 		SNode* next = iteNode.next;
 		ReadTrainProcess(handle, next, &iteNode, sizeof(SNode));
 		strResult += func(handle, iteNode.pointer);
-		strResult += "\r\n";
 	}
 	return strResult;
 }
