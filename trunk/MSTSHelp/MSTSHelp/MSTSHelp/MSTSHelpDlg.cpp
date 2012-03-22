@@ -1022,12 +1022,43 @@ void CMSTSHelpDlg::AutoDrive(HANDLE hProcess)
 	}
 
 	//根据列车运行的状况，调整功率和制动
-	if (m_fForwardSignalLimit >= 0)
+	if (m_fForwardSignalLimit == 0)
+	{
+		if (m_fForwardSignalDistance < 50)
+		{
+			// 前方限速为0，而且距离小于50，直接停车
+			if (m_fCurrentSpeed > 1E-3)
+			{
+				m_bInStopThread = true;
+				_beginthread(StopAndPressEnter, NULL, this);
+			}
+			else
+			{
+				// 按TAB键申请通过
+				if (m_sGameTime.m_nSecond % 6 == 0)
+					PressKeyToTrainWnd(VK_TAB);
+			}
+
+			return;
+		}
+		else
+		{
+			SForwardLimit limit;
+			limit.m_fDistance = m_fForwardSignalDistance -= 40;
+			limit.m_fSpeedLimit = 0;
+			m_listLimit.push_back(limit);
+		}
+	}
+	else if (m_fForwardSignalLimit > 0)
 	{
 		SForwardLimit limit;
 		limit.m_fDistance = m_fForwardSignalDistance;
 		limit.m_fSpeedLimit = m_fForwardSignalLimit;
 		m_listLimit.push_back(limit);
+	}
+	else
+	{
+		//前方限速为-1，表示没有前方信号限速
 	}
 
 	AdjustPowerAndBreak();
