@@ -348,14 +348,14 @@ void CSignSpeedLimitDlg::OnGetData()
 		msg.Format(L"%.1f Ìú¹ì¾¡Í·", forwardLength);
 		m_textContent += msg;
 	}
-	wchar_t name[0x100];
+	/*wchar_t name[0x100];
 	size_t mem;
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), name, 200);
 	m_textContent = name;
 	m_textContent += L"\r\n";
 	CString strResult = IteratorList(m_hTrainProcess, (LPVOID)0x809AF8, DefaultHandle);
-	m_textContent += strResult;
+	m_textContent += strResult;*/
 }
 
 void CSignSpeedLimitDlg::OnBnClickedOk()
