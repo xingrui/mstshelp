@@ -63,13 +63,13 @@ struct SSchedule
 	float m_fUnknownData;
 	DWORD m_nSkipCount;
 	DWORD data6;
-	float m_fEddiciency;
+	float m_fEfficiency;
 	SSchedule(): m_fDepartTime(-1) {}
 	CString toString()const
 	{
 		CString str;
 		str.Format(L"%d\t%1.1f\t%1.1f\t%1.1f\t%1.1f\t%1.0f\t%1.1f\t%x\t%d\t%0.4f", m_nPlatformStartID, m_fArrivalTime, m_fActualArrivalTime, m_fDepartTime, m_fActualDepartTime, m_fDistanceDownPath,
-		           m_fUnknownData, m_nSkipCount, data6, m_fEddiciency);
+		           m_fUnknownData, m_nSkipCount, data6, m_fEfficiency);
 		return str;
 	}
 	std::string toSTLString()const
@@ -81,7 +81,7 @@ struct SSchedule
 
 		char cArray[200];
 		sprintf_s(cArray, 200, "%d\t%1.1f\t%1.1f\t%1.1f\t%1.1f\t%1.0f\t%1.1f\t%x\t%d\t%0.4f", m_nPlatformStartID, m_fArrivalTime, m_fActualArrivalTime, m_fDepartTime, m_fActualDepartTime, m_fDistanceDownPath,
-		          m_fUnknownData, m_nSkipCount, data6, m_fEddiciency);
+		          m_fUnknownData, m_nSkipCount, data6, m_fEfficiency);
 		return std::string(cArray);
 	}
 };
@@ -98,7 +98,12 @@ struct SHead
 	SList *head;
 	SSchedule *currentSchedule;
 };
-
+inline BOOL ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
+{
+	if(!ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, NULL))
+		throw 1;
+	return TRUE;
+}
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 bool WritePointerMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, int num, ...);
 bool GetTrainHandle(HANDLE &hProcess);
