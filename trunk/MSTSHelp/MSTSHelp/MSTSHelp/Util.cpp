@@ -22,7 +22,7 @@ void *GetTrainPointer(HANDLE hProcess)
 {
 	void *pointer;
 
-	if (!ReadProcessMemory(hProcess, (void *)THIS_POINTER_MEM, &pointer, 4, NULL))
+	if (!ReadTrainProcess(hProcess, (void *)THIS_POINTER_MEM, &pointer, 4))
 	{
 		CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 		return NULL;
@@ -35,7 +35,7 @@ bool IsPowered(HANDLE hProcess)
 {
 	float fPowered;
 
-	if (!ReadProcessMemory(hProcess, (void *)IS_POWERED_MEM, (LPVOID)&fPowered, 4, NULL))
+	if (!ReadTrainProcess(hProcess, (void *)IS_POWERED_MEM, (LPVOID)&fPowered, 4))
 	{
 		CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 		return false;
@@ -93,7 +93,7 @@ bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, 
 	{
 		int y = va_arg(x, int);
 
-		if (!ReadProcessMemory(hProcess, addressPointer, (LPVOID)&dataPointer, 4, NULL))
+		if (!ReadTrainProcess(hProcess, addressPointer, (LPVOID)&dataPointer, 4))
 		{
 			CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 			return false;
@@ -104,7 +104,7 @@ bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, 
 
 	va_end(x);
 
-	if (!ReadProcessMemory(hProcess, addressPointer, lpBuffer, nSize, NULL))
+	if (!ReadTrainProcess(hProcess, addressPointer, lpBuffer, nSize))
 	{
 		CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 		return false;
@@ -124,7 +124,7 @@ bool WritePointerMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer,
 	{
 		int y = va_arg(x, int);
 
-		if (!ReadProcessMemory(hProcess, addressPointer, (LPVOID)&dataPointer, 4, NULL))
+		if (!ReadTrainProcess(hProcess, addressPointer, (LPVOID)&dataPointer, 4))
 		{
 			CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 			return false;
@@ -180,7 +180,7 @@ Direction GetDirection(Locomotive loco, HANDLE hProcess)
 		break;
 	}
 
-	if (!ReadProcessMemory(hProcess, (void *)directionMem, (LPVOID)&fDirection, 4, NULL))
+	if (!ReadTrainProcess(hProcess, (void *)directionMem, (LPVOID)&fDirection, 4))
 	{
 		CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 		return InValid;

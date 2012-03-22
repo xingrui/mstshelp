@@ -177,6 +177,7 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 		return;
 	}
 
+	clearControlList();
 	//获取列车运行的数据
 	GetTrainData(m_hTrainProcess);
 
@@ -207,6 +208,10 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 		{
 			m_bIsProcessing = true;
 			m_listLimit.clear();
+			float fTrainBreak;
+			ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&fTrainBreak, 4, 4, 0, 0x8, 0x10, 0x442);
+			if(fTrainBreak != 0)
+				PressKeyToTrainWnd(VK_OEM_4);
 
 			if (m_fCurrentSpeedLimit == 0 || m_cColor1 == 8 && m_cColor2 == 8)
 			{
@@ -243,12 +248,20 @@ void CMSTSHelpDlg::OnTimer(UINT_PTR nIDEvent)
 	switch (nIDEvent)
 	{
 	case AUTO_GET_DATA_TIMER:
-		OnBnClickedButton1();
+		try
+		{
+			OnBnClickedButton1();
+		}
+		catch (int)
+		{
+			clearControlList();
+			m_listCtrl.SetItemText(INFORMATION_ITEM, 1, L"获取数据失败");
+		}
 		break;
 	case AUTO_ESC_MSG_TIMER:
 	{
 		int nFlag;
-		CHECK(ReadProcessMemory(m_hTrainProcess, (void *)PAUSE_BY_MSG_MEM, (LPVOID)&nFlag, 4, NULL))
+		CHECK(ReadTrainProcess(m_hTrainProcess, (void *)PAUSE_BY_MSG_MEM, (LPVOID)&nFlag, 4))
 
 		if (!nFlag)
 		{
@@ -286,7 +299,7 @@ void CMSTSHelpDlg::OnTimer(UINT_PTR nIDEvent)
 }
 void CMSTSHelpDlg::clearControlList()
 {
-	int count = m_listCtrl.GetHeaderCtrl()->GetItemCount();
+	int count = m_listCtrl.GetItemCount();
 
 	for (int i = 0; i < count; ++i)
 	{
@@ -468,12 +481,6 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 
 	if (m_fAcceleration < (fCalculatedSpeedLimit - m_fCurrentSpeed) / 50)
 	{
-		if(m_fCurrentSpeed < 0.1)
-		{
-			for (int i = 0; i < 20; ++i)
-				PressKeyToTrainWnd(VK_OEM_4);
-		}
-
 		// 列车加速度过小，需要加速
 		for (int i = 0; i < 20; ++i)
 			ReleaseBreak();
@@ -609,21 +616,21 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	//float fForwardTurnOff;
 	int nLevelBit;
 	CString strColor;
-	CHECK(ReadProcessMemory(hProcess, (void *)CUR_SPEED_MEM, (LPVOID)&m_fCurrentSpeed, 4, NULL))
-	CHECK(ReadProcessMemory(hProcess, (void *)SPEED_LIMIT_MEM, (LPVOID)&m_fCurrentSpeedLimit, 4, NULL))
-	CHECK(ReadProcessMemory(hProcess, (void *)FOWARD_LIMIT_MEM, (LPVOID)&m_fForwardSignalLimit, 4, NULL))
-	CHECK(ReadProcessMemory(hProcess, (void *)SIG_DISTANT_MEM, (LPVOID)&m_fForwardSignalDistance, 4, NULL))
-	CHECK(ReadProcessMemory(hProcess, (void *)S_GAME_TIME_MEM, (LPVOID)&m_sGameTime, 12, NULL))
-	CHECK(ReadProcessMemory(hProcess, (void *)F_GAME_TIME_MEM, (LPVOID)&m_fGameTime, 4, NULL));
+	CHECK(ReadTrainProcess(hProcess, (void *)CUR_SPEED_MEM, (LPVOID)&m_fCurrentSpeed, 4))
+	CHECK(ReadTrainProcess(hProcess, (void *)SPEED_LIMIT_MEM, (LPVOID)&m_fCurrentSpeedLimit, 4))
+	CHECK(ReadTrainProcess(hProcess, (void *)FOWARD_LIMIT_MEM, (LPVOID)&m_fForwardSignalLimit, 4))
+	CHECK(ReadTrainProcess(hProcess, (void *)SIG_DISTANT_MEM, (LPVOID)&m_fForwardSignalDistance, 4))
+	CHECK(ReadTrainProcess(hProcess, (void *)S_GAME_TIME_MEM, (LPVOID)&m_sGameTime, 12))
+	CHECK(ReadTrainProcess(hProcess, (void *)F_GAME_TIME_MEM, (LPVOID)&m_fGameTime, 4));
 	CString strTime;
 	strTime.Format(L"%02d:%02d:%02d", m_sGameTime.m_nHour, m_sGameTime.m_nMinute, m_sGameTime.m_nSecond);
-	CHECK(ReadProcessMemory(hProcess, (void *)LIGHT_COLOR_MEM, (LPVOID)&m_cColor1, 1, NULL))
+	CHECK(ReadTrainProcess(hProcess, (void *)LIGHT_COLOR_MEM, (LPVOID)&m_cColor1, 1))
 	strColor = changeColorToString(m_cColor1);
 	strColor += " : ";
-	CHECK(ReadProcessMemory(hProcess, (void *)LIGHT_COLOR_MEM_2, (LPVOID)&m_cColor2, 1, NULL))
+	CHECK(ReadTrainProcess(hProcess, (void *)LIGHT_COLOR_MEM_2, (LPVOID)&m_cColor2, 1))
 	strColor += changeColorToString(m_cColor2);
-	CHECK(ReadProcessMemory(hProcess, (void *)ACCER_MEM, (LPVOID)&m_fAcceleration, 4, NULL))
-	//CHECK(ReadProcessMemory(hProcess, (void *)FORWARD_TURNOFF_MEM, (LPVOID)&fForwardTurnOff, 4, NULL))
+	CHECK(ReadTrainProcess(hProcess, (void *)ACCER_MEM, (LPVOID)&m_fAcceleration, 4))
+	//CHECK(ReadTrainProcess(hProcess, (void *)FORWARD_TURNOFF_MEM, (LPVOID)&fForwardTurnOff, 4, NULL))
 	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 4, 0, 0x8, 0x10, 0x24C))
 	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 4, 0, 0x8, 0x10, 0x248))
 	CString str;
@@ -678,8 +685,8 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	{
 		//仅仅获取数据，不改变成员变量的信息。
 		float fCurrentTime, fDistance;
-		CHECK(ReadProcessMemory(hProcess, (void *)F_GAME_TIME_MEM, (LPVOID)&fCurrentTime, 4, NULL))
-		CHECK(ReadProcessMemory(hProcess, (void *)FOWARD_STATION_DIS_MEM, (LPVOID)&fDistance, 4, NULL))
+		CHECK(ReadTrainProcess(hProcess, (void *)F_GAME_TIME_MEM, (LPVOID)&fCurrentTime, 4))
+		CHECK(ReadTrainProcess(hProcess, (void *)FOWARD_STATION_DIS_MEM, (LPVOID)&fDistance, 4))
 		ShowScheduleInfo(schedule, fCurrentTime, fDistance);
 	}
 }
@@ -836,7 +843,7 @@ void CMSTSHelpDlg::UpdateScheduleInfo(float &fNextStationDistance)
 		else
 		{
 			//当前时刻表出发时间未过，使用旧时刻表，并更新旧时刻表当中的内容
-			CHECK(ReadProcessMemory(m_hTrainProcess, (void *)m_pCurrentSchedule, (LPVOID)&m_currentSchedule, sizeof(schedule), NULL))
+			CHECK(ReadTrainProcess(m_hTrainProcess, (void *)m_pCurrentSchedule, (LPVOID)&m_currentSchedule, sizeof(schedule)))
 			fNextStationDistance = 0;
 		}
 	}
@@ -853,12 +860,12 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 	if(m_isConnectMode)
 	{
 		int mode;
-		CHECK(ReadProcessMemory(hProcess, (void*)VIEW_MODE_MEM, (LPVOID)&mode, 4, NULL))
+		CHECK(ReadTrainProcess(hProcess, (void*)VIEW_MODE_MEM, (LPVOID)&mode, 4))
 		PressKeyToTrainWnd('6');
 		if(mode == 8)
 		{
 			float distance;
-			CHECK(ReadProcessMemory(hProcess, (void*)CONNECT_DIS_MEM, (LPVOID)&distance, 4, NULL))
+			CHECK(ReadTrainProcess(hProcess, (void*)CONNECT_DIS_MEM, (LPVOID)&distance, 4))
 			if(distance < 0)
 			{
 				SForwardLimit limit;
@@ -897,7 +904,7 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 	///////////////////////////////////////////////////////////////////////////////
 	//如果是任务模式，需要得知前方到站的信息
 	float fNextStationDistance;
-	CHECK(ReadProcessMemory(hProcess, (void *)FOWARD_STATION_DIS_MEM, (LPVOID)&fNextStationDistance, 4, NULL))
+	CHECK(ReadTrainProcess(hProcess, (void *)FOWARD_STATION_DIS_MEM, (LPVOID)&fNextStationDistance, 4))
 	UpdateScheduleInfo(fNextStationDistance);
 	ShowScheduleInfo(m_currentSchedule, m_fGameTime, fNextStationDistance);
 	//在这里根据时刻表直接进行一次筛选
@@ -1074,14 +1081,14 @@ void CMSTSHelpDlg::ReleaseElectricBreak()
 bool CMSTSHelpDlg::GetCurrentSchedule(HANDLE hProcess, SSchedule **pSchedule, SSchedule &schedule)
 {
 	SHead head;
-	CHECK(ReadProcessMemory(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead), NULL))
+	CHECK(ReadTrainProcess(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead)))
 
 	if (head.currentSchedule != NULL)
 	{
 		if (pSchedule)
 			*pSchedule = head.currentSchedule;
 
-		CHECK(ReadProcessMemory(hProcess, (void *)head.currentSchedule, (LPVOID)&schedule, sizeof(schedule), NULL))
+		CHECK(ReadTrainProcess(hProcess, (void *)head.currentSchedule, (LPVOID)&schedule, sizeof(schedule)))
 		return true;
 	}
 
@@ -1093,8 +1100,8 @@ BOOL CMSTSHelpDlg::IsTaskMode(HANDLE hProcess)
 	//是否有前方到站信息
 	SHead head;
 	SList node;
-	CHECK(ReadProcessMemory(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead), NULL))
-	CHECK(ReadProcessMemory(hProcess, (void *)head.head, (LPVOID)&node, sizeof(SList), NULL))
+	CHECK(ReadTrainProcess(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead)))
+	CHECK(ReadTrainProcess(hProcess, (void *)head.head, (LPVOID)&node, sizeof(SList)))
 	return node.m_next != head.head;
 }
 
@@ -1102,7 +1109,7 @@ void CMSTSHelpDlg::GetAllSchedule(HANDLE hProcess)
 {
 	SHead head;
 
-	if (!ReadProcessMemory(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead), NULL))
+	if (!ReadTrainProcess(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead)))
 	{
 		CLogger::Log("Read Memory Failed in %s", __FUNCTION__);
 		return;
@@ -1120,7 +1127,7 @@ void CMSTSHelpDlg::GetAllSchedule(HANDLE hProcess)
 	if (head.currentSchedule != NULL)
 	{
 		SList node;
-		CHECK(ReadProcessMemory(hProcess, (void *)pNode, (LPVOID)&node, sizeof(SList), NULL))
+		CHECK(ReadTrainProcess(hProcess, (void *)pNode, (LPVOID)&node, sizeof(SList)))
 		CString str;
 		str.Format(L"%X %X %X\n", node.m_next, node.m_pre, node.m_data);
 		output += str;
@@ -1129,11 +1136,11 @@ void CMSTSHelpDlg::GetAllSchedule(HANDLE hProcess)
 		while (node.m_next != head.head)
 		{
 			pNode = node.m_next;
-			CHECK(ReadProcessMemory(hProcess, pNode, (LPVOID)&node, sizeof(SList), NULL))
+			CHECK(ReadTrainProcess(hProcess, pNode, (LPVOID)&node, sizeof(SList)))
 			str.Format(L"%X %X %X\n", node.m_next, node.m_pre, node.m_data);
 			output += str;
 			SSchedule schedule;
-			CHECK(ReadProcessMemory(hProcess, node.m_data, (LPVOID)&schedule, sizeof(SSchedule), NULL))
+			CHECK(ReadTrainProcess(hProcess, node.m_data, (LPVOID)&schedule, sizeof(SSchedule)))
 			m_vectSchedule.push_back(schedule);
 		}
 
