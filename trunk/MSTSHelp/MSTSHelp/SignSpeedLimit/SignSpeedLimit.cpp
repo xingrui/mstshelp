@@ -44,11 +44,8 @@ BOOL CSignSpeedLimitApp::InitInstance()
 	// 公共控件类。
 	InitCtrls.dwICC = ICC_WIN95_CLASSES;
 	InitCommonControlsEx(&InitCtrls);
-
 	CWinApp::InitInstance();
-
 	AfxEnableControlContainer();
-
 	// 标准初始化
 	// 如果未使用这些功能并希望减小
 	// 最终可执行文件的大小，则应移除下列
@@ -57,10 +54,10 @@ BOOL CSignSpeedLimitApp::InitInstance()
 	// TODO: 应适当修改该字符串，
 	// 例如修改为公司或组织名
 	SetRegistryKey(_T("应用程序向导生成的本地应用程序"));
-
 	CSignSpeedLimitDlg dlg;
 	m_pMainWnd = &dlg;
 	INT_PTR nResponse = dlg.DoModal();
+
 	if (nResponse == IDOK)
 	{
 		// TODO: 在此处放置处理何时用“确定”来关闭

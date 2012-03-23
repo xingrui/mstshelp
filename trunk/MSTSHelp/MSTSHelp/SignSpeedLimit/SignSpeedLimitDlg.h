@@ -7,18 +7,18 @@
 // CSignSpeedLimitDlg 对话框
 class CSignSpeedLimitDlg : public CDialog
 {
-// 构造
+	// 构造
 public:
-	CSignSpeedLimitDlg(CWnd* pParent = NULL);	// 标准构造函数
+	CSignSpeedLimitDlg(CWnd *pParent = NULL);	// 标准构造函数
 
-// 对话框数据
+	// 对话框数据
 	enum { IDD = IDD_SIGNSPEEDLIMIT_DIALOG };
 
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
+protected:
+	virtual void DoDataExchange(CDataExchange *pDX);	// DDX/DDV 支持
 
 
-// 实现
+	// 实现
 protected:
 	HICON m_hIcon;
 	HANDLE m_hTrainProcess;
@@ -63,5 +63,5 @@ public:
 public:
 	afx_msg void OnBnClickedCheck5();
 	void OnGetData();
-	void GetTrainData(void* startLocation);
+	void GetTrainData(void *startLocation);
 };
