@@ -393,6 +393,8 @@ void CSignSpeedLimitDlg::OnGetData()
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), name, 200);
 	m_textContent = name;
 	m_textContent += L"\r\n";*/
+	m_textContent += L"\r\n";
+	m_textContent += showAllCarriage(m_hTrainProcess);
 	m_textContent += showAllAITrain(m_hTrainProcess);
 }
 
