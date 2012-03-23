@@ -62,7 +62,7 @@ struct SSectionTypeData
 
 struct SSubConnectStruct
 {
-	STrackNode* nodePtr;
+	STrackNode *nodePtr;
 	int nDirect;
 };
 struct SConnectStruct
@@ -77,11 +77,11 @@ struct SConnectNode
 	DWORD data8; // 不知道是什么意思
 	size_t   nTrPinsFirst12; // TrPins的第一数据 总是1
 	size_t   nTrPinsSecond16; // TrPins的第二个数据 JunctionNode是2 EndNode是0
-	SConnectStruct* nodePointer20; // 卧槽，又是指针，等着吧，下面继续又是结构体
+	SConnectStruct *nodePointer20; // 卧槽，又是指针，等着吧，下面继续又是结构体
 	int   nWorldTileX;
 	int   nWorldTileY;
 	int   nWorldFileUid;
-	STDBFile* tdbFilePtr;
+	STDBFile *tdbFilePtr;
 	DWORD data11;
 	float X;
 	float Y;
@@ -95,7 +95,7 @@ struct SConnectNode
 	unsigned short direction;
 	unsigned short direction80;//这个数据非常重要，这个是真正决定道岔走向的数据，只在是JunctionNode的时候有效
 	// 还记得我们的JunctionNode里面的TrPins数据吧，不记得到前面的TDB文件介绍看看
-	// JunctionNode里面会有三个 这个东西 TrPin ( ConnectNodeIndex Direction ) 
+	// JunctionNode里面会有三个 这个东西 TrPin ( ConnectNodeIndex Direction )
 	// 这个东西就是存储在nodePointer20指针(本结构体的第六个数据)指向的内容里面的。
 	// 第一个TrPin是道岔的一个出口方向，第二个TrPin和第三个TrPin是可以选择的。
 	// 也就是说这个JunctionNode可以是由第一个连接到第二个，也可以是由第一个连接到第三个
@@ -106,43 +106,43 @@ struct STrItem;
 struct SAllTrItem
 {
 	STrItem *allItem;
-	void*   ptr;
+	void   *ptr;
 	int     nItemNum;
 	DWORD   data;
 };
 struct STDBFile
 {
-	STrackNode* trackNodes;
+	STrackNode *trackNodes;
 	int TrackNodeNumber;
 	int TrackNodeNumber2;
 	int NodeNumMinus1;
 	int nBufferSize;
 	int NodeNumMinus2;
-	void* pPtr;
-	SAllTrItem* allTrItemPtr;
+	void *pPtr;
+	SAllTrItem *allTrItemPtr;
 	wchar_t TDBFileName[0x400];
 };
 struct STrackNode
 {
 	DWORD data0;
 	int data4;
-	SConnectNode* InConnectNodePtr;
+	SConnectNode *InConnectNodePtr;
 	DWORD data12;
-	SConnectNode* OutConnectNodePtr;
+	SConnectNode *OutConnectNodePtr;
 	DWORD data20;
-	SSectionData* sectionArrayPtr;
+	SSectionData *sectionArrayPtr;
 	int   nSectionNum;
-	STrItem**  trItemArrayPtr;
+	STrItem  **trItemArrayPtr;
 	int   nTrItemNum;
 	float fTrackNodeLength;
-	void* pPtr44;
-	STDBFile* tdbFilePtr;
+	void *pPtr44;
+	STDBFile *tdbFilePtr;
 };
 struct STrackInfo
 {
-	STrackNode*     trackNodePtr;
+	STrackNode     *trackNodePtr;
 	int             nCurrentSectionNum;
-	SSectionData*  sectionPtr;
+	SSectionData  *sectionPtr;
 	int             nDirection;
 	float           fLocationInNode;
 	float           fLocationInSection;
@@ -158,9 +158,10 @@ enum ItemType
 	SoundRegionItem = 10,
 	CrossOverItem = 11,
 };
-struct SSpeedPostItem{
+struct SSpeedPostItem
+{
 	ItemType nType;//8
-	int nSubType; //2     
+	int nSubType; //2
 	int unknown3; //0
 	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	int TrItemSDataSecond;
@@ -195,8 +196,8 @@ struct SPlatformItem
 	int   nTrItemRDataFourth;
 	int   nTrItemRDataFifth;
 	DWORD data;
-	wchar_t* platformName;      // 指向站台名称
-	wchar_t* stationName;       // 指向车站名称
+	wchar_t *platformName;      // 指向站台名称
+	wchar_t *stationName;       // 指向车站名称
 };
 
 struct SSidingItem
@@ -206,7 +207,7 @@ struct SSidingItem
 	int unknown;
 	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;
-	wchar_t* sidingName;   // 指向边线的名称
+	wchar_t *sidingName;   // 指向边线的名称
 	int   nSidingTrItemDataFirst;
 	int   nSidingTrItemDataSecond;
 };
@@ -215,28 +216,28 @@ struct SSpeedPostLimit
 {
 	float fDistance;
 	float   fLimitNum;
-	SSpeedPostLimit(float dis, float num):fDistance(dis),fLimitNum(num){}
+	SSpeedPostLimit(float dis, float num): fDistance(dis), fLimitNum(num) {}
 };
 
 struct STempSpeedLimit
 {
 	float fDistanceStart;
 	float fDistanceEnd;
-	STempSpeedLimit(float f1, float f2):fDistanceStart(f1), fDistanceEnd(f2){}
+	STempSpeedLimit(float f1, float f2): fDistanceStart(f1), fDistanceEnd(f2) {}
 };
 
 struct SStationItem
 {
 	float fDistance;
 	CString stationName;
-	SStationItem(float dis, CString sName):fDistance(dis),stationName(sName){}
+	SStationItem(float dis, CString sName): fDistance(dis), stationName(sName) {}
 };
 
 struct SProcessData
 {
-	const STrackNode* nodePtr0;
+	const STrackNode *nodePtr0;
 	int nSectionNum4;
-	SSectionData* sectionPtr8;
+	SSectionData *sectionPtr8;
 	size_t nData12;
 	float fDistanceFromNodeStart16;
 	float fDistanceFromSectionStart20;
@@ -252,59 +253,58 @@ struct SProcessData
 
 struct STempSpeed
 {
-	STrackNode* nodePtr;
+	STrackNode *nodePtr;
 	float fStart;
 	float fEnd;
 };
 struct SNode
 {
-	SNode* next;
-	SNode* prev;
-	void* pointer;
+	SNode *next;
+	SNode *prev;
+	void *pointer;
 };
-void AddTempSpeedLimit(float currentDistance, STrackNode* node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
-void AddSpeedPostLimit(float currentDistance, const STrackNode& node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode*);
-void AddStationItem(float currentDistance, const STrackNode& node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
+void AddTempSpeedLimit(float currentDistance, STrackNode *node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
+void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode *);
+void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
 
-CString SpeedPostItemToString(const SSpeedPostItem& item);
+CString SpeedPostItemToString(const SSpeedPostItem &item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
-STrackNode* GetNext(STrackNode* nodePtr, const SConnectStruct& connectStruct, const SConnectNode& connectNode, 
-					int&nextDirect);
-STrackNode* GetNextNode(HANDLE handle, const STrackNode& node, STrackNode* nodePtr, int direction, int&nextDirect);
+STrackNode *GetNext(STrackNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
+                    int &nextDirect);
+STrackNode *GetNextNode(HANDLE handle, const STrackNode &node, STrackNode *nodePtr, int direction, int &nextDirect);
 
-void process_AX(float* fArray, float AX);
-void process_AY(float* fArray, float AY);
-void process_AZ(float* fArray, float AZ);
-float* process(HANDLE handle, float* fMatrix, float*fXYZ);
-float* process30(HANDLE handle, float* fMatrix, float*fXYZ);
+void process_AX(float *fArray, float AX);
+void process_AY(float *fArray, float AY);
+void process_AZ(float *fArray, float AZ);
+float *process(HANDLE handle, float *fMatrix, float *fXYZ);
+float *process30(HANDLE handle, float *fMatrix, float *fXYZ);
 
-bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode& node, STrackNode* nodePtr);
-CString IteratorList(HANDLE handle, void* head, CString (*func)(HANDLE, void*));
-void getSectionData_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node,int, int , SSectionTypeData* basePtr);
-int AdjustAngle_Modified(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode &node, STrackNode *nodePtr);
+CString IteratorList(HANDLE handle, void *head, CString (*func)(HANDLE, void *));
+void getSectionData_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, int, int , SSectionTypeData *basePtr);
+int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, float fLocation, SSectionTypeData *basePtr);
 
-void getSectionData(HANDLE handle, SProcessData& processData, const STrackNode& node, int sectionNum, float* fArray, SSectionTypeData* basePtr);
-int AdjustAngle(HANDLE handle, SProcessData& processData, const STrackNode& node, float fLocation, SSectionTypeData* basePtr);
+void getSectionData(HANDLE handle, SProcessData &processData, const STrackNode &node, int sectionNum, float *fArray, SSectionTypeData *basePtr);
+int AdjustAngle(HANDLE handle, SProcessData &processData, const STrackNode &node, float fLocation, SSectionTypeData *basePtr);
 
 inline void ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
 {
-	if(!ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, NULL))
+	if (!ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, NULL))
 		throw 1;
-
 }
 
-inline float inner_product(float* fArray1, float* fArray2)
+inline float inner_product(float *fArray1, float *fArray2)
 {
-	return fArray1[0] * fArray2[0] + fArray1[1]*fArray2[1]+fArray1[2]*fArray2[2];
+	return fArray1[0] * fArray2[0] + fArray1[1] * fArray2[1] + fArray1[2] * fArray2[2];
 }
 
 
-inline CString showTrackInfo(const STrackInfo& trackInfo)
+inline CString showTrackInfo(const STrackInfo &trackInfo)
 {
 	CString msg;
 	msg.Format(L"nLeftNodeNum : %d, Direct %d, LeftLen : %f, SectLen : %f",
-		trackInfo.nCurrentSectionNum, trackInfo.nDirection, trackInfo.fLocationInNode, trackInfo.fLocationInSection);
+	           trackInfo.nCurrentSectionNum, trackInfo.nDirection, trackInfo.fLocationInNode, trackInfo.fLocationInSection);
 	return msg;
 }
 
