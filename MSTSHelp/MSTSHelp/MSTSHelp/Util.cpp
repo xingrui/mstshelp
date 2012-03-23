@@ -8,7 +8,7 @@ void PressKey(byte c)
 	Sleep(50);
 	keybd_event(c, MapVirtualKey(c, 0), KEYEVENTF_KEYUP, 0);
 }
-void PressKeyToTrainWnd(byte c)
+BOOL PressKeyToTrainWnd(byte c)
 {
 	HWND hWnd = GetForegroundWindow();
 	HWND hWnd2 = FindWindow(L"TrainSim", NULL);
@@ -16,7 +16,10 @@ void PressKeyToTrainWnd(byte c)
 	if (hWnd == hWnd2)
 	{
 		PressKey(c);
+		return TRUE;
 	}
+	
+	return FALSE;
 }
 void *GetTrainPointer(HANDLE hProcess)
 {

@@ -100,8 +100,9 @@ struct SHead
 };
 inline BOOL ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
 {
-	if(!ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, NULL))
+	if (!ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, NULL))
 		throw 1;
+
 	return TRUE;
 }
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
@@ -115,6 +116,6 @@ Locomotive GetLocomotive(HANDLE hProcess);
 void *GetTrainPointer(HANDLE hProcess);
 bool IsPowered(HANDLE hProcess);
 void PressKey(byte c);
-void PressKeyToTrainWnd(byte c);
+BOOL PressKeyToTrainWnd(byte c);
 
 #endif
