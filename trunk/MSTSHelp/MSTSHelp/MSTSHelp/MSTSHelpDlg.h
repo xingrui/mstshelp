@@ -68,8 +68,6 @@ public:
 	afx_msg void OnBnClickedOk();
 	afx_msg void OnBnClickedCancel();
 	afx_msg void OnBnClickedButton1();
-	afx_msg void OnBnClickedButton2();
-	afx_msg void OnBnClickedButton3();
 	afx_msg void OnAutoDriveChanged();
 	afx_msg void OnAutoGetDataChanged();
 	afx_msg void OnTopMostChanged();
@@ -84,11 +82,12 @@ public:
 public:
 	void AdjustLocation();
 	void AdjustPowerAndBreak();
+	void AutoConnectTrain(HANDLE hProcess);
 	void AutoDrive(HANDLE hProcess);
 	void AutoDriveTask(HANDLE hProcess);
+	void PrepareDataAndControlTrain(HANDLE hProcess);
 private:
 	void GetTrainData(HANDLE hProcess);
-	void GetAllSchedule(HANDLE hProcess);
 	BOOL IsTaskMode(HANDLE hProcess);
 	void UpdateScheduleInfo(float &fNextStationDistance);
 	void ShowScheduleInfo(const SSchedule &schedule, float fCurrentTime, float fDistance);
