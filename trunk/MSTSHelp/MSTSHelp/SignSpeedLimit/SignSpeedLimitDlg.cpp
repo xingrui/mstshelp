@@ -384,18 +384,6 @@ void CSignSpeedLimitDlg::OnGetData()
 		msg.Format(L"%.1f Ìú¹ì¾¡Í·", forwardLength);
 		m_textContent += msg;
 	}
-
-	//m_textContent += showAllCarriage(m_hTrainProcess);
-
-	/*wchar_t name[0x100];
-	size_t mem;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), name, 200);
-	m_textContent = name;
-	m_textContent += L"\r\n";*/
-	m_textContent += L"\r\n";
-	m_textContent += showAllCarriage(m_hTrainProcess);
-	m_textContent += showAllAITrain(m_hTrainProcess);
 }
 
 void CSignSpeedLimitDlg::OnBnClickedOk()
@@ -418,7 +406,22 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 
 	try
 	{
-		OnGetData();
+		wchar_t headName[0x100];
+		wchar_t tailName[0x100];
+		size_t mem;
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099AC, &mem, 4);
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), headName, 200);
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), tailName, 200);
+		m_textContent.Format(L"headName : %s\r\ntailName : %s\r\n", headName, tailName);
+		m_textContent += showAllCarriage(m_hTrainProcess);
+		m_textContent += showAllAITrain(m_hTrainProcess);
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x80A038, &mem, 4);
+		SNode *nodes[2];
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)mem, nodes, 8);
+		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[0], DefaultHandle);
+		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[1], DefaultHandle);
+		//OnGetData();
 	}
 	catch (int)
 	{
