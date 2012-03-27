@@ -353,11 +353,13 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 }
 CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void *))
 {
+	CString strDecorator = L"\r\n**********************************\r\n";
 	int count = 0;
 	SNode *head;
 	SNode iteNode;
 	CString strResult;
 	strResult.Format(L"DbLinkedList with head %x Iterator Result:\r\n", headPtr);
+	strResult = strDecorator + strResult;
 	ReadTrainProcess(handle, headPtr, &head, 4);
 	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
 
@@ -370,8 +372,9 @@ CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void 
 	}
 
 	CString strCount;
-	strCount.Format(L"Total Count : %d\r\n", count);
+	strCount.Format(L"Total Count : %d", count);
 	strResult += strCount;
+	strResult += strDecorator;
 	return strResult;
 }
 

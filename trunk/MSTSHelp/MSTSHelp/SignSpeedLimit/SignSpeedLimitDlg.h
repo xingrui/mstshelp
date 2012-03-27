@@ -33,35 +33,21 @@ protected:
 public:
 	afx_msg void OnBnClickedOk();
 public:
-	CString m_textContent;
-public:
-	afx_msg void OnTimer(UINT_PTR nIDEvent);
+	afx_msg void OnBnClickedCheck();
 public:
 	afx_msg void OnBnClickedButton1();
 public:
+	afx_msg void OnTimer(UINT_PTR nIDEvent);
+public:
+	CString m_textContent;
+public:
 	BOOL m_bShowSpeedPost;
-public:
 	BOOL m_bShowStation;
-public:
 	BOOL m_bShowSiding;
+	BOOL m_bAutoGetData;
+	BOOL m_bShowTaskLimit;
 public:
 	UINT m_uForwardDistance;
 public:
-	afx_msg void OnBnClickedCheck1();
-public:
-	afx_msg void OnBnClickedCheck2();
-public:
-	afx_msg void OnBnClickedCheck3();
-public:
-	BOOL m_bAutoGetData;
-public:
-	afx_msg void OnBnClickedCheck4();
-public:
-	afx_msg void OnBnClickedTest();
-public:
-	BOOL m_bShowTaskLimit;
-public:
-	afx_msg void OnBnClickedCheck5();
 	void OnGetData();
-	void GetTrainData(void *startLocation);
 };
