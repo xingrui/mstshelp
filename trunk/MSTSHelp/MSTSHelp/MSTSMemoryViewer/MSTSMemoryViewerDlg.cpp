@@ -15,7 +15,7 @@
 
 
 
-CMSTSMemoryViewerDlg::CMSTSMemoryViewerDlg(CWnd* pParent /*=NULL*/)
+CMSTSMemoryViewerDlg::CMSTSMemoryViewerDlg(CWnd *pParent /*=NULL*/)
 	: CDialog(CMSTSMemoryViewerDlg::IDD, pParent)
 	, m_strDBListHead(_T(""))
 	, m_textContent(_T(""))
@@ -23,7 +23,7 @@ CMSTSMemoryViewerDlg::CMSTSMemoryViewerDlg(CWnd* pParent /*=NULL*/)
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
-void CMSTSMemoryViewerDlg::DoDataExchange(CDataExchange* pDX)
+void CMSTSMemoryViewerDlg::DoDataExchange(CDataExchange *pDX)
 {
 	CDialog::DoDataExchange(pDX);
 	DDX_Text(pDX, IDC_EDIT2, m_strDBListHead);
@@ -44,14 +44,11 @@ END_MESSAGE_MAP()
 BOOL CMSTSMemoryViewerDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
 	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
-
 	// TODO: 在此添加额外的初始化代码
-
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -64,9 +61,7 @@ void CMSTSMemoryViewerDlg::OnPaint()
 	if (IsIconic())
 	{
 		CPaintDC dc(this); // 用于绘制的设备上下文
-
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-
 		// 使图标在工作矩形中居中
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
@@ -74,7 +69,6 @@ void CMSTSMemoryViewerDlg::OnPaint()
 		GetClientRect(&rect);
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
-
 		// 绘制图标
 		dc.DrawIcon(x, y, m_hIcon);
 	}
@@ -163,10 +157,11 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)mem, nodes, 8);
 		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[0], DefaultHandle);
 		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[1], DefaultHandle);
-
-		size_t InputMem = 0;
+		void *InputMem = NULL;
 		swscanf(m_strDBListHead, L"%x", &InputMem);
-		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)InputMem, DefaultHandle);
+
+		if (InputMem != NULL)
+			m_textContent += IteratorList(m_hTrainProcess, (LPVOID)InputMem, DefaultHandle);
 	}
 	catch (int)
 	{
