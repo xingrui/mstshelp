@@ -52,9 +52,9 @@ CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd *pParent /*=NULL*/)
 	, m_bShowSpeedPost(FALSE)
 	, m_bShowStation(FALSE)
 	, m_bShowSiding(FALSE)
-	, m_uForwardDistance(0)
 	, m_bAutoGetData(FALSE)
 	, m_bShowTaskLimit(FALSE)
+	, m_uForwardDistance(0)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -78,11 +78,11 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	//}}AFX_MSG_MAP
 	ON_BN_CLICKED(IDOK, &CSignSpeedLimitDlg::OnBnClickedOk)
 	ON_WM_TIMER()
-	ON_BN_CLICKED(IDC_CHECK1, &CSignSpeedLimitDlg::OnBnClickedCheck1)
-	ON_BN_CLICKED(IDC_CHECK2, &CSignSpeedLimitDlg::OnBnClickedCheck2)
-	ON_BN_CLICKED(IDC_CHECK3, &CSignSpeedLimitDlg::OnBnClickedCheck3)
-	ON_BN_CLICKED(IDC_CHECK4, &CSignSpeedLimitDlg::OnBnClickedCheck4)
-	ON_BN_CLICKED(IDC_CHECK5, &CSignSpeedLimitDlg::OnBnClickedCheck5)
+	ON_BN_CLICKED(IDC_CHECK1, &CSignSpeedLimitDlg::OnBnClickedCheck)
+	ON_BN_CLICKED(IDC_CHECK2, &CSignSpeedLimitDlg::OnBnClickedCheck)
+	ON_BN_CLICKED(IDC_CHECK3, &CSignSpeedLimitDlg::OnBnClickedCheck)
+	ON_BN_CLICKED(IDC_CHECK4, &CSignSpeedLimitDlg::OnBnClickedCheck)
+	ON_BN_CLICKED(IDC_CHECK5, &CSignSpeedLimitDlg::OnBnClickedCheck)
 END_MESSAGE_MAP()
 
 
@@ -120,7 +120,9 @@ BOOL CSignSpeedLimitDlg::OnInitDialog()
 	m_bShowStation = TRUE;
 	m_bShowTaskLimit = TRUE;
 	m_bShowSiding = TRUE;
+	m_bAutoGetData = FALSE;
 	m_uForwardDistance = 4;
+	m_textContent = L"";
 	UpdateData(FALSE);
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -382,78 +384,7 @@ void CSignSpeedLimitDlg::OnTimer(UINT_PTR nIDEvent)
 		OnBnClickedOk();
 }
 
-void CSignSpeedLimitDlg::OnBnClickedCheck1()
+void CSignSpeedLimitDlg::OnBnClickedCheck()
 {
 	UpdateData();
-}
-
-void CSignSpeedLimitDlg::OnBnClickedCheck2()
-{
-	UpdateData();
-}
-
-void CSignSpeedLimitDlg::OnBnClickedCheck3()
-{
-	UpdateData();
-}
-
-void CSignSpeedLimitDlg::OnBnClickedCheck4()
-{
-	UpdateData();
-}
-
-
-void CSignSpeedLimitDlg::OnBnClickedCheck5()
-{
-	UpdateData();
-}
-
-CString TempSpeedFunc(HANDLE handle, void *ptr)
-{
-	CString str;
-	char *cPtr = (char *)ptr;
-	STempSpeed speed;
-	ReadTrainProcess(handle, cPtr + 32, &speed, sizeof(STempSpeed));
-	str.Format(L"%x %x %.1f %.1f", ptr, speed.nodePtr, speed.fStart, speed.fEnd);
-	return str;
-}
-
-void CSignSpeedLimitDlg::GetTrainData(void *startLocation)
-{
-}
-
-//Remain This Method For Test
-void CSignSpeedLimitDlg::OnBnClickedTest()
-{
-	if (!GetTrainHandle(m_hTrainProcess))
-	{
-		m_textContent = L"等待MSTS启动";
-		UpdateData(FALSE);
-		return;
-	}
-
-	if (!GetTrainPointer(m_hTrainProcess))
-	{
-		m_textContent = L"等待MSTS任务运行";
-		UpdateData(FALSE);
-		return;
-	}
-
-	CString strResult = IteratorList(m_hTrainProcess, (LPVOID)TASK_LIMIT_HEAD_MEM, TempSpeedFunc);
-	float *fTempLimitPtr;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)TASK_LIMIT_MEM, &fTempLimitPtr, 4);
-	float fTempLimit;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4);
-	int nType;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)DISTANCE_TYPE_MEM, &nType, 4);
-	m_textContent = strResult;
-	CString strSpeed;
-
-	if (nType)
-		strSpeed.Format(L"Temp Speed Limit %.0f km\r\n", fTempLimit * 3.6);
-	else
-		strSpeed.Format(L"Temp Speed Limit %.0f mile\r\n", fTempLimit * 2.237);
-
-	m_textContent += strSpeed;
-	UpdateData(false);
 }

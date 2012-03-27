@@ -121,6 +121,49 @@ CString showAllAITrain(HANDLE handle)
 	return strResult;
 }
 
+
+CString TempSpeedFunc(HANDLE handle, void *ptr)
+{
+	CString str;
+	char *cPtr = (char *)ptr;
+	STempSpeed speed;
+	ReadTrainProcess(handle, cPtr + 32, &speed, sizeof(STempSpeed));
+	str.Format(L"%x %x %.1f %.1f", ptr, speed.nodePtr, speed.fStart, speed.fEnd);
+	return str;
+}
+
+CString showAllTaskLimit(HANDLE handle)
+{
+	CString strResult = IteratorList(handle, (LPVOID)TASK_LIMIT_HEAD_MEM, TempSpeedFunc);
+	float *fTempLimitPtr;
+	ReadTrainProcess(handle, (LPCVOID)TASK_LIMIT_MEM, &fTempLimitPtr, 4);
+	float fTempLimit;
+	ReadTrainProcess(handle, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4);
+	int nType;
+	ReadTrainProcess(handle, (LPCVOID)DISTANCE_TYPE_MEM, &nType, 4);
+	CString strSpeed;
+
+	if (nType)
+		strSpeed.Format(L"Temp Speed Limit %.0f km\r\n", fTempLimit * 3.6);
+	else
+		strSpeed.Format(L"Temp Speed Limit %.0f mile\r\n", fTempLimit * 2.237);
+
+	strResult += strSpeed;
+	return strResult;
+}
+
+CString showContentIn80A038(HANDLE handle)
+{
+	CString strResult;
+	size_t mem;
+	ReadTrainProcess(handle, (LPCVOID)0x80A038, &mem, 4);
+	SNode *nodes[2];
+	ReadTrainProcess(handle, (LPCVOID)mem, nodes, 8);
+	strResult += IteratorList(handle, (LPVOID)nodes[0], DefaultHandle);
+	strResult += IteratorList(handle, (LPVOID)nodes[1], DefaultHandle);
+	return strResult;
+}
+
 void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 {
 	// TODO: 在此添加控件通知处理程序代码
@@ -152,11 +195,8 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 		m_textContent.Format(L"headName : %s\r\ntailName : %s\r\n", headName, tailName);
 		m_textContent += showAllCarriage(m_hTrainProcess);
 		m_textContent += showAllAITrain(m_hTrainProcess);
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x80A038, &mem, 4);
-		SNode *nodes[2];
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)mem, nodes, 8);
-		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[0], DefaultHandle);
-		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[1], DefaultHandle);
+		m_textContent += showAllTaskLimit(m_hTrainProcess);
+		//m_textContent += showContentIn80A038(m_hTrainProcess);
 		void *InputMem = NULL;
 		swscanf(m_strDBListHead, L"%x", &InputMem);
 
