@@ -361,7 +361,7 @@ CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void 
 	ReadTrainProcess(handle, headPtr, &head, 4);
 	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
 
-	while (iteNode.next != head)
+	while (iteNode.next != head && count < 10000)
 	{
 		SNode *next = iteNode.next;
 		ReadTrainProcess(handle, next, &iteNode, sizeof(SNode));
@@ -373,6 +373,13 @@ CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void 
 	strCount.Format(L"Total Count : %d\r\n", count);
 	strResult += strCount;
 	return strResult;
+}
+
+CString DefaultHandle(HANDLE handle, void *pointer)
+{
+	CString result;
+	result.Format(L"0x%X\r\n", pointer);
+	return result;
 }
 
 void getSectionData_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, int, int, SSectionTypeData *basePtr)
