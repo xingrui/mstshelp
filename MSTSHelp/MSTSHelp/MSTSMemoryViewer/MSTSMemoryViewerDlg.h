@@ -7,18 +7,18 @@
 // CMSTSMemoryViewerDlg 对话框
 class CMSTSMemoryViewerDlg : public CDialog
 {
-// 构造
+	// 构造
 public:
-	CMSTSMemoryViewerDlg(CWnd* pParent = NULL);	// 标准构造函数
+	CMSTSMemoryViewerDlg(CWnd *pParent = NULL);	// 标准构造函数
 
-// 对话框数据
+	// 对话框数据
 	enum { IDD = IDD_MSTSMEMORYVIEWER_DIALOG };
 
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
+protected:
+	virtual void DoDataExchange(CDataExchange *pDX);	// DDX/DDV 支持
 
 
-// 实现
+	// 实现
 protected:
 	HICON m_hIcon;
 	HANDLE m_hTrainProcess;
