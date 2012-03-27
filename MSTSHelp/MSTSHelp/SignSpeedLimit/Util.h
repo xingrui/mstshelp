@@ -282,6 +282,7 @@ float *process30(HANDLE handle, float *fMatrix, float *fXYZ);
 
 bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode &node, STrackNode *nodePtr);
 CString IteratorList(HANDLE handle, void *head, CString (*func)(HANDLE, void *));
+CString DefaultHandle(HANDLE handle, void *pointer);
 void getSectionData_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, int, int , SSectionTypeData *basePtr);
 int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, float fLocation, SSectionTypeData *basePtr);
 
@@ -307,5 +308,8 @@ inline CString showTrackInfo(const STrackInfo &trackInfo)
 	           trackInfo.nCurrentSectionNum, trackInfo.nDirection, trackInfo.fLocationInNode, trackInfo.fLocationInSection);
 	return msg;
 }
+
+
+
 
 #endif

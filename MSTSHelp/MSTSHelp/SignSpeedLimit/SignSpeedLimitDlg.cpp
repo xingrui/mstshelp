@@ -191,49 +191,6 @@ HCURSOR CSignSpeedLimitDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
-CString DefaultHandle(HANDLE handle, void *pointer)
-{
-	CString result;
-	result.Format(L"0x%X\r\n", pointer);
-	return result;
-}
-
-CString AITrainHandle(HANDLE handle, void *pointer)
-{
-	size_t mem;
-	wchar_t name[0x20];
-	ReadTrainProcess(handle, (char *)pointer + 0x11C, &mem, 4);
-	ReadTrainProcess(handle, (LPCVOID)(mem + 8), name, 0x40);
-	ReadTrainProcess(handle, (char *)pointer + 76, &mem, 4);
-	size_t mem2;
-	wchar_t trainTrips[0x20];
-	ReadTrainProcess(handle, (char *)pointer + 8, &mem2, 4);
-	ReadTrainProcess(handle, (LPCVOID)mem2, trainTrips, 0x40);
-	CString result;
-	result.Format(L"0x%X %s %s\r\n", mem, name, trainTrips);
-
-	if (mem == NULL)
-	{
-		return CString();
-	}
-	else
-	{
-		return result;
-	}
-}
-
-CString showAllCarriage(HANDLE handle)
-{
-	CString strResult = IteratorList(handle, (LPVOID)0x8099BC, DefaultHandle);
-	return strResult;
-}
-
-CString showAllAITrain(HANDLE handle)
-{
-	CString strResult = IteratorList(handle, (LPVOID)0x809AF8, AITrainHandle);
-	return strResult;
-}
-
 void CSignSpeedLimitDlg::OnGetData()
 {
 	vector<SSpeedPostLimit> limitVect;
@@ -406,22 +363,7 @@ void CSignSpeedLimitDlg::OnBnClickedOk()
 
 	try
 	{
-		wchar_t headName[0x100];
-		wchar_t tailName[0x100];
-		size_t mem;
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099AC, &mem, 4);
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), headName, 200);
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), tailName, 200);
-		m_textContent.Format(L"headName : %s\r\ntailName : %s\r\n", headName, tailName);
-		m_textContent += showAllCarriage(m_hTrainProcess);
-		m_textContent += showAllAITrain(m_hTrainProcess);
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x80A038, &mem, 4);
-		SNode *nodes[2];
-		ReadTrainProcess(m_hTrainProcess, (LPCVOID)mem, nodes, 8);
-		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[0], DefaultHandle);
-		m_textContent += IteratorList(m_hTrainProcess, (LPVOID)nodes[1], DefaultHandle);
-		//OnGetData();
+		OnGetData();
 	}
 	catch (int)
 	{

@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MSTSHelp", "MSTSHelp\MSTSHe
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SignSpeedLimit", "SignSpeedLimit\SignSpeedLimit.vcproj", "{0639E122-351D-4766-B424-23C8BA6DBD94}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MSTSMemoryViewer", "MSTSMemoryViewer\MSTSMemoryViewer.vcproj", "{1B466FCC-2883-4009-91C5-0EA5745A419D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,10 @@ Global
 		{0639E122-351D-4766-B424-23C8BA6DBD94}.Debug|Win32.Build.0 = Debug|Win32
 		{0639E122-351D-4766-B424-23C8BA6DBD94}.Release|Win32.ActiveCfg = Release|Win32
 		{0639E122-351D-4766-B424-23C8BA6DBD94}.Release|Win32.Build.0 = Release|Win32
+		{1B466FCC-2883-4009-91C5-0EA5745A419D}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1B466FCC-2883-4009-91C5-0EA5745A419D}.Debug|Win32.Build.0 = Debug|Win32
+		{1B466FCC-2883-4009-91C5-0EA5745A419D}.Release|Win32.ActiveCfg = Release|Win32
+		{1B466FCC-2883-4009-91C5-0EA5745A419D}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
