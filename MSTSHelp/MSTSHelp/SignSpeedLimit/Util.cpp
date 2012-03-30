@@ -366,8 +366,8 @@ CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void 
 	while (iteNode.next != head && count < 10000)
 	{
 		SNode *next = iteNode.next;
-		ReadTrainProcess(handle, next, &iteNode, sizeof(SNode));
 		strResult += func(handle, iteNode.pointer);
+		ReadTrainProcess(handle, next, &iteNode, sizeof(SNode));
 		++count;
 	}
 
