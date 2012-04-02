@@ -48,6 +48,7 @@ BOOL CMSTSMemoryViewerDlg::OnInitDialog()
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
+	m_hTrainProcess = NULL;
 	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -109,6 +110,25 @@ CString AITrainHandle(HANDLE handle, void *pointer)
 	}
 }
 
+CString CarriageHandle(HANDLE handle, void *pointer)
+{
+	CString result;
+	size_t mem;
+	SWagFile *wagFilePtr;
+	SWagFile wagFile;
+	ReadTrainProcess(handle, (LPCVOID)((size_t)pointer + 0x10), &mem, 4);
+	ReadTrainProcess(handle, (LPCVOID)(mem + 0x94), &wagFilePtr, 4);
+	result.Format(L"0x%08X 0x%08X Wag File Pointer : 0x%08X\r\n", pointer, mem, wagFilePtr);
+	ReadTrainProcess(handle, (LPCVOID)wagFilePtr, &wagFile, sizeof(SWagFile));
+	/*for(int i = 0; i < sizeof(SWagFile); i += 4)
+	{
+		CString temp;
+		temp.Format(L"0X%X\t0X %08X %f\r\n", i, *((int*)&wagFile + i / 4), *((float*)&wagFile + i / 4));
+		result += temp;
+	}*/
+	return result;
+}
+
 CString FileHandle(HANDLE handle, void *pointer)
 {
 	CString result;
@@ -122,7 +142,7 @@ CString FileHandle(HANDLE handle, void *pointer)
 
 CString showAllCarriage(HANDLE handle)
 {
-	CString strResult = IteratorList(handle, (LPVOID)0x8099BC, DefaultHandle);
+	CString strResult = IteratorList(handle, (LPVOID)0x8099BC, CarriageHandle);
 	return strResult;
 }
 
@@ -221,7 +241,7 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 		m_textContent.Format(L"headName : %s\r\ntailName : %s\r\n", headName, tailName);
 		m_textContent += showAllCarriage(m_hTrainProcess);
 		m_textContent += showAllAITrain(m_hTrainProcess);
-		m_textContent += showAllTaskLimit(m_hTrainProcess);
+		//m_textContent += showAllTaskLimit(m_hTrainProcess);
 		//m_textContent += showContentIn80A038(m_hTrainProcess);
 		void *InputMem = NULL;
 		swscanf_s(m_strDBListHead, L"%x", &InputMem);
