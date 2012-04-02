@@ -263,6 +263,15 @@ struct SNode
 	SNode *prev;
 	void *pointer;
 };
+struct S80A9D8
+{
+	DWORD dwData0;
+	SNode *WagFileDBList4;
+	DWORD dwData8;
+	SNode *EngFileDBListC;
+	DWORD dwData10;
+	SNode *ConFileDBList14;
+};
 void AddTempSpeedLimit(float currentDistance, STrackNode *node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
 void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode *);
 void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
