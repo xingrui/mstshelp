@@ -109,6 +109,17 @@ CString AITrainHandle(HANDLE handle, void *pointer)
 	}
 }
 
+CString FileHandle(HANDLE handle, void *pointer)
+{
+	CString result;
+	result.Format(L"0x%X ", pointer);
+	wchar_t name[0x20];
+	ReadTrainProcess(handle, (LPCVOID)((size_t)pointer + 8), name, 0x40);
+	result += name;
+	result += L"\r\n";
+	return result;
+}
+
 CString showAllCarriage(HANDLE handle)
 {
 	CString strResult = IteratorList(handle, (LPVOID)0x8099BC, DefaultHandle);
@@ -152,6 +163,20 @@ CString showAllTaskLimit(HANDLE handle)
 	return strResult;
 }
 
+CString showWagEngConFiles(HANDLE handle)
+{
+	//S80A9D8 sDBList;
+	//ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x80A9D8, &sDBList, sizeof(S80A9D8));
+	// WAG 0x80A9DC
+	// ENG 0x80A9E4
+	// CON 0x80A9EC
+	CString strResult;
+	strResult = IteratorList(handle, (LPVOID)0x80A9DC, FileHandle);
+	strResult += IteratorList(handle, (LPVOID)0x80A9E4, FileHandle);
+	strResult += IteratorList(handle, (LPVOID)0x80A9EC, FileHandle);
+	return strResult;
+}
+
 CString showContentIn80A038(HANDLE handle)
 {
 	CString strResult;
@@ -178,7 +203,8 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 
 	if (!GetTrainPointer(m_hTrainProcess))
 	{
-		m_textContent = L"等待MSTS任务运行";
+		//m_textContent = L"等待MSTS任务运行";
+		m_textContent = showWagEngConFiles(m_hTrainProcess);
 		UpdateData(FALSE);
 		return;
 	}
@@ -198,7 +224,7 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 		m_textContent += showAllTaskLimit(m_hTrainProcess);
 		//m_textContent += showContentIn80A038(m_hTrainProcess);
 		void *InputMem = NULL;
-		swscanf(m_strDBListHead, L"%x", &InputMem);
+		swscanf_s(m_strDBListHead, L"%x", &InputMem);
 
 		if (InputMem != NULL)
 			m_textContent += IteratorList(m_hTrainProcess, (LPVOID)InputMem, DefaultHandle);

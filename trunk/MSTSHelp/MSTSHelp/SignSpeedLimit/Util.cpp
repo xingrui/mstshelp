@@ -358,7 +358,7 @@ CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void 
 	SNode *head;
 	SNode iteNode;
 	CString strResult;
-	strResult.Format(L"DbLinkedList with head %x Iterator Result:\r\n", headPtr);
+	strResult.Format(L"DbLinkedList with head 0x%08X Iterator Result:\r\n", headPtr);
 	strResult = strDecorator + strResult;
 	ReadTrainProcess(handle, headPtr, &head, 4);
 	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
