@@ -213,6 +213,7 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
+	m_textContent = L"";
 
 	if (!GetTrainHandle(m_hTrainProcess))
 	{
@@ -224,7 +225,7 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 	if (!GetTrainPointer(m_hTrainProcess))
 	{
 		//m_textContent = L"等待MSTS任务运行";
-		m_textContent = showWagEngConFiles(m_hTrainProcess);
+		m_textContent += showWagEngConFiles(m_hTrainProcess);
 		UpdateData(FALSE);
 		return;
 	}
@@ -243,11 +244,12 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 		m_textContent += showAllAITrain(m_hTrainProcess);
 		//m_textContent += showAllTaskLimit(m_hTrainProcess);
 		//m_textContent += showContentIn80A038(m_hTrainProcess);
+		m_textContent = showWagEngConFiles(m_hTrainProcess);
 		void *InputMem = NULL;
 		swscanf_s(m_strDBListHead, L"%x", &InputMem);
 
 		if (InputMem != NULL)
-			m_textContent += IteratorList(m_hTrainProcess, (LPVOID)InputMem, DefaultHandle);
+			m_textContent = IteratorList(m_hTrainProcess, (LPVOID)InputMem, DefaultHandle);
 	}
 	catch (int)
 	{
