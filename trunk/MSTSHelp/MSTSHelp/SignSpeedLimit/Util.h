@@ -254,7 +254,7 @@ struct SShowSignalItem
 	float fDistance;
 	float fSignalSpeed;
 	int nLightColor;
-	SShowSignalItem(float dis, float signalSpeed, int color):fDistance(dis), fSignalSpeed(signalSpeed), nLightColor(color){}
+	SShowSignalItem(float dis, float signalSpeed, int color): fDistance(dis), fSignalSpeed(signalSpeed), nLightColor(color) {}
 };
 
 struct SProcessData

@@ -46,6 +46,7 @@ public:
 	BOOL m_bShowSiding;
 	BOOL m_bAutoGetData;
 	BOOL m_bShowTaskLimit;
+	BOOL m_bShowSignal;
 public:
 	UINT m_uForwardDistance;
 public:
