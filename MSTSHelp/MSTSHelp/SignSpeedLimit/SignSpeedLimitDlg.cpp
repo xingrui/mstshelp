@@ -55,6 +55,7 @@ CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd *pParent /*=NULL*/)
 	, m_bAutoGetData(FALSE)
 	, m_bShowTaskLimit(FALSE)
 	, m_uForwardDistance(0)
+	, m_bShowSignal(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -69,6 +70,7 @@ void CSignSpeedLimitDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Check(pDX, IDC_CHECK3, m_bShowSiding);
 	DDX_Check(pDX, IDC_CHECK4, m_bAutoGetData);
 	DDX_Check(pDX, IDC_CHECK5, m_bShowTaskLimit);
+	DDX_Check(pDX, IDC_CHECK6, m_bShowSignal);
 }
 
 BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
@@ -83,6 +85,7 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK3, &CSignSpeedLimitDlg::OnBnClickedCheck)
 	ON_BN_CLICKED(IDC_CHECK4, &CSignSpeedLimitDlg::OnBnClickedCheck)
 	ON_BN_CLICKED(IDC_CHECK5, &CSignSpeedLimitDlg::OnBnClickedCheck)
+	ON_BN_CLICKED(IDC_CHECK6, &CSignSpeedLimitDlg::OnBnClickedCheck)
 END_MESSAGE_MAP()
 
 
@@ -120,6 +123,7 @@ BOOL CSignSpeedLimitDlg::OnInitDialog()
 	m_bShowStation = TRUE;
 	m_bShowTaskLimit = TRUE;
 	m_bShowSiding = TRUE;
+	m_bShowSignal = TRUE;
 	m_bAutoGetData = FALSE;
 	m_uForwardDistance = 4;
 	m_textContent = L"";
@@ -339,18 +343,21 @@ void CSignSpeedLimitDlg::OnGetData()
 		m_textContent += L"****************************************************\r\n";
 	}
 
-	m_textContent += L"前方信号\r\n";
-
-	for (size_t i = 0; i < signalVect.size(); ++i)
+	if (m_bShowSignal)
 	{
-		CString msg;
-		msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance, signalVect[i].fSignalSpeed);
-		msg += changeColorToString(signalVect[i].nLightColor);
-		msg += L"\r\n";
-		m_textContent += msg;
-	}
+		m_textContent += L"前方信号\r\n";
 
-	m_textContent += L"****************************************************\r\n";
+		for (size_t i = 0; i < signalVect.size(); ++i)
+		{
+			CString msg;
+			msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance, signalVect[i].fSignalSpeed);
+			msg += changeColorToString(signalVect[i].nLightColor);
+			msg += L"\r\n";
+			m_textContent += msg;
+		}
+
+		m_textContent += L"****************************************************\r\n";
+	}
 
 	if (!nextNodePtr)
 	{

@@ -4,7 +4,8 @@
 vector<CString> g_colorToStringVect;
 class Global
 {
-public:Global()
+public:
+	Global()
 	{
 		g_colorToStringVect.clear();
 		g_colorToStringVect.push_back(L"红灯");
@@ -21,8 +22,9 @@ public:Global()
 Global g_struct;
 CString changeColorToString(char cLightColor)
 {
-	if(cLightColor < 0 || cLightColor > 8)
+	if (cLightColor < 0 || cLightColor > 8)
 		return L"不能识别的车灯";
+
 	return g_colorToStringVect[cLightColor];
 }
 bool GetTrainHandle(HANDLE &hProcess)
@@ -84,8 +86,11 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 	{
 		size_t *memory = new size_t[num];
 		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr, (LPVOID)memory, num * 4);
+		int start = nDirection ? 0 : num - 1;
+		int end = nDirection ? num : -1;
+		int delta = nDirection ? 1 : -1;
 
-		for (int i = 0; i < num; ++i)
+		for (int i = start; i != end; i += delta)
 		{
 			int type;
 			ReadTrainProcess(handle, (LPCVOID)(*(memory + i)), (LPVOID)&type, 4);
@@ -143,7 +148,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 	}
 }
 
-void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int direction)
+void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int nDirection)
 {
 	int num = node.nTrItemNum;
 
@@ -151,8 +156,11 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 	{
 		size_t *memory = new size_t[num];
 		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr, (LPVOID)memory, num * 4);
+		int start = nDirection ? 0 : num - 1;
+		int end = nDirection ? num : -1;
+		int delta = nDirection ? 1 : -1;
 
-		for (int i = 0; i < num; ++i)
+		for (int i = start; i != end; i += delta)
 		{
 			int type;
 			ReadTrainProcess(handle, (LPCVOID)(*(memory + i)), (LPVOID)&type, 4);
@@ -163,16 +171,19 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 				const void *address = (LPCVOID) * (memory + i);
 				ReadTrainProcess(handle, address, (LPVOID)&signalItem, sizeof(SSignalItem));
 				size_t ptrMem, ptrMemCopy;
-				ReadTrainProcess(handle, (LPCVOID)((char*)signalItem.ptr14 + 0x50), (LPVOID)&ptrMem, 4);
+				ReadTrainProcess(handle, (LPCVOID)((char *)signalItem.ptr14 + 0x50), (LPVOID)&ptrMem, 4);
 				ptrMem += 4;
 				ptrMemCopy = ptrMem;
 				ptrMem += 12 * signalItem.bData20[1];
 				float fSignalSpeed;
 				ReadTrainProcess(handle, (LPCVOID)ptrMem, (LPVOID)&fSignalSpeed, 4);
+				ptrMem += 4;
+				int nValueToTest;
+				ReadTrainProcess(handle, (LPCVOID)ptrMem, (LPVOID)&nValueToTest, 4);
 				fSignalSpeed *= 3.6f;
 				float distanceToTrackStart;
 
-				if (!direction)
+				if (!nDirection)
 				{
 					distanceToTrackStart = node.fTrackNodeLength - signalItem.fLocationInTrackNode;
 				}
@@ -181,15 +192,54 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 					distanceToTrackStart = signalItem.fLocationInTrackNode;
 				}
 
-				if(direction == signalItem.bData20[0])
+				if (nDirection == signalItem.bData20[0])
 					continue; // 判断方向
 
-				int nMagicData;
-				ReadTrainProcess(handle, (LPCVOID)ptrMemCopy, (LPVOID)&nMagicData, 4);
+				/*** 这里面我也不知道是什么意思 开始***/
+				int nSignalType;
+				ReadTrainProcess(handle, (LPCVOID)ptrMemCopy, (LPVOID)&nSignalType, 4);
 
-				if(nMagicData)
-					continue;
+				if (nSignalType)
+					continue; // 判断类型
 
+				int nBitSet = 0;
+				int nRetValue = 2;
+				BYTE cSignalColor = signalItem.bData20[1];
+
+				if (cSignalColor)
+				{
+					if (cSignalColor == 1)
+						nRetValue = 1;
+				}
+				else
+				{
+					nRetValue = 0;
+				}
+
+				if (nValueToTest & 1)
+					nBitSet |= 1;
+
+				if (signalItem.dwData1C & 0x2)
+					nBitSet |= 2;
+
+				if (signalItem.dwData1C & 0x2000)
+					nBitSet |= 4;
+
+				if (nBitSet & 4 && (!nRetValue || nBitSet & 2))
+				{
+					// 任务临时限速的值
+					float *fTempLimitPtr;
+					ReadTrainProcess(handle, (LPCVOID)TASK_LIMIT_MEM, &fTempLimitPtr, 4);
+					float fTempLimit;
+					ReadTrainProcess(handle, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4);
+					fSignalSpeed = fTempLimit;
+				}
+				else if (nBitSet & 2 || !cSignalColor || cSignalColor >= 8)
+				{
+					fSignalSpeed = 0;
+				}
+
+				/*** 这里面我也不知道是什么意思 结尾***/
 				if (distanceToTrackStart + currentDistance > 0)
 					signalVect.push_back(SShowSignalItem(distanceToTrackStart + currentDistance, fSignalSpeed, signalItem.bData20[1]));
 			}
@@ -238,7 +288,7 @@ void AddTempSpeedLimit(float currentDistance, STrackNode *nodePtr, vector<STempS
 	}
 }
 
-void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction)
+void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int nDirection)
 {
 	int num = node.nTrItemNum;
 
@@ -246,8 +296,11 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 	{
 		size_t *memory = new size_t[num];
 		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr, (LPVOID)memory, num * 4);
+		int start = nDirection ? 0 : num - 1;
+		int end = nDirection ? num : -1;
+		int delta = nDirection ? 1 : -1;
 
-		for (int i = 0; i < num; ++i)
+		for (int i = start; i != end; i += delta)
 		{
 			int type;
 			ReadTrainProcess(handle, (LPCVOID)(*(memory + i)), (LPVOID)&type, 4);
@@ -261,7 +314,7 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 				ReadTrainProcess(handle, platformItem.platformName, (LPVOID)stationName, 0x800);
 				float distanceToTrackStart;
 
-				if (!direction)
+				if (!nDirection)
 				{
 					distanceToTrackStart = node.fTrackNodeLength - platformItem.fLocationInTrackNode;
 				}
@@ -282,7 +335,7 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 				ReadTrainProcess(handle, sidingItem.sidingName, (LPVOID)stationName, 0x800);
 				float distanceToTrackStart;
 
-				if (!direction)
+				if (!nDirection)
 				{
 					distanceToTrackStart = node.fTrackNodeLength - sidingItem.fLocationInTrackNode;
 				}
