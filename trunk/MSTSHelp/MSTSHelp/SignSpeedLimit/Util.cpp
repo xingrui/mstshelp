@@ -1,6 +1,30 @@
 #include "stdafx.h"
 #include "Util.h"
 #include <cmath>
+vector<CString> g_colorToStringVect;
+class Global
+{
+public:Global()
+	{
+		g_colorToStringVect.clear();
+		g_colorToStringVect.push_back(L"红灯");
+		g_colorToStringVect.push_back(L"不能识别的车灯");
+		g_colorToStringVect.push_back(L"红黄灯");
+		g_colorToStringVect.push_back(L"双黄灯");
+		g_colorToStringVect.push_back(L"黄2灯");
+		g_colorToStringVect.push_back(L"黄灯");
+		g_colorToStringVect.push_back(L"绿黄灯");
+		g_colorToStringVect.push_back(L"绿灯");
+		g_colorToStringVect.push_back(L"白灯");
+	}
+};
+Global g_struct;
+CString changeColorToString(char cLightColor)
+{
+	if(cLightColor < 0 || cLightColor > 8)
+		return L"不能识别的车灯";
+	return g_colorToStringVect[cLightColor];
+}
 bool GetTrainHandle(HANDLE &hProcess)
 {
 	if (hProcess)
@@ -112,6 +136,62 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 						}
 					}
 				}
+			}
+		}
+
+		delete[]memory;
+	}
+}
+
+void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int direction)
+{
+	int num = node.nTrItemNum;
+
+	if (num > 0)
+	{
+		size_t *memory = new size_t[num];
+		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr, (LPVOID)memory, num * 4);
+
+		for (int i = 0; i < num; ++i)
+		{
+			int type;
+			ReadTrainProcess(handle, (LPCVOID)(*(memory + i)), (LPVOID)&type, 4);
+
+			if (type == EmptyOrSignalItem)
+			{
+				SSignalItem signalItem;
+				const void *address = (LPCVOID) * (memory + i);
+				ReadTrainProcess(handle, address, (LPVOID)&signalItem, sizeof(SSignalItem));
+				size_t ptrMem, ptrMemCopy;
+				ReadTrainProcess(handle, (LPCVOID)((char*)signalItem.ptr14 + 0x50), (LPVOID)&ptrMem, 4);
+				ptrMem += 4;
+				ptrMemCopy = ptrMem;
+				ptrMem += 12 * signalItem.bData20[1];
+				float fSignalSpeed;
+				ReadTrainProcess(handle, (LPCVOID)ptrMem, (LPVOID)&fSignalSpeed, 4);
+				fSignalSpeed *= 3.6f;
+				float distanceToTrackStart;
+
+				if (!direction)
+				{
+					distanceToTrackStart = node.fTrackNodeLength - signalItem.fLocationInTrackNode;
+				}
+				else
+				{
+					distanceToTrackStart = signalItem.fLocationInTrackNode;
+				}
+
+				if(direction == signalItem.bData20[0])
+					continue; // 判断方向
+
+				int nMagicData;
+				ReadTrainProcess(handle, (LPCVOID)ptrMemCopy, (LPVOID)&nMagicData, 4);
+
+				if(nMagicData)
+					continue;
+
+				if (distanceToTrackStart + currentDistance > 0)
+					signalVect.push_back(SShowSignalItem(distanceToTrackStart + currentDistance, fSignalSpeed, signalItem.bData20[1]));
 			}
 		}
 

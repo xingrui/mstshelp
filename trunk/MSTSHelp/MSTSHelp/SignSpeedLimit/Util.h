@@ -184,10 +184,26 @@ struct SSpeedPostItem
 	DWORD fData;//0
 };
 
+struct SSignalItem
+{
+	ItemType nType;//0
+	int nTrItemIndexInTrackNode;
+	int nData8;
+	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
+	DWORD dwData10;
+	void *ptr14;
+	DWORD dwData18;
+	DWORD dwData1C; // 0x8000
+	BYTE bData20[4];
+	int nItemDirection;
+	DWORD dwData28;
+	DWORD dwData2C;
+};
+
 struct SPlatformItem
 {
 	int type;//3
-	int subType;
+	int nTrItemIndexInTrackNode;
 	int unknown;
 	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;   // TrItemSData的第二个数据
@@ -203,7 +219,7 @@ struct SPlatformItem
 struct SSidingItem
 {
 	int type; // 6
-	int subType;
+	int nTrItemIndexInTrackNode;
 	int unknown;
 	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;
@@ -231,6 +247,14 @@ struct SStationItem
 	float fDistance;
 	CString stationName;
 	SStationItem(float dis, CString sName): fDistance(dis), stationName(sName) {}
+};
+
+struct SShowSignalItem
+{
+	float fDistance;
+	float fSignalSpeed;
+	int nLightColor;
+	SShowSignalItem(float dis, float signalSpeed, int color):fDistance(dis), fSignalSpeed(signalSpeed), nLightColor(color){}
 };
 
 struct SProcessData
@@ -272,6 +296,7 @@ struct S80A9D8
 	DWORD dwData10;
 	SNode *ConFileDBList14;
 };
+CString changeColorToString(char cLightColor);
 struct SWagFile // Size C0C
 {
 	DWORD dwMagicData0; // 0x773230
@@ -1101,6 +1126,7 @@ struct SEngineOrWagonInConFile
 void AddTempSpeedLimit(float currentDistance, STrackNode *node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
 void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode *);
 void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
+void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE, int direction);
 
 CString SpeedPostItemToString(const SSpeedPostItem &item);
 bool GetTrainHandle(HANDLE &hProcess);

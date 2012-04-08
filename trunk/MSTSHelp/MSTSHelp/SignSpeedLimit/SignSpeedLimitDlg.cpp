@@ -199,6 +199,7 @@ void CSignSpeedLimitDlg::OnGetData()
 	vector<SStationItem> stationVect;
 	vector<SStationItem> sidingVect;
 	vector<STempSpeedLimit> tempLimitVect;
+	vector<SShowSignalItem> signalVect;
 	STrackInfo headInfo;
 	//headInfo is the information of the head of the train.
 	m_textContent = L"";
@@ -239,6 +240,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		AddTempSpeedLimit(forwardLength, currentNodePtr, tempLimitVect, m_hTrainProcess, nDirectOfCurrentNode);
 		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr);
 		AddStationItem(forwardLength, trackNode, stationVect, sidingVect, m_hTrainProcess, nDirectOfCurrentNode);
+		AddSignalItem(forwardLength, trackNode, signalVect, m_hTrainProcess, nDirectOfCurrentNode);
 		forwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -336,6 +338,19 @@ void CSignSpeedLimitDlg::OnGetData()
 
 		m_textContent += L"****************************************************\r\n";
 	}
+
+	m_textContent += L"前方信号\r\n";
+
+	for (size_t i = 0; i < signalVect.size(); ++i)
+	{
+		CString msg;
+		msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance, signalVect[i].fSignalSpeed);
+		msg += changeColorToString(signalVect[i].nLightColor);
+		msg += L"\r\n";
+		m_textContent += msg;
+	}
+
+	m_textContent += L"****************************************************\r\n";
 
 	if (!nextNodePtr)
 	{
