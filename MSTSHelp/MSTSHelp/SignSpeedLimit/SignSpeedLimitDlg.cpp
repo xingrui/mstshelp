@@ -352,11 +352,14 @@ void CSignSpeedLimitDlg::OnGetData()
 
 		for (size_t i = 0; i < signalVect.size(); ++i)
 		{
-			CString msg;
-			msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance, signalVect[i].fSignalSpeed);
-			msg += changeColorToString(signalVect[i].nLightColor);
-			msg += L"\r\n";
-			m_textContent += msg;
+			if(signalVect[i].fDistance > fCarriageLength / 2)
+			{
+				CString msg;
+				msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance - fCarriageLength / 2, signalVect[i].fSignalSpeed);
+				msg += changeColorToString(signalVect[i].nLightColor);
+				msg += L"\r\n";
+				m_textContent += msg;
+			}
 		}
 
 		m_textContent += L"****************************************************\r\n";
