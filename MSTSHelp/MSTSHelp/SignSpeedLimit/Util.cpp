@@ -77,7 +77,24 @@ void *GetTrainPointer(HANDLE hProcess)
 
 	return pointer;
 }
+bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...)
+{
+	LPCVOID addressPointer = lpBaseAddress;
+	char *dataPointer;
+	va_list x;
+	va_start(x, num);
 
+	for (int i = 0; i < num; ++i)
+	{
+		int y = va_arg(x, int);
+		ReadTrainProcess(hProcess, addressPointer, (LPVOID)&dataPointer, 4);
+		addressPointer = dataPointer + y;
+	}
+
+	va_end(x);
+	ReadTrainProcess(hProcess, addressPointer, lpBuffer, nSize);
+	return true;
+}
 void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int nDirection, STrackNode *nodePtr)
 {
 	int num = node.nTrItemNum;

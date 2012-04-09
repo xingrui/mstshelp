@@ -346,6 +346,9 @@ void CSignSpeedLimitDlg::OnGetData()
 	if (m_bShowSignal)
 	{
 		m_textContent += L"Ç°·½ÐÅºÅ\r\n";
+		int nOffset = bIsForward ? 0x62 : 0x66;
+		float fCarriageLength;
+		ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
 
 		for (size_t i = 0; i < signalVect.size(); ++i)
 		{
