@@ -221,10 +221,6 @@
 				RelativePath=".\Util.cpp"
 				>
 			</File>
-			<File
-				RelativePath=".\Util_back.cpp"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Í·ÎÄ¼þ"
@@ -249,10 +245,6 @@
 			</File>
 			<File
 				RelativePath=".\Util.h"
-				>
-			</File>
-			<File
-				RelativePath=".\Util_back.h"
 				>
 			</File>
 		</Filter>

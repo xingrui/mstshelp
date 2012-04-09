@@ -1128,6 +1128,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
 void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE, int direction);
 
+bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 CString SpeedPostItemToString(const SSpeedPostItem &item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
