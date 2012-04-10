@@ -352,7 +352,7 @@ void CSignSpeedLimitDlg::OnGetData()
 
 		for (size_t i = 0; i < signalVect.size(); ++i)
 		{
-			if(signalVect[i].fDistance > fCarriageLength / 2)
+			if (signalVect[i].fDistance > fCarriageLength / 2)
 			{
 				CString msg;
 				msg.Format(L"%.1f очкы%.1f ", signalVect[i].fDistance - fCarriageLength / 2, signalVect[i].fSignalSpeed);
