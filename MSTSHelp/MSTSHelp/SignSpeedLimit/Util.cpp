@@ -165,6 +165,49 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 	}
 }
 
+void TestAndSetSignalItem(HANDLE handle, const SSignalItem &signalItem, int nValueToTest, float &fSignalSpeed)
+{
+	/*** 这里面我也不知道是什么意思 开始***/
+	int nBitSet = 0;
+	int nRetValue = 2;
+	BYTE cSignalColor = signalItem.bData20[1];
+
+	if (cSignalColor)
+	{
+		if (cSignalColor == 1)
+			nRetValue = 1;
+	}
+	else
+	{
+		nRetValue = 0;
+	}
+
+	if (nValueToTest & 1)
+		nBitSet |= 1;
+
+	if (signalItem.dwData1C & 0x2)
+		nBitSet |= 2;
+
+	if (signalItem.dwData1C & 0x2000)
+		nBitSet |= 4;
+
+	if (nBitSet & 4 && (!nRetValue || nBitSet & 2))
+	{
+		// 任务临时限速的值
+		float *fTempLimitPtr;
+		ReadTrainProcess(handle, (LPCVOID)TASK_LIMIT_MEM, &fTempLimitPtr, 4);
+		float fTempLimit;
+		ReadTrainProcess(handle, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4);
+		fSignalSpeed = fTempLimit;
+	}
+	else if (nBitSet & 2 || !cSignalColor || cSignalColor >= 8)
+	{
+		fSignalSpeed = 0;
+	}
+
+	/*** 这里面我也不知道是什么意思 结尾***/
+}
+
 void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int nDirection)
 {
 	int num = node.nTrItemNum;
@@ -176,6 +219,12 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 		int start = nDirection ? 0 : num - 1;
 		int end = nDirection ? num : -1;
 		int delta = nDirection ? 1 : -1;
+		SSignalItem savedSignalItem;
+		savedSignalItem.bData20[1] = 0;
+		savedSignalItem.fLocationInTrackNode = -1;
+		float fSavedDistanceToTrackStart;
+		int nSavedValueToTest;
+		float fSavedSignalSpeed;
 
 		for (int i = start; i != end; i += delta)
 		{
@@ -212,54 +261,47 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 				if (nDirection == signalItem.bData20[0])
 					continue; // 判断方向
 
-				/*** 这里面我也不知道是什么意思 开始***/
 				int nSignalType;
 				ReadTrainProcess(handle, (LPCVOID)ptrMemCopy, (LPVOID)&nSignalType, 4);
 
 				if (nSignalType)
 					continue; // 判断类型
 
-				int nBitSet = 0;
-				int nRetValue = 2;
-				BYTE cSignalColor = signalItem.bData20[1];
+				float fDelta = signalItem.fLocationInTrackNode - savedSignalItem.fLocationInTrackNode;
+				fDelta = fDelta < 0 ? -fDelta : fDelta;
 
-				if (cSignalColor)
+				if (fDelta < 0.1)
 				{
-					if (cSignalColor == 1)
-						nRetValue = 1;
+					if (signalItem.bData20[1] > savedSignalItem.bData20[1])
+					{
+						nSavedValueToTest = nValueToTest;
+						fSavedSignalSpeed = fSignalSpeed;
+						savedSignalItem = signalItem;
+						fSavedDistanceToTrackStart = distanceToTrackStart;
+					}
 				}
 				else
 				{
-					nRetValue = 0;
+					if (savedSignalItem.fLocationInTrackNode > 0)
+					{
+						TestAndSetSignalItem(handle, savedSignalItem, nSavedValueToTest, fSavedSignalSpeed);
+
+						if (fSavedDistanceToTrackStart + currentDistance > 0)
+							signalVect.push_back(SShowSignalItem(fSavedDistanceToTrackStart + currentDistance, fSavedSignalSpeed, savedSignalItem.bData20[1]));
+					}
+
+					nSavedValueToTest = nValueToTest;
+					fSavedSignalSpeed = fSignalSpeed;
+					savedSignalItem = signalItem;
+					fSavedDistanceToTrackStart = distanceToTrackStart;
 				}
-
-				if (nValueToTest & 1)
-					nBitSet |= 1;
-
-				if (signalItem.dwData1C & 0x2)
-					nBitSet |= 2;
-
-				if (signalItem.dwData1C & 0x2000)
-					nBitSet |= 4;
-
-				if (nBitSet & 4 && (!nRetValue || nBitSet & 2))
-				{
-					// 任务临时限速的值
-					float *fTempLimitPtr;
-					ReadTrainProcess(handle, (LPCVOID)TASK_LIMIT_MEM, &fTempLimitPtr, 4);
-					float fTempLimit;
-					ReadTrainProcess(handle, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4);
-					fSignalSpeed = fTempLimit;
-				}
-				else if (nBitSet & 2 || !cSignalColor || cSignalColor >= 8)
-				{
-					fSignalSpeed = 0;
-				}
-
-				/*** 这里面我也不知道是什么意思 结尾***/
-				if (distanceToTrackStart + currentDistance > 0)
-					signalVect.push_back(SShowSignalItem(distanceToTrackStart + currentDistance, fSignalSpeed, signalItem.bData20[1]));
 			}
+		}
+
+		if (savedSignalItem.fLocationInTrackNode > 0 && fSavedDistanceToTrackStart + currentDistance > 0)
+		{
+			TestAndSetSignalItem(handle, savedSignalItem, nSavedValueToTest, fSavedSignalSpeed);
+			signalVect.push_back(SShowSignalItem(fSavedDistanceToTrackStart + currentDistance, fSavedSignalSpeed, savedSignalItem.bData20[1]));
 		}
 
 		delete[]memory;
