@@ -95,7 +95,7 @@ bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, 
 	ReadTrainProcess(hProcess, addressPointer, lpBuffer, nSize);
 	return true;
 }
-void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int nDirection, STrackNode *nodePtr)
+void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int nDirection, STrackNode *nodePtr, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
 
@@ -145,7 +145,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 						if (currentDistance + distanceToTrackStart > 0)
 						{
 							// 判断该标志限速是否有效，根据方向判断
-							if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, !nDirection, node, nodePtr))
+							if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, nDirectionOfItemToFind, node, nodePtr))
 							{
 								float speed = speedPostItem.SpeedpostTrItemDataSecond;
 
@@ -208,7 +208,7 @@ void TestAndSetSignalItem(HANDLE handle, const SSignalItem &signalItem, int nVal
 	/*** 这里面我也不知道是什么意思 结尾***/
 }
 
-void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int nDirection)
+void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
 
@@ -258,7 +258,7 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 					distanceToTrackStart = signalItem.fLocationInTrackNode;
 				}
 
-				if (nDirection == signalItem.bData20[0])
+				if (nDirectionOfItemToFind != signalItem.bData20[0])
 					continue; // 判断方向
 
 				int nSignalType;
