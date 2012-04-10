@@ -323,7 +323,7 @@ void CSignSpeedLimitDlg::OnGetData()
 
 		if (nIsKiloMeter)
 		{
-			temp = L"前方标志限速(公里/时)\r\n";
+			temp = L"标志限速(公里/时)\r\n";
 		}
 		else
 		{
@@ -333,14 +333,13 @@ void CSignSpeedLimitDlg::OnGetData()
 
 		m_textContent += temp;
 
-		for (size_t i = 0; i < backLimitVect.size(); ++i)
+		for (size_t i = backLimitVect.size(); i > 0; )
 		{
+			--i;
 			CString msg;
 			msg.Format(L"%.1f %.0f\r\n", -backLimitVect[i].fDistance, backLimitVect[i].fLimitNum / fRate);
 			m_textContent += msg;
 		}
-
-		m_textContent += L"*****************FORWARD*************************\r\n";
 
 		for (size_t i = 0; i < limitVect.size(); ++i)
 		{
@@ -356,16 +355,15 @@ void CSignSpeedLimitDlg::OnGetData()
 	{
 		m_textContent += L"车站名称\r\n";
 
-		for (size_t i = 0; i < backStationVect.size(); ++i)
+		for (size_t i = backStationVect.size() ; i > 0;)
 		{
+			--i;
 			CString msg;
 			msg.Format(L"%.1f ", -backStationVect[i].fDistance);
 			msg += backStationVect[i].stationName;
 			msg += L"\r\n";
 			m_textContent += msg;
 		}
-
-		m_textContent += L"*****************FORWARD*************************\r\n";
 
 		for (size_t i = 0; i < stationVect.size(); ++i)
 		{
@@ -381,18 +379,17 @@ void CSignSpeedLimitDlg::OnGetData()
 
 	if (m_bShowSiding)
 	{
-		m_textContent += L"前方边线名称\r\n";
+		m_textContent += L"边线名称\r\n";
 
-		for (size_t i = 0; i < backSidingVect.size(); ++i)
+		for (size_t i = backSidingVect.size(); i > 0;)
 		{
+			--i;
 			CString msg;
 			msg.Format(L"%.1f ", -backSidingVect[i].fDistance);
 			msg += backSidingVect[i].stationName;
 			msg += L"\r\n";
 			m_textContent += msg;
 		}
-
-		m_textContent += L"*****************FORWARD*************************\r\n";
 
 		for (size_t i = 0; i < sidingVect.size(); ++i)
 		{
@@ -413,30 +410,23 @@ void CSignSpeedLimitDlg::OnGetData()
 		float fCarriageLength;
 		ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
 
-		for (size_t i = 0; i < backSignalVect.size(); ++i)
+		for (size_t i = backSignalVect.size(); i > 0;)
 		{
-			if (backSignalVect[i].fDistance > -fCarriageLength / 2)
-			{
-				CString msg;
-				msg.Format(L"%.1f 限速%.1f ", -backSignalVect[i].fDistance + fCarriageLength / 2, backSignalVect[i].fSignalSpeed);
-				msg += changeColorToString(backSignalVect[i].nLightColor);
-				msg += L"\r\n";
-				m_textContent += msg;
-			}
+			--i;
+			CString msg;
+			msg.Format(L"%.1f 限速%.1f ", -backSignalVect[i].fDistance - fCarriageLength / 2, backSignalVect[i].fSignalSpeed);
+			msg += changeColorToString(backSignalVect[i].nLightColor);
+			msg += L"\r\n";
+			m_textContent += msg;
 		}
-
-		m_textContent += L"*****************FORWARD*************************\r\n";
 
 		for (size_t i = 0; i < signalVect.size(); ++i)
 		{
-			if (signalVect[i].fDistance > fCarriageLength / 2)
-			{
-				CString msg;
-				msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance - fCarriageLength / 2, signalVect[i].fSignalSpeed);
-				msg += changeColorToString(signalVect[i].nLightColor);
-				msg += L"\r\n";
-				m_textContent += msg;
-			}
+			CString msg;
+			msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance - fCarriageLength / 2, signalVect[i].fSignalSpeed);
+			msg += changeColorToString(signalVect[i].nLightColor);
+			msg += L"\r\n";
+			m_textContent += msg;
 		}
 
 		m_textContent += L"****************************************************\r\n";
