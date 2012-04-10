@@ -258,25 +258,26 @@ void CSignSpeedLimitDlg::OnGetData()
 
 	/*** Copy And Modify Of Previous Code Start **/
 	nDirectOfHeadNode = !nDirectOfHeadNode;
+	float backwardLength;
 
 	if (nDirectOfHeadNode)
-		forwardLength = - headInfo.fLocationInNode;
+		backwardLength = - headInfo.fLocationInNode;
 	else
-		forwardLength = headInfo.fLocationInNode - trackNode.fTrackNodeLength;
+		backwardLength = headInfo.fLocationInNode - trackNode.fTrackNodeLength;
 
 	int nDirectOfPrevNode = nDirectOfHeadNode;
 	STrackNode *prevNodePtr = headInfo.trackNodePtr;
 
-	while (forwardLength < 1000 && prevNodePtr)
+	while (backwardLength < 1000 && prevNodePtr)
 	{
 		STrackNode *currentNodePtr = prevNodePtr;
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
 		STrackNode trackNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
-		AddSpeedPostLimit(forwardLength, trackNode, backLimitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, nDirectOfCurrentNode);
-		AddStationItem(forwardLength, trackNode, backStationVect, backSidingVect, m_hTrainProcess, nDirectOfCurrentNode);
-		AddSignalItem(forwardLength, trackNode, backSignalVect, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode);
-		forwardLength += trackNode.fTrackNodeLength;
+		AddSpeedPostLimit(backwardLength, trackNode, backLimitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, nDirectOfCurrentNode);
+		AddStationItem(backwardLength, trackNode, backStationVect, backSidingVect, m_hTrainProcess, nDirectOfCurrentNode);
+		AddSignalItem(backwardLength, trackNode, backSignalVect, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode);
+		backwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
 		/************************************************************************/
