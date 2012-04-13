@@ -415,7 +415,15 @@ void CSignSpeedLimitDlg::OnGetData()
 		{
 			--i;
 			CString msg;
-			msg.Format(L"%.1f 限速%.1f ", -backSignalVect[i].fDistance - fCarriageLength / 2, backSignalVect[i].fSignalSpeed);
+			msg.Format(L"%s %.1f ", changeESignalTypeToString(backSignalVect[i].eSignalType), -backSignalVect[i].fDistance - fCarriageLength / 2);
+
+			if (backSignalVect[i].eSignalType == NORMAL)
+			{
+				CString strSignalLimit;
+				strSignalLimit.Format(L"限速%.1f ", backSignalVect[i].fSignalSpeed * 3.6f);
+				msg += strSignalLimit;
+			}
+
 			msg += changeColorToString(backSignalVect[i].nLightColor);
 			msg += L"\r\n";
 			m_textContent += msg;
@@ -424,7 +432,15 @@ void CSignSpeedLimitDlg::OnGetData()
 		for (size_t i = 0; i < signalVect.size(); ++i)
 		{
 			CString msg;
-			msg.Format(L"%.1f 限速%.1f ", signalVect[i].fDistance - fCarriageLength / 2, signalVect[i].fSignalSpeed);
+			msg.Format(L"%s %.1f ", changeESignalTypeToString(signalVect[i].eSignalType), signalVect[i].fDistance - fCarriageLength / 2);
+
+			if (signalVect[i].eSignalType == NORMAL)
+			{
+				CString strSignalLimit;
+				strSignalLimit.Format(L"限速%.1f ", signalVect[i].fSignalSpeed * 3.6f);
+				msg += strSignalLimit;
+			}
+
 			msg += changeColorToString(signalVect[i].nLightColor);
 			msg += L"\r\n";
 			m_textContent += msg;

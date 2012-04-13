@@ -183,7 +183,76 @@ struct SSpeedPostItem
 	float fAngle; // 这个是该标志限速相对于原始坐标系在XZ平面上面旋转的角度
 	DWORD fData;//0
 };
+enum ESignalState
+{
+	STOP             = 0,
+	STOP_AND_PROCEED = 1,
+	RESTRICTING      = 2,
+	APPROACH_1       = 3,
+	APPROACH_2       = 4,
+	APPROACH_3       = 5,
+	CLEAR_1          = 6,
+	CLEAR_2          = 7,
+	NOSIGNALSTATE    = 8,
+};
 
+struct SSignalState
+{
+	int nIndexOfSignalAspect;
+	float fSpeedLimit;
+	int SIGASPF_flags;
+};
+//预告信号机
+enum ESignalType
+{
+	NORMAL   = 0,
+	DISTANCE = 1, //
+	REPEATER = 2, // 复示信号机
+	SHUNTING = 3, // 调车信号机
+	INFO     = 4, //
+};
+struct SSignalLight
+{
+	DWORD dwData0;
+	float fPositionX;
+	float fPositionY;
+	float fPositionZ;
+	int nLightNameIndex;
+	float fRadius;
+};
+struct SSignalDrawState
+{
+	wchar_t *wcpDrawStateName;
+	void *uPtr;
+	int nDrawLightNum;
+	float fDataC;
+};
+struct SSignalType // Size 0x5C Exactly. SignalType in memory are placed as array. one by one.
+{
+	wchar_t *wcpSignalTypeName0;
+	ESignalType eSignalType4;
+	DWORD dwData8;
+	DWORD dwDataC;
+	SSignalLight *pSignalLightArray10;
+	int nSignalLightNum14;
+	SSignalDrawState *pSignalDrawStateArray18;
+	int nSignalDrawStateNum1C;
+	DWORD dwData20;
+	DWORD dwData24;
+	float fData28;
+	float fData2C;
+	float fData30;
+	DWORD dwData34;
+	DWORD dwData38;
+	DWORD dwData3C;
+	DWORD dwData40;
+	DWORD dwData44;
+	DWORD dwData48;
+	DWORD dwData4C;
+	SSignalState *pSignalStateArray50;
+	int SignalNumClearAhead54;
+	void *pData58;
+};
 struct SSignalItem
 {
 	ItemType nType;//0
@@ -191,11 +260,14 @@ struct SSignalItem
 	int nData8;
 	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	DWORD dwData10;
-	void *ptr14;
+	SSignalType *pSignalType14;
 	DWORD dwData18;
 	DWORD dwData1C; // 0x8000
-	BYTE bData20[4];
-	int nItemDirection;
+	BYTE cSignalItemDirection20;
+	BYTE cLightColor21;
+	BYTE cData22;
+	BYTE cData23;
+	DWORD dwData24;
 	DWORD dwData28;
 	DWORD dwData2C;
 };
@@ -251,10 +323,11 @@ struct SStationItem
 
 struct SShowSignalItem
 {
+	ESignalType eSignalType;
 	float fDistance;
 	float fSignalSpeed;
 	int nLightColor;
-	SShowSignalItem(float dis, float signalSpeed, int color): fDistance(dis), fSignalSpeed(signalSpeed), nLightColor(color) {}
+	SShowSignalItem(ESignalType sigType, float dis, float signalSpeed, int color): eSignalType(sigType), fDistance(dis), fSignalSpeed(signalSpeed), nLightColor(color) {}
 };
 
 struct SProcessData
@@ -297,6 +370,7 @@ struct S80A9D8
 	SNode *ConFileDBList14;
 };
 CString changeColorToString(char cLightColor);
+CString changeESignalTypeToString(ESignalType signalType);
 struct SWagFile // Size C0C
 {
 	DWORD dwMagicData0; // 0x773230
@@ -858,6 +932,7 @@ struct SWagFile // Size C0C
 	wchar_t soundFileName9A0[0x60];
 	DWORD dwDataA60[0x6B];
 };
+#pragma pack (2)
 struct SEngFile // Size 0xD2C
 {
 	DWORD dwData0; // 0x773244
@@ -1111,6 +1186,7 @@ struct SEngFile // Size 0xD2C
 	DWORD dwData4FA[0x20C];
 	short sDataD2A;
 };
+#pragma pack ()
 struct SEngineOrWagonInConFile
 {
 	SWagFile *wagFilePtr0;

@@ -2,6 +2,7 @@
 #include "Util.h"
 #include <cmath>
 vector<CString> g_colorToStringVect;
+vector<CString> g_ESignalTypeToStringVect;
 class Global
 {
 public:
@@ -17,15 +18,28 @@ public:
 		g_colorToStringVect.push_back(L"绿黄灯");
 		g_colorToStringVect.push_back(L"绿灯");
 		g_colorToStringVect.push_back(L"白灯");
+		g_ESignalTypeToStringVect.clear();
+		g_ESignalTypeToStringVect.push_back(L"NORMAL");
+		g_ESignalTypeToStringVect.push_back(L"DISTANCE");
+		g_ESignalTypeToStringVect.push_back(L"REPEATER");
+		g_ESignalTypeToStringVect.push_back(L"SHUNTING");
+		g_ESignalTypeToStringVect.push_back(L"INFO");
 	}
 };
 Global g_struct;
 CString changeColorToString(char cLightColor)
 {
-	if (cLightColor < 0 || cLightColor > 8)
+	if (cLightColor < 0 || cLightColor > (char)g_colorToStringVect.size())
 		return L"不能识别的车灯";
 
 	return g_colorToStringVect[cLightColor];
+}
+CString changeESignalTypeToString(ESignalType signalType)
+{
+	if (signalType < 0 || signalType > (int)g_ESignalTypeToStringVect.size())
+		return L"不能识别的信号机";
+
+	return g_ESignalTypeToStringVect[signalType];
 }
 bool GetTrainHandle(HANDLE &hProcess)
 {
@@ -170,7 +184,7 @@ void TestAndSetSignalItem(HANDLE handle, const SSignalItem &signalItem, int nVal
 	/*** 这里面我也不知道是什么意思 开始***/
 	int nBitSet = 0;
 	int nRetValue = 2;
-	BYTE cSignalColor = signalItem.bData20[1];
+	BYTE cSignalColor = signalItem.cLightColor21;
 
 	if (cSignalColor)
 	{
@@ -220,11 +234,10 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 		int end = nDirection ? num : -1;
 		int delta = nDirection ? 1 : -1;
 		SSignalItem savedSignalItem;
-		savedSignalItem.bData20[1] = 0;
+		savedSignalItem.cLightColor21 = 0;
 		savedSignalItem.fLocationInTrackNode = -1;
 		float fSavedDistanceToTrackStart;
-		int nSavedValueToTest;
-		float fSavedSignalSpeed;
+		SSignalState savedSignalState;
 
 		for (int i = start; i != end; i += delta)
 		{
@@ -236,17 +249,10 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 				SSignalItem signalItem;
 				const void *address = (LPCVOID) * (memory + i);
 				ReadTrainProcess(handle, address, (LPVOID)&signalItem, sizeof(SSignalItem));
-				size_t ptrMem, ptrMemCopy;
-				ReadTrainProcess(handle, (LPCVOID)((char *)signalItem.ptr14 + 0x50), (LPVOID)&ptrMem, 4);
-				ptrMem += 4;
-				ptrMemCopy = ptrMem;
-				ptrMem += 12 * signalItem.bData20[1];
-				float fSignalSpeed;
-				ReadTrainProcess(handle, (LPCVOID)ptrMem, (LPVOID)&fSignalSpeed, 4);
-				ptrMem += 4;
-				int nValueToTest;
-				ReadTrainProcess(handle, (LPCVOID)ptrMem, (LPVOID)&nValueToTest, 4);
-				fSignalSpeed *= 3.6f;
+				SSignalType signalType;
+				ReadTrainProcess(handle, signalItem.pSignalType14, (LPVOID)&signalType, sizeof(SSignalType));
+				SSignalState signalState;
+				ReadTrainProcess(handle, signalType.pSignalStateArray50 + signalItem.cLightColor21, (LPVOID)&signalState, sizeof(SSignalState));
 				float distanceToTrackStart;
 
 				if (!nDirection)
@@ -258,24 +264,24 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 					distanceToTrackStart = signalItem.fLocationInTrackNode;
 				}
 
-				if (nDirectionOfItemToFind != signalItem.bData20[0])
+				if (nDirectionOfItemToFind != signalItem.cSignalItemDirection20)
 					continue; // 判断方向
 
-				int nSignalType;
-				ReadTrainProcess(handle, (LPCVOID)ptrMemCopy, (LPVOID)&nSignalType, 4);
-
-				if (nSignalType)
-					continue; // 判断类型
+				if (signalType.eSignalType4 != NORMAL) // 判断类型
+				{
+					//if (distanceToTrackStart + currentDistance > 0)
+					//signalVect.push_back(SShowSignalItem(signalType.eSignalType4, distanceToTrackStart + currentDistance, signalState.fSpeedLimit, signalItem.cLightColor21));
+					continue;
+				}
 
 				float fDelta = signalItem.fLocationInTrackNode - savedSignalItem.fLocationInTrackNode;
 				fDelta = fDelta < 0 ? -fDelta : fDelta;
 
 				if (fDelta < 0.1)
 				{
-					if (signalItem.bData20[1] > savedSignalItem.bData20[1])
+					if (signalItem.cLightColor21 > savedSignalItem.cLightColor21)
 					{
-						nSavedValueToTest = nValueToTest;
-						fSavedSignalSpeed = fSignalSpeed;
+						savedSignalState = signalState;
 						savedSignalItem = signalItem;
 						fSavedDistanceToTrackStart = distanceToTrackStart;
 					}
@@ -284,14 +290,13 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 				{
 					if (savedSignalItem.fLocationInTrackNode > 0)
 					{
-						TestAndSetSignalItem(handle, savedSignalItem, nSavedValueToTest, fSavedSignalSpeed);
+						TestAndSetSignalItem(handle, savedSignalItem, savedSignalState.SIGASPF_flags, savedSignalState.fSpeedLimit);
 
 						if (fSavedDistanceToTrackStart + currentDistance > 0)
-							signalVect.push_back(SShowSignalItem(fSavedDistanceToTrackStart + currentDistance, fSavedSignalSpeed, savedSignalItem.bData20[1]));
+							signalVect.push_back(SShowSignalItem(NORMAL, fSavedDistanceToTrackStart + currentDistance, savedSignalState.fSpeedLimit, savedSignalItem.cLightColor21));
 					}
 
-					nSavedValueToTest = nValueToTest;
-					fSavedSignalSpeed = fSignalSpeed;
+					savedSignalState = signalState;
 					savedSignalItem = signalItem;
 					fSavedDistanceToTrackStart = distanceToTrackStart;
 				}
@@ -300,8 +305,8 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 
 		if (savedSignalItem.fLocationInTrackNode > 0 && fSavedDistanceToTrackStart + currentDistance > 0)
 		{
-			TestAndSetSignalItem(handle, savedSignalItem, nSavedValueToTest, fSavedSignalSpeed);
-			signalVect.push_back(SShowSignalItem(fSavedDistanceToTrackStart + currentDistance, fSavedSignalSpeed, savedSignalItem.bData20[1]));
+			TestAndSetSignalItem(handle, savedSignalItem, savedSignalState.SIGASPF_flags, savedSignalState.fSpeedLimit);
+			signalVect.push_back(SShowSignalItem(NORMAL, fSavedDistanceToTrackStart + currentDistance, savedSignalState.fSpeedLimit, savedSignalItem.cLightColor21));
 		}
 
 		delete[]memory;
@@ -533,8 +538,6 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 
 	if (nDirection)
 	{
-		//processData.nData12 = processData.nData12 != 1;
-		//processData.nData92 = -processData.nData92;
 		processData.fAngle24[1] += 3.14159f;
 		process(handle, processData.fMatrix, processData.fAngle24);
 	}
