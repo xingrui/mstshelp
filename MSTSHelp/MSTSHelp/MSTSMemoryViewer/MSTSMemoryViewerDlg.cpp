@@ -208,6 +208,33 @@ CString showContentIn80A038(HANDLE handle)
 	strResult += IteratorList(handle, (LPVOID)nodes[1], DefaultHandle);
 	return strResult;
 }
+struct SData
+{
+	wchar_t *wcpName;
+	int nIndex;
+};
+
+CString GetStringMap(HANDLE handle)
+{
+	CString strResult;
+	size_t uCount;
+	ReadTrainProcess(handle, (LPCVOID)0x82806C, &uCount, 4);
+	size_t memPtr;
+	SData *mem = (SData*)malloc(uCount * sizeof(SData));
+	ReadTrainProcess(handle, (LPCVOID)0x828068, &memPtr, 4);
+	ReadTrainProcess(handle, (LPCVOID)memPtr, mem, uCount * sizeof(SData));
+	wchar_t temp[0x100];
+	for(size_t i = 0; i < uCount; ++i)
+	{
+		CString strTemp;
+		strTemp.Format(L" = 0x%08X,", mem[i].nIndex);
+		ReadTrainProcess(handle, (LPCVOID)mem[i].wcpName, temp, 0x100);
+		strResult += temp;
+		strResult += strTemp;
+		strResult += L"\r\n";
+	}
+	return strResult;
+}
 
 void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 {
@@ -225,7 +252,8 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 	if (!GetTrainPointer(m_hTrainProcess))
 	{
 		//m_textContent = L"等待MSTS任务运行";
-		m_textContent += showWagEngConFiles(m_hTrainProcess);
+		//m_textContent += showWagEngConFiles(m_hTrainProcess);
+		m_textContent += GetStringMap(m_hTrainProcess);
 		UpdateData(FALSE);
 		return;
 	}

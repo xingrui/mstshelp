@@ -269,8 +269,9 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 
 				if (signalType.eSignalType4 != NORMAL) // ÅÐ¶ÏÀàÐÍ
 				{
-					//if (distanceToTrackStart + currentDistance > 0)
-					//signalVect.push_back(SShowSignalItem(signalType.eSignalType4, distanceToTrackStart + currentDistance, signalState.fSpeedLimit, signalItem.cLightColor21));
+					if (distanceToTrackStart + currentDistance > 0)
+						signalVect.push_back(SShowSignalItem(signalType.eSignalType4, distanceToTrackStart + currentDistance, signalState.fSpeedLimit, signalItem.cLightColor21));
+
 					continue;
 				}
 
