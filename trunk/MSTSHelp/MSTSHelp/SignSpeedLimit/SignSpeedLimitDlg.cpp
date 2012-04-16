@@ -247,7 +247,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
 		AddTempSpeedLimit(forwardLength, currentNodePtr, tempLimitVect, m_hTrainProcess, nDirectOfCurrentNode);
 		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, !nDirectOfCurrentNode);
-		AddStationItem(forwardLength, trackNode, stationVect, sidingVect, m_hTrainProcess, nDirectOfCurrentNode);
+		AddStationItem(forwardLength, trackNode, stationVect, sidingVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode);
 		AddSignalItem(forwardLength, trackNode, signalVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode);
 		forwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
@@ -275,7 +275,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		STrackNode trackNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
 		AddSpeedPostLimit(backwardLength, trackNode, backLimitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, nDirectOfCurrentNode);
-		AddStationItem(backwardLength, trackNode, backStationVect, backSidingVect, m_hTrainProcess, nDirectOfCurrentNode);
+		AddStationItem(backwardLength, trackNode, backStationVect, backSidingVect, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode);
 		AddSignalItem(backwardLength, trackNode, backSignalVect, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode);
 		backwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
@@ -352,6 +352,11 @@ void CSignSpeedLimitDlg::OnGetData()
 		m_textContent += L"****************************************************\r\n";
 	}
 
+	vector<CString> typeToString;
+	typeToString.push_back(L"< ");
+	typeToString.push_back(L"> ");
+	typeToString.push_back(L"O ");
+
 	if (m_bShowStation)
 	{
 		m_textContent += L"³µÕ¾Ãû³Æ\r\n";
@@ -361,6 +366,7 @@ void CSignSpeedLimitDlg::OnGetData()
 			--i;
 			CString msg;
 			msg.Format(L"%.1f ", -backStationVect[i].fDistance);
+			msg += typeToString[backStationVect[i].nStationType];
 			msg += backStationVect[i].stationName;
 			msg += L"\r\n";
 			m_textContent += msg;
@@ -370,6 +376,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		{
 			CString msg;
 			msg.Format(L"%.1f ", stationVect[i].fDistance);
+			msg += typeToString[stationVect[i].nStationType];
 			msg += stationVect[i].stationName;
 			msg += L"\r\n";
 			m_textContent += msg;
@@ -387,6 +394,7 @@ void CSignSpeedLimitDlg::OnGetData()
 			--i;
 			CString msg;
 			msg.Format(L"%.1f ", -backSidingVect[i].fDistance);
+			msg += typeToString[backSidingVect[i].nStationType];
 			msg += backSidingVect[i].stationName;
 			msg += L"\r\n";
 			m_textContent += msg;
@@ -396,6 +404,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		{
 			CString msg;
 			msg.Format(L"%.1f ", sidingVect[i].fDistance);
+			msg += typeToString[sidingVect[i].nStationType];
 			msg += sidingVect[i].stationName;
 			msg += L"\r\n";
 			m_textContent += msg;

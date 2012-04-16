@@ -274,9 +274,9 @@ struct SSignalItem
 
 struct SPlatformItem
 {
-	int type;//3
+	ItemType nType;//3
 	int nTrItemIndexInTrackNode;
-	int unknown;
+	int nData8;
 	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;   // TrItemSData的第二个数据
 	float fTrItemRDataFirst;    // 同上面的，顾名思义吧
@@ -284,8 +284,12 @@ struct SPlatformItem
 	int   nTrItemRDataFourth;
 	int   nTrItemRDataFifth;
 	DWORD data;
-	wchar_t *platformName;      // 指向站台名称
-	wchar_t *stationName;       // 指向车站名称
+	wchar_t *wcpPlatformName28;      // 指向站台名称
+	wchar_t *wcpStationName2C;       // 指向车站名称
+	DWORD dwPlatformTrItemDataFirst30;
+	int nPlatformAnotherSideIndex34;
+	int nPlatformMinWaitingTime38;
+	int nPlatformNumPassengersWaiting3C;
 };
 
 struct SSidingItem
@@ -318,7 +322,8 @@ struct SStationItem
 {
 	float fDistance;
 	CString stationName;
-	SStationItem(float dis, CString sName): fDistance(dis), stationName(sName) {}
+	int nStationType;
+	SStationItem(float dis, CString sName, int nType): fDistance(dis), stationName(sName), nStationType(nType) {}
 };
 
 struct SShowSignalItem
@@ -1201,7 +1206,7 @@ struct SEngineOrWagonInConFile
 
 void AddTempSpeedLimit(float currentDistance, STrackNode *node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
 void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode *,  int nDirectionOfItemToFind);
-void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction);
+void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction, int nDirectionOfItemToFind);
 void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE, int direction,  int nDirectionOfItemToFind);
 
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
