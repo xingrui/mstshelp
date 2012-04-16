@@ -145,16 +145,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 
 					if ((subType & 0x80) || subType & 0x20 && memory & 2 || subType & 0x40 && memory & 4)
 					{
-						float distanceToTrackStart;
-
-						if (!nDirection)
-						{
-							distanceToTrackStart = node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
-						}
-						else
-						{
-							distanceToTrackStart = speedPostItem.fLocationInTrackNode;
-						}
+						float distanceToTrackStart = nDirection ? speedPostItem.fLocationInTrackNode : node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
 
 						if (currentDistance + distanceToTrackStart > 0)
 						{
@@ -253,25 +244,16 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 				ReadTrainProcess(handle, signalItem.pSignalType14, (LPVOID)&signalType, sizeof(SSignalType));
 				SSignalState signalState;
 				ReadTrainProcess(handle, signalType.pSignalStateArray50 + signalItem.cLightColor21, (LPVOID)&signalState, sizeof(SSignalState));
-				float distanceToTrackStart;
-
-				if (!nDirection)
-				{
-					distanceToTrackStart = node.fTrackNodeLength - signalItem.fLocationInTrackNode;
-				}
-				else
-				{
-					distanceToTrackStart = signalItem.fLocationInTrackNode;
-				}
+				float distanceToTrackStart = nDirection ? signalItem.fLocationInTrackNode : node.fTrackNodeLength - signalItem.fLocationInTrackNode;
 
 				if (nDirectionOfItemToFind != signalItem.cSignalItemDirection20)
 					continue; // 判断方向
 
 				if (signalType.eSignalType4 != NORMAL) // 判断类型
 				{
-					if (distanceToTrackStart + currentDistance > 0)
-						signalVect.push_back(SShowSignalItem(signalType.eSignalType4, distanceToTrackStart + currentDistance, signalState.fSpeedLimit, signalItem.cLightColor21));
-
+					//if (distanceToTrackStart + currentDistance > 0)
+					//	signalVect.push_back(SShowSignalItem(signalType.eSignalType4, distanceToTrackStart + currentDistance, signalState.fSpeedLimit, signalItem.cLightColor21));
+					//
 					continue;
 				}
 
@@ -353,7 +335,7 @@ void AddTempSpeedLimit(float currentDistance, STrackNode *nodePtr, vector<STempS
 	}
 }
 
-void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int nDirection)
+void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
 
@@ -376,20 +358,22 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 				const void *address = (LPCVOID) * (memory + i);
 				ReadTrainProcess(handle, address, (LPVOID)&platformItem, sizeof(SPlatformItem));
 				wchar_t stationName[0x400];
-				ReadTrainProcess(handle, platformItem.platformName, (LPVOID)stationName, 0x800);
-				float distanceToTrackStart;
-
-				if (!nDirection)
-				{
-					distanceToTrackStart = node.fTrackNodeLength - platformItem.fLocationInTrackNode;
-				}
-				else
-				{
-					distanceToTrackStart = platformItem.fLocationInTrackNode;
-				}
+				ReadTrainProcess(handle, platformItem.wcpPlatformName28, (LPVOID)stationName, 0x800);
+				float distanceToTrackStart = nDirection ? platformItem.fLocationInTrackNode : node.fTrackNodeLength - platformItem.fLocationInTrackNode;
 
 				if (distanceToTrackStart + currentDistance > 0)
-					stationVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
+				{
+					float fEndPosition;
+					ReadPointerMemory(handle, (LPCVOID)0x80A038, &fEndPosition, 4, 5, 0xC, 0x20, 0, 4 * platformItem.nPlatformAnotherSideIndex34, 0xC);
+					float fEndPositionToTrackStart = nDirection ? fEndPosition : node.fTrackNodeLength - fEndPosition;
+					int nType = (fEndPositionToTrackStart > distanceToTrackStart) ^ (nDirection == nDirectionOfItemToFind);
+					stationVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName, !nType));
+
+					if (fEndPosition > platformItem.fLocationInTrackNode)
+					{
+						stationVect.push_back(SStationItem((distanceToTrackStart + fEndPositionToTrackStart) / 2 + currentDistance, stationName, 2));
+					}
+				}
 			}
 			else if (type == SidingItem)
 			{
@@ -398,19 +382,21 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 				ReadTrainProcess(handle, address, (LPVOID)&sidingItem, sizeof(SSidingItem));
 				wchar_t stationName[0x400];
 				ReadTrainProcess(handle, sidingItem.sidingName, (LPVOID)stationName, 0x800);
-				float distanceToTrackStart;
-
-				if (!nDirection)
-				{
-					distanceToTrackStart = node.fTrackNodeLength - sidingItem.fLocationInTrackNode;
-				}
-				else
-				{
-					distanceToTrackStart = sidingItem.fLocationInTrackNode;
-				}
+				float distanceToTrackStart = nDirection ? sidingItem.fLocationInTrackNode : node.fTrackNodeLength - sidingItem.fLocationInTrackNode;
 
 				if (distanceToTrackStart + currentDistance > 0)
-					sidingVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName));
+				{
+					float fEndPosition;
+					ReadPointerMemory(handle, (LPCVOID)0x80A038, &fEndPosition, 4, 5, 0xC, 0x20, 0, 4 * sidingItem.nSidingTrItemDataSecond, 0xC);
+					float fEndPositionToTrackStart = nDirection ? fEndPosition : node.fTrackNodeLength - fEndPosition;
+					int nType = (fEndPositionToTrackStart > distanceToTrackStart) ^ (nDirection == nDirectionOfItemToFind);
+					sidingVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName, !nType));
+
+					if (fEndPosition > sidingItem.fLocationInTrackNode)
+					{
+						sidingVect.push_back(SStationItem((distanceToTrackStart + fEndPositionToTrackStart) / 2 + currentDistance, stationName, 2));
+					}
+				}
 			}
 		}
 
