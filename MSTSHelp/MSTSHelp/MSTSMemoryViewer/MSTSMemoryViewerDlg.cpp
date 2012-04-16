@@ -220,11 +220,12 @@ CString GetStringMap(HANDLE handle)
 	size_t uCount;
 	ReadTrainProcess(handle, (LPCVOID)0x82806C, &uCount, 4);
 	size_t memPtr;
-	SData *mem = (SData*)malloc(uCount * sizeof(SData));
+	SData *mem = (SData *)malloc(uCount * sizeof(SData));
 	ReadTrainProcess(handle, (LPCVOID)0x828068, &memPtr, 4);
 	ReadTrainProcess(handle, (LPCVOID)memPtr, mem, uCount * sizeof(SData));
 	wchar_t temp[0x100];
-	for(size_t i = 0; i < uCount; ++i)
+
+	for (size_t i = 0; i < uCount; ++i)
 	{
 		CString strTemp;
 		strTemp.Format(L" = 0x%08X,", mem[i].nIndex);
@@ -233,6 +234,7 @@ CString GetStringMap(HANDLE handle)
 		strResult += strTemp;
 		strResult += L"\r\n";
 	}
+
 	return strResult;
 }
 
