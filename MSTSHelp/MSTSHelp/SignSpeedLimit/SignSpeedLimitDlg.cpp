@@ -317,6 +317,10 @@ void CSignSpeedLimitDlg::OnGetData()
 		m_textContent += L"****************************************************\r\n";
 	}
 
+	int nOffset = bIsForward ? 0x62 : 0x66;
+	float fCarriageLength;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
+
 	if (m_bShowSpeedPost)
 	{
 		CString temp;
@@ -338,14 +342,14 @@ void CSignSpeedLimitDlg::OnGetData()
 		{
 			--i;
 			CString msg;
-			msg.Format(L"%.1f %.0f\r\n", -backLimitVect[i].fDistance, backLimitVect[i].fLimitNum / fRate);
+			msg.Format(L"%.1f %.0f\r\n", -backLimitVect[i].fDistance - fCarriageLength, backLimitVect[i].fLimitNum / fRate);
 			m_textContent += msg;
 		}
 
 		for (size_t i = 0; i < limitVect.size(); ++i)
 		{
 			CString msg;
-			msg.Format(L"%.1f %.0f\r\n", limitVect[i].fDistance, limitVect[i].fLimitNum / fRate);
+			msg.Format(L"%.1f %.0f\r\n", limitVect[i].fDistance - fCarriageLength, limitVect[i].fLimitNum / fRate);
 			m_textContent += msg;
 		}
 
@@ -391,9 +395,6 @@ void CSignSpeedLimitDlg::OnGetData()
 	if (m_bShowSignal)
 	{
 		m_textContent += L"пе╨е\r\n";
-		int nOffset = bIsForward ? 0x62 : 0x66;
-		float fCarriageLength;
-		ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
 
 		for (size_t i = backSignalVect.size(); i > 0;)
 		{

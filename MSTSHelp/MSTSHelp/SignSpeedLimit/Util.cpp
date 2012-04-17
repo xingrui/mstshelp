@@ -141,6 +141,13 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 		int start = nDirection ? 0 : num - 1;
 		int end = nDirection ? num : -1;
 		int delta = nDirection ? 1 : -1;
+		size_t pointer;
+		ReadTrainProcess(handle, (LPCVOID)THIS_POINTER_MEM, &pointer, 4);
+		pointer += 230;
+		size_t nTrainType;
+		ReadTrainProcess(handle, (LPCVOID)pointer, &nTrainType, 4);
+		pointer = nTrainType;
+		ReadTrainProcess(handle, (LPCVOID)pointer, &nTrainType, 4);
 
 		for (int i = start; i != end; i += delta)
 		{
@@ -156,15 +163,7 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 
 				if ((subType & 7) == 2)
 				{
-					size_t pointer;
-					ReadTrainProcess(handle, (LPCVOID)THIS_POINTER_MEM, &pointer, 4);
-					pointer += 230;
-					size_t memory;
-					ReadTrainProcess(handle, (LPCVOID)pointer, &memory, 4);
-					pointer = memory;
-					ReadTrainProcess(handle, (LPCVOID)pointer, &memory, 4);
-
-					if ((subType & 0x80) || subType & 0x20 && memory & 2 || subType & 0x40 && memory & 4)
+					if ((subType & 0x80) || subType & 0x20 && nTrainType & 2 || subType & 0x40 && nTrainType & 4)
 					{
 						float distanceToTrackStart = nDirection ? speedPostItem.fLocationInTrackNode : node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
 
@@ -186,14 +185,17 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 				}
 				else if ((subType & 7) == 3)
 				{
-					float distanceToTrackStart = nDirection ? speedPostItem.fLocationInTrackNode : node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
-
-					if (currentDistance + distanceToTrackStart > 0)
+					if ((subType & 0x80) || subType & 0x20 && nTrainType & 2 || subType & 0x40 && nTrainType & 4)
 					{
-						if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, nDirectionOfItemToFind, node, nodePtr))
+						float distanceToTrackStart = nDirection ? speedPostItem.fLocationInTrackNode : node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
+
+						if (currentDistance + distanceToTrackStart > 0)
 						{
-							limitVect.push_back(SSpeedPostLimit(currentDistance +
-							                                    distanceToTrackStart, -1));
+							if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, nDirectionOfItemToFind, node, nodePtr))
+							{
+								limitVect.push_back(SSpeedPostLimit(currentDistance +
+								                                    distanceToTrackStart, -1));
+							}
 						}
 					}
 				}
