@@ -184,6 +184,19 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 						}
 					}
 				}
+				else if ((subType & 7) == 3)
+				{
+					float distanceToTrackStart = nDirection ? speedPostItem.fLocationInTrackNode : node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
+
+					if (currentDistance + distanceToTrackStart > 0)
+					{
+						if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, nDirectionOfItemToFind, node, nodePtr))
+						{
+							limitVect.push_back(SSpeedPostLimit(currentDistance +
+							                                    distanceToTrackStart, -1));
+						}
+					}
+				}
 			}
 		}
 
