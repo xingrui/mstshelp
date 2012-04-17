@@ -47,11 +47,11 @@ CString changeESignalTypeToString(ESignalType signalType)
 	return g_ESignalTypeToStringVect[signalType];
 }
 
-CString getStationString(const SStationItem& item)
+CString getStationString(const SStationItem &item)
 {
 	CString tmp;
 
-	if(item.nStationType != 2)
+	if (item.nStationType != 2)
 		tmp.Format(L" ³µÕ¾±àºÅ:%d ", item.nStationNum);
 
 	CString msg;
