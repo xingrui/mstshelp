@@ -323,7 +323,7 @@ struct SStationItem
 	CString stationName;
 	int nStationType;
 	int nStationNum;
-	SStationItem(float dis, CString sName, int nType, int nNum): fDistance(dis), stationName(sName), nStationType(nType), nStationNum(nNum){}
+	SStationItem(float dis, CString sName, int nType, int nNum): fDistance(dis), stationName(sName), nStationType(nType), nStationNum(nNum) {}
 };
 
 struct SShowSignalItem
@@ -1211,7 +1211,7 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 CString SpeedPostItemToString(const SSpeedPostItem &item);
-CString getStationString(const SStationItem& item);
+CString getStationString(const SStationItem &item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
 STrackNode *GetNext(STrackNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
