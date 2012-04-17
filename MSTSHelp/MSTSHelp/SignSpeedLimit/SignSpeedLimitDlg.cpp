@@ -352,11 +352,6 @@ void CSignSpeedLimitDlg::OnGetData()
 		m_textContent += L"****************************************************\r\n";
 	}
 
-	vector<CString> typeToString;
-	typeToString.push_back(L"< ");
-	typeToString.push_back(L"> ");
-	typeToString.push_back(L"O ");
-
 	if (m_bShowStation)
 	{
 		m_textContent += L"³µÕ¾Ãû³Æ\r\n";
@@ -364,22 +359,12 @@ void CSignSpeedLimitDlg::OnGetData()
 		for (size_t i = backStationVect.size() ; i > 0;)
 		{
 			--i;
-			CString msg;
-			msg.Format(L"%.1f ", -backStationVect[i].fDistance);
-			msg += typeToString[backStationVect[i].nStationType];
-			msg += backStationVect[i].stationName;
-			msg += L"\r\n";
-			m_textContent += msg;
+			m_textContent += getStationString(backStationVect[i]);
 		}
 
 		for (size_t i = 0; i < stationVect.size(); ++i)
 		{
-			CString msg;
-			msg.Format(L"%.1f ", stationVect[i].fDistance);
-			msg += typeToString[stationVect[i].nStationType];
-			msg += stationVect[i].stationName;
-			msg += L"\r\n";
-			m_textContent += msg;
+			m_textContent += getStationString(stationVect[i]);
 		}
 
 		m_textContent += L"****************************************************\r\n";
@@ -392,22 +377,12 @@ void CSignSpeedLimitDlg::OnGetData()
 		for (size_t i = backSidingVect.size(); i > 0;)
 		{
 			--i;
-			CString msg;
-			msg.Format(L"%.1f ", -backSidingVect[i].fDistance);
-			msg += typeToString[backSidingVect[i].nStationType];
-			msg += backSidingVect[i].stationName;
-			msg += L"\r\n";
-			m_textContent += msg;
+			m_textContent += getStationString(backSidingVect[i]);
 		}
 
 		for (size_t i = 0; i < sidingVect.size(); ++i)
 		{
-			CString msg;
-			msg.Format(L"%.1f ", sidingVect[i].fDistance);
-			msg += typeToString[sidingVect[i].nStationType];
-			msg += sidingVect[i].stationName;
-			msg += L"\r\n";
-			m_textContent += msg;
+			m_textContent += getStationString(sidingVect[i]);
 		}
 
 		m_textContent += L"****************************************************\r\n";
