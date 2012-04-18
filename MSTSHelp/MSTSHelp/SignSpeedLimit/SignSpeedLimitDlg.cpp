@@ -204,6 +204,8 @@ void CSignSpeedLimitDlg::OnGetData()
 	vector<SStationItem> sidingVect;
 	vector<STempSpeedLimit> tempLimitVect;
 	vector<SShowSignalItem> signalVect;
+	vector<SSectionInfo> sectionVect;
+	vector<SSectionInfo> backSectionVect;
 	vector<SSpeedPostLimit> backLimitVect;
 	vector<SStationItem> backStationVect;
 	vector<SStationItem> backSidingVect;
@@ -238,6 +240,8 @@ void CSignSpeedLimitDlg::OnGetData()
 
 	int nDirectOfNextNode = nDirectOfHeadNode;
 	STrackNode *nextNodePtr = headInfo.trackNodePtr;
+	STrackSection *pSection;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, &pSection, 4, 1, 0xC);
 
 	while (forwardLength < m_uForwardDistance * 1000 && nextNodePtr)
 	{
@@ -249,6 +253,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		AddSpeedPostLimit(forwardLength, trackNode, limitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, !nDirectOfCurrentNode);
 		AddStationItem(forwardLength, trackNode, stationVect, sidingVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode);
 		AddSignalItem(forwardLength, trackNode, signalVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode);
+		AddSectionInfo(forwardLength, trackNode, sectionVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, pSection);
 		forwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -277,6 +282,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		AddSpeedPostLimit(backwardLength, trackNode, backLimitVect, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, nDirectOfCurrentNode);
 		AddStationItem(backwardLength, trackNode, backStationVect, backSidingVect, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode);
 		AddSignalItem(backwardLength, trackNode, backSignalVect, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode);
+		AddSectionInfo(backwardLength, trackNode, backSectionVect, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode, pSection);
 		backwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -432,6 +438,61 @@ void CSignSpeedLimitDlg::OnGetData()
 		}
 
 		m_textContent += L"****************************************************\r\n";
+	}
+
+	for (size_t i = backSectionVect.size(); i > 0;)
+	{
+		--i;
+		CString msg;
+		msg.Format(L"开始位置 %.1f 结束位置%.1f 长度 %.1f", -backSectionVect[i].fEnd, -backSectionVect[i].fStart, backSectionVect[i].fEnd - backSectionVect[i].fStart);
+		CString temp;
+
+		if (backSectionVect[i].nDirection == 0)
+		{
+			msg += L"直轨道";
+		}
+		else if (backSectionVect[i].nDirection == 1)
+		{
+			msg += L"左转 半径为";
+			temp.Format(L"%.1f", backSectionVect[i].fRadius);
+			msg += temp;
+		}
+		else
+		{
+			msg += L"右转 半径为";
+			temp.Format(L"%.1f", backSectionVect[i].fRadius);
+			msg += temp;
+		}
+
+		msg += L"\r\n";
+		m_textContent += msg;
+	}
+
+	for (size_t i = 0; i < sectionVect.size(); ++i)
+	{
+		CString msg;
+		msg.Format(L"开始位置 %.1f 结束位置%.1f 长度 %.1f", sectionVect[i].fStart, sectionVect[i].fEnd, sectionVect[i].fEnd - sectionVect[i].fStart);
+		CString temp;
+
+		if (sectionVect[i].nDirection == 0)
+		{
+			msg += L"直轨道";
+		}
+		else if (sectionVect[i].nDirection == 1)
+		{
+			msg += L"左转 半径为";
+			temp.Format(L"%.1f", sectionVect[i].fRadius);
+			msg += temp;
+		}
+		else
+		{
+			msg += L"右转 半径为";
+			temp.Format(L"%.1f", sectionVect[i].fRadius);
+			msg += temp;
+		}
+
+		msg += L"\r\n";
+		m_textContent += msg;
 	}
 
 	if (!nextNodePtr)

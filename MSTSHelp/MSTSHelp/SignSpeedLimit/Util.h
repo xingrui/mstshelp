@@ -326,6 +326,15 @@ struct SStationItem
 	SStationItem(float dis, CString sName, int nType, int nNum): fDistance(dis), stationName(sName), nStationType(nType), nStationNum(nNum) {}
 };
 
+struct SSectionInfo
+{
+	float fStart;
+	float fEnd;
+	int nDirection;
+	float fRadius;
+	SSectionInfo(float start, float end, int direction, float radius): fStart(start), fEnd(end), nDirection(direction), fRadius(radius) {};
+};
+
 struct SShowSignalItem
 {
 	ESignalType eSignalType;
@@ -1192,6 +1201,15 @@ struct SEngFile // Size 0xD2C
 	short sDataD2A;
 };
 #pragma pack ()
+struct STrackSection
+{
+	float fSectionSizeSecondLength0; // This value is 0 when this section is not straight, so this value is calculated by data in SectionCurve
+	float fSectionCurveFirstRadius4;
+	float fSectionCurveSecondAngle8;
+	float fSectionSizeFirstGaugeC;
+	float fSectionSkew10; // a degree value much like the SectionCurve describing the direction of the preceding SectionSize. As with curves you need to define skewed TrackSections in pairs with the negative skew first. This makes for a straight path with a slant, not very usefull.
+	float fSectionFlags14;
+};
 struct SEngineOrWagonInConFile
 {
 	SWagFile *wagFilePtr0;
@@ -1208,6 +1226,7 @@ void AddTempSpeedLimit(float currentDistance, STrackNode *node, vector<STempSpee
 void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode *,  int nDirectionOfItemToFind);
 void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction, int nDirectionOfItemToFind);
 void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE, int direction,  int nDirectionOfItemToFind);
+void AddSectionInfo(float currentDistance, const STrackNode &node, vector<SSectionInfo>& sectionVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, STrackSection *pSection);
 
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 CString SpeedPostItemToString(const SSpeedPostItem &item);
