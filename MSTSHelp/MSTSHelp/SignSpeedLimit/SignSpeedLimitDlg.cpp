@@ -444,7 +444,7 @@ void CSignSpeedLimitDlg::OnGetData()
 	{
 		--i;
 		CString msg;
-		msg.Format(L"开始位置 %.1f 结束位置%.1f 长度 %.1f", -backSectionVect[i].fEnd, -backSectionVect[i].fStart, backSectionVect[i].fEnd - backSectionVect[i].fStart);
+		msg.Format(L"%.1f %.1f", -backSectionVect[i].fEnd, -backSectionVect[i].fStart);
 		CString temp;
 
 		if (backSectionVect[i].nDirection == 0)
@@ -453,17 +453,19 @@ void CSignSpeedLimitDlg::OnGetData()
 		}
 		else if (backSectionVect[i].nDirection == 1)
 		{
-			msg += L"左转 半径为";
+			msg += L"右转 半径为";
 			temp.Format(L"%.1f", backSectionVect[i].fRadius);
 			msg += temp;
 		}
 		else
 		{
-			msg += L"右转 半径为";
+			msg += L"左转 半径为";
 			temp.Format(L"%.1f", backSectionVect[i].fRadius);
 			msg += temp;
 		}
 
+		temp.Format(L" 坡度 %.5f", backSectionVect[i].fAngle * 180 / 3.1415926f);
+		msg += temp;
 		msg += L"\r\n";
 		m_textContent += msg;
 	}
@@ -471,7 +473,7 @@ void CSignSpeedLimitDlg::OnGetData()
 	for (size_t i = 0; i < sectionVect.size(); ++i)
 	{
 		CString msg;
-		msg.Format(L"开始位置 %.1f 结束位置%.1f 长度 %.1f", sectionVect[i].fStart, sectionVect[i].fEnd, sectionVect[i].fEnd - sectionVect[i].fStart);
+		msg.Format(L"%.1f %.1f", sectionVect[i].fStart, sectionVect[i].fEnd);
 		CString temp;
 
 		if (sectionVect[i].nDirection == 0)
@@ -480,17 +482,19 @@ void CSignSpeedLimitDlg::OnGetData()
 		}
 		else if (sectionVect[i].nDirection == 1)
 		{
-			msg += L"左转 半径为";
+			msg += L"右转 半径为";
 			temp.Format(L"%.1f", sectionVect[i].fRadius);
 			msg += temp;
 		}
 		else
 		{
-			msg += L"右转 半径为";
+			msg += L"左转 半径为";
 			temp.Format(L"%.1f", sectionVect[i].fRadius);
 			msg += temp;
 		}
 
+		temp.Format(L" 坡度 %.5f", sectionVect[i].fAngle * 180 / 3.1415926f);
+		msg += temp;
 		msg += L"\r\n";
 		m_textContent += msg;
 	}

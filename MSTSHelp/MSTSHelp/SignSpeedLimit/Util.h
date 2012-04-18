@@ -332,7 +332,8 @@ struct SSectionInfo
 	float fEnd;
 	int nDirection;
 	float fRadius;
-	SSectionInfo(float start, float end, int direction, float radius): fStart(start), fEnd(end), nDirection(direction), fRadius(radius) {};
+	float fAngle;
+	SSectionInfo(float start, float end, int direction, float radius, float angle): fStart(start), fEnd(end), nDirection(direction), fRadius(radius), fAngle(angle) {};
 };
 
 struct SShowSignalItem

@@ -389,10 +389,11 @@ void AddSectionInfo(float currentDistance, const STrackNode &node, vector<SSecti
 			nAngle = 1;
 
 		float fDis = currentDistance + fCurrentLength;
-		fDis += (nDirection == nDirectionOfItemToFind) * curSection.fSectionSizeSecondLength0;
+		fDis += (nDirection != nDirectionOfItemToFind) * curSection.fSectionSizeSecondLength0;
+		float fHeightAngle = nDirectionOfItemToFind ? -pSectionData[i].AX : pSectionData[i].AX;
 
 		if (fDis > 0)
-			sectionVect.push_back(SSectionInfo(currentDistance + fCurrentLength, currentDistance + fCurrentLength + curSection.fSectionSizeSecondLength0, nAngle, fRaidus));
+			sectionVect.push_back(SSectionInfo(currentDistance + fCurrentLength, currentDistance + fCurrentLength + curSection.fSectionSizeSecondLength0, nAngle, fRaidus, fHeightAngle));
 
 		fCurrentLength += curSection.fSectionSizeSecondLength0;
 	}
