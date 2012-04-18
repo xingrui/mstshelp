@@ -56,6 +56,7 @@ CSignSpeedLimitDlg::CSignSpeedLimitDlg(CWnd *pParent /*=NULL*/)
 	, m_bShowTaskLimit(FALSE)
 	, m_uForwardDistance(0)
 	, m_bShowSignal(FALSE)
+	, m_bShowTrackInfo(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -71,6 +72,7 @@ void CSignSpeedLimitDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Check(pDX, IDC_CHECK4, m_bAutoGetData);
 	DDX_Check(pDX, IDC_CHECK5, m_bShowTaskLimit);
 	DDX_Check(pDX, IDC_CHECK6, m_bShowSignal);
+	DDX_Check(pDX, IDC_CHECK7, m_bShowTrackInfo);
 }
 
 BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
@@ -86,6 +88,7 @@ BEGIN_MESSAGE_MAP(CSignSpeedLimitDlg, CDialog)
 	ON_BN_CLICKED(IDC_CHECK4, &CSignSpeedLimitDlg::OnBnClickedCheck)
 	ON_BN_CLICKED(IDC_CHECK5, &CSignSpeedLimitDlg::OnBnClickedCheck)
 	ON_BN_CLICKED(IDC_CHECK6, &CSignSpeedLimitDlg::OnBnClickedCheck)
+	ON_BN_CLICKED(IDC_CHECK7, &CSignSpeedLimitDlg::OnBnClickedCheck)
 END_MESSAGE_MAP()
 
 
@@ -124,6 +127,7 @@ BOOL CSignSpeedLimitDlg::OnInitDialog()
 	m_bShowTaskLimit = TRUE;
 	m_bShowSiding = TRUE;
 	m_bShowSignal = TRUE;
+	m_bShowTrackInfo = TRUE;
 	m_bAutoGetData = FALSE;
 	m_uForwardDistance = 4;
 	m_textContent = L"";
@@ -440,63 +444,27 @@ void CSignSpeedLimitDlg::OnGetData()
 		m_textContent += L"****************************************************\r\n";
 	}
 
-	for (size_t i = backSectionVect.size(); i > 0;)
+	if (m_bShowTrackInfo)
 	{
-		--i;
-		CString msg;
-		msg.Format(L"%.1f %.1f", -backSectionVect[i].fEnd, -backSectionVect[i].fStart);
-		CString temp;
-
-		if (backSectionVect[i].nDirection == 0)
+		for (size_t i = backSectionVect.size(); i > 0;)
 		{
-			msg += L"直轨道";
-		}
-		else if (backSectionVect[i].nDirection == 1)
-		{
-			msg += L"右转 半径为";
-			temp.Format(L"%.1f", backSectionVect[i].fRadius);
-			msg += temp;
-		}
-		else
-		{
-			msg += L"左转 半径为";
-			temp.Format(L"%.1f", backSectionVect[i].fRadius);
-			msg += temp;
+			--i;
+			CString msg;
+			msg.Format(L"%.1f %.1f ", -backSectionVect[i].fEnd, -backSectionVect[i].fStart);
+			m_textContent += msg;
+			m_textContent += getTrackSectionString(backSectionVect[i]);
 		}
 
-		temp.Format(L" 坡度 %.5f", backSectionVect[i].fAngle * 180 / 3.1415926f);
-		msg += temp;
-		msg += L"\r\n";
-		m_textContent += msg;
-	}
-
-	for (size_t i = 0; i < sectionVect.size(); ++i)
-	{
-		CString msg;
-		msg.Format(L"%.1f %.1f", sectionVect[i].fStart, sectionVect[i].fEnd);
-		CString temp;
-
-		if (sectionVect[i].nDirection == 0)
+		for (size_t i = 0; i < sectionVect.size(); ++i)
 		{
-			msg += L"直轨道";
-		}
-		else if (sectionVect[i].nDirection == 1)
-		{
-			msg += L"右转 半径为";
-			temp.Format(L"%.1f", sectionVect[i].fRadius);
-			msg += temp;
-		}
-		else
-		{
-			msg += L"左转 半径为";
-			temp.Format(L"%.1f", sectionVect[i].fRadius);
-			msg += temp;
+			CString msg;
+			msg.Format(L"%.1f %.1f ", sectionVect[i].fStart, sectionVect[i].fEnd);
+			m_textContent += msg;
+			m_textContent += msg;
+			m_textContent += getTrackSectionString(sectionVect[i]);
 		}
 
-		temp.Format(L" 坡度 %.5f", sectionVect[i].fAngle * 180 / 3.1415926f);
-		msg += temp;
-		msg += L"\r\n";
-		m_textContent += msg;
+		m_textContent += L"****************************************************\r\n";
 	}
 
 	if (!nextNodePtr)

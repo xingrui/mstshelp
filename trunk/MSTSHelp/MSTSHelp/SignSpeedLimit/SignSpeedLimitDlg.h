@@ -51,4 +51,6 @@ public:
 	UINT m_uForwardDistance;
 public:
 	void OnGetData();
+public:
+	BOOL m_bShowTrackInfo;
 };

@@ -1231,6 +1231,7 @@ void AddSectionInfo(float currentDistance, const STrackNode &node, vector<SSecti
 
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 CString SpeedPostItemToString(const SSpeedPostItem &item);
+CString getTrackSectionString(const SSectionInfo &info);
 CString getStationString(const SStationItem &item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
