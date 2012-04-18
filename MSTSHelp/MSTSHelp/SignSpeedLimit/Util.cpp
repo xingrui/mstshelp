@@ -62,6 +62,32 @@ CString getStationString(const SStationItem &item)
 	msg += L"\r\n";
 	return msg;
 }
+CString getTrackSectionString(const SSectionInfo &info)
+{
+	CString temp, msg;
+
+	if (info.nDirection == 0)
+	{
+		msg += L"直轨道";
+	}
+	else if (info.nDirection == 1)
+	{
+		msg += L"右转 半径为";
+		temp.Format(L"%.1f", info.fRadius);
+		msg += temp;
+	}
+	else
+	{
+		msg += L"左转 半径为";
+		temp.Format(L"%.1f", info.fRadius);
+		msg += temp;
+	}
+
+	temp.Format(L" 坡度 %.5f", info.fAngle * 180 / 3.1415926f);
+	msg += temp;
+	msg += L"\r\n";
+	return msg;
+}
 bool GetTrainHandle(HANDLE &hProcess)
 {
 	if (hProcess)
