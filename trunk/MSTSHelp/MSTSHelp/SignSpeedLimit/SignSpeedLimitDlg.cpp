@@ -460,7 +460,6 @@ void CSignSpeedLimitDlg::OnGetData()
 			CString msg;
 			msg.Format(L"%.1f %.1f ", sectionVect[i].fStart, sectionVect[i].fEnd);
 			m_textContent += msg;
-			m_textContent += msg;
 			m_textContent += getTrackSectionString(sectionVect[i]);
 		}
 
