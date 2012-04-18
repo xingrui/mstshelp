@@ -365,7 +365,40 @@ void AddTempSpeedLimit(float currentDistance, STrackNode *nodePtr, vector<STempS
 		}
 	}
 }
+void AddSectionInfo(float currentDistance, const STrackNode &node, vector<SSectionInfo>& sectionVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, STrackSection *pSection)
+{
+	int num = node.nSectionNum;
+	SSectionData *pSectionData = new SSectionData[num];
+	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SSectionData));
+	int start = nDirection ? 0 : num - 1;
+	int end = nDirection ? num : -1;
+	int delta = nDirection ? 1 : -1;
+	float fCurrentLength = 0;
 
+	for (int i = start; i != end; i += delta)
+	{
+		STrackSection *pCurSection = pSection + pSectionData[i].sectionIndex;
+		STrackSection curSection;
+		ReadTrainProcess(handle, pCurSection, &curSection, sizeof(STrackSection));
+		float fRaidus = curSection.fSectionCurveFirstRadius4;
+		int nAngle = -1;
+
+		if (curSection.fSectionCurveSecondAngle8 == 0)
+			nAngle = 0;
+		else if ((curSection.fSectionCurveSecondAngle8 > 0) ^ nDirectionOfItemToFind)
+			nAngle = 1;
+
+		float fDis = currentDistance + fCurrentLength;
+		fDis += (nDirection == nDirectionOfItemToFind) * curSection.fSectionSizeSecondLength0;
+
+		if (fDis > 0)
+			sectionVect.push_back(SSectionInfo(currentDistance + fCurrentLength, currentDistance + fCurrentLength + curSection.fSectionSizeSecondLength0, nAngle, fRaidus));
+
+		fCurrentLength += curSection.fSectionSizeSecondLength0;
+	}
+
+	delete[] pSectionData;
+}
 void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
