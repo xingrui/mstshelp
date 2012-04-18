@@ -141,13 +141,8 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 		int start = nDirection ? 0 : num - 1;
 		int end = nDirection ? num : -1;
 		int delta = nDirection ? 1 : -1;
-		size_t pointer;
-		ReadTrainProcess(handle, (LPCVOID)THIS_POINTER_MEM, &pointer, 4);
-		pointer += 230;
 		size_t nTrainType;
-		ReadTrainProcess(handle, (LPCVOID)pointer, &nTrainType, 4);
-		pointer = nTrainType;
-		ReadTrainProcess(handle, (LPCVOID)pointer, &nTrainType, 4);
+		ReadTrainProcess(handle, (LPCVOID)TRAIN_INFO_MEM, &nTrainType, 4);
 
 		for (int i = start; i != end; i += delta)
 		{
