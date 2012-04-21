@@ -304,7 +304,7 @@ void TestAndSetSignalItem(HANDLE handle, const SSignalItem &signalItem, int nVal
 	/*** 这里面我也不知道是什么意思 结尾***/
 }
 
-void AddSignalItem(float currentDistance, const STrackNode &node, vector<SForwardLimit>& limitVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
+void AddSignalItem(float currentDistance, const STrackNode &node, vector<SForwardLimit>& limitVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, float fCarriageLength)
 {
 	int num = node.nTrItemNum;
 
@@ -363,8 +363,8 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SForwar
 					{
 						TestAndSetSignalItem(handle, savedSignalItem, savedSignalState.SIGASPF_flags, savedSignalState.fSpeedLimit);
 
-						if (fSavedDistanceToTrackStart + currentDistance > 0 && savedSignalState.fSpeedLimit >= 0)
-							limitVect.push_back(SForwardLimit(fSavedDistanceToTrackStart + currentDistance, savedSignalState.fSpeedLimit));
+						if (fSavedDistanceToTrackStart + currentDistance - fCarriageLength > 0 && savedSignalState.fSpeedLimit >= 0)
+							limitVect.push_back(SForwardLimit(fSavedDistanceToTrackStart + currentDistance - fCarriageLength  , savedSignalState.fSpeedLimit));
 					}
 
 					savedSignalState = signalState;
@@ -374,10 +374,10 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SForwar
 			}
 		}
 
-		if (savedSignalItem.fLocationInTrackNode > 0 && fSavedDistanceToTrackStart + currentDistance > 0 && savedSignalState.fSpeedLimit >= 0)
+		if (savedSignalItem.fLocationInTrackNode > 0 && fSavedDistanceToTrackStart + currentDistance - fCarriageLength > 0 && savedSignalState.fSpeedLimit >= 0)
 		{
 			TestAndSetSignalItem(handle, savedSignalItem, savedSignalState.SIGASPF_flags, savedSignalState.fSpeedLimit);
-			limitVect.push_back(SForwardLimit(fSavedDistanceToTrackStart + currentDistance, savedSignalState.fSpeedLimit));
+			limitVect.push_back(SForwardLimit(fSavedDistanceToTrackStart + currentDistance - fCarriageLength , savedSignalState.fSpeedLimit));
 		}
 
 		delete[]memory;
@@ -413,6 +413,10 @@ void GetForwardSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitLi
 	else
 		forwardLength = headInfo.fLocationInNode - trackNode.fTrackNodeLength;
 
+	int nOffset = bIsForward ? 0x62 : 0x66;
+	float fCarriageLength;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
+	fCarriageLength /= 2;
 	int nDirectOfNextNode = nDirectOfHeadNode;
 	STrackNode *nextNodePtr = headInfo.trackNodePtr;
 
@@ -424,7 +428,7 @@ void GetForwardSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitLi
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
 		AddTempSpeedLimit(forwardLength, currentNodePtr, limitList, m_hTrainProcess, nDirectOfCurrentNode, fTempLimit);
 		AddSpeedPostLimit(forwardLength, trackNode, limitList, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, !nDirectOfCurrentNode);
-		AddSignalItem(forwardLength, trackNode, limitList, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode);
+		AddSignalItem(forwardLength, trackNode, limitList, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, fCarriageLength);
 		forwardLength += trackNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
