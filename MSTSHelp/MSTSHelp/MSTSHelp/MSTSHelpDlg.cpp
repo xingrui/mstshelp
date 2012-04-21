@@ -5,6 +5,7 @@
 #include "MSTSHelp.h"
 #include "MSTSHelpDlg.h"
 #include "Logger.h"
+#include "UtilTDBFile.h"
 #include <assert.h>
 #include <math.h>
 #include <process.h>
@@ -208,7 +209,7 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 		if (!m_bIsProcessing)
 		{
 			m_bIsProcessing = true;
-			m_listLimit.clear();
+			m_vectLimit.clear();
 			float fTrainBreak;
 			ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&fTrainBreak, 4, 4, 0, 0x8, 0x10, 0x442);
 
@@ -379,10 +380,10 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 {
 	CString str;
 	float fCalculatedSpeedLimit = m_fCurrentSpeedLimit;
-	list<SForwardLimit>::iterator ite = m_listLimit.begin();
+	vector<SForwardLimit>::iterator ite = m_vectLimit.begin();
 	bool bInBreaking = false;
 
-	while (ite != m_listLimit.end())
+	while (ite != m_vectLimit.end())
 	{
 		if (ite->m_fDistance < 1.0F && ite->m_fSpeedLimit == 0)
 		{
@@ -611,8 +612,12 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	//float fForwardTurnOff;
 	int nLevelBit;
 	CString strColor;
+	m_fTaskTempSpeedLimit = GetTaskTempSpeedLimit(hProcess);
 	CHECK(ReadTrainProcess(hProcess, (void *)CUR_SPEED_MEM, (LPVOID)&m_fCurrentSpeed, 4))
 	CHECK(ReadTrainProcess(hProcess, (void *)SPEED_LIMIT_MEM, (LPVOID)&m_fCurrentSpeedLimit, 4))
+	BOOL bIsInTaskLimit;
+	ReadTrainProcess(hProcess, (void *)0x809AAC, (LPVOID)&bIsInTaskLimit, 4);
+	m_fCurrentSpeedLimit = bIsInTaskLimit ? m_fTaskTempSpeedLimit : m_fCurrentSpeedLimit;
 	CHECK(ReadTrainProcess(hProcess, (void *)FOWARD_LIMIT_MEM, (LPVOID)&m_fForwardSignalLimit, 4))
 	CHECK(ReadTrainProcess(hProcess, (void *)SIG_DISTANT_MEM, (LPVOID)&m_fForwardSignalDistance, 4))
 	CHECK(ReadTrainProcess(hProcess, (void *)S_GAME_TIME_MEM, (LPVOID)&m_sGameTime, 12))
@@ -886,7 +891,7 @@ void CMSTSHelpDlg::PrepareDataAndControlTrain(HANDLE hProcess)
 			SForwardLimit limit;
 			limit.m_fDistance = m_fForwardSignalDistance -= 40;
 			limit.m_fSpeedLimit = 0;
-			m_listLimit.push_back(limit);
+			m_vectLimit.push_back(limit);
 		}
 	}
 	else if (m_fForwardSignalLimit > 0)
@@ -894,13 +899,14 @@ void CMSTSHelpDlg::PrepareDataAndControlTrain(HANDLE hProcess)
 		SForwardLimit limit;
 		limit.m_fDistance = m_fForwardSignalDistance;
 		limit.m_fSpeedLimit = m_fForwardSignalLimit;
-		m_listLimit.push_back(limit);
+		m_vectLimit.push_back(limit);
 	}
 	else
 	{
 		//前方限速为-1，表示没有前方信号限速
 	}
 
+	GetForwardSpeedLimit(m_hTrainProcess, m_vectLimit, m_fTaskTempSpeedLimit);
 	AdjustPowerAndBreak();
 }
 
@@ -920,7 +926,7 @@ void CMSTSHelpDlg::AutoConnectTrain(HANDLE hProcess)
 			SForwardLimit limit;
 			limit.m_fDistance = 20;
 			limit.m_fSpeedLimit = 1.0;
-			m_listLimit.push_back(limit);
+			m_vectLimit.push_back(limit);
 		}
 		else
 		{
@@ -932,7 +938,7 @@ void CMSTSHelpDlg::AutoConnectTrain(HANDLE hProcess)
 				limit.m_fDistance = distance  / 3;
 
 			limit.m_fSpeedLimit = 1.0;
-			m_listLimit.push_back(limit);
+			m_vectLimit.push_back(limit);
 		}
 
 		if (MakePowered(hProcess, true))
@@ -982,7 +988,7 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 		SForwardLimit limit;
 		limit.m_fDistance = fNextStationDistance;
 		limit.m_fSpeedLimit = 0;
-		m_listLimit.push_back(limit);
+		m_vectLimit.push_back(limit);
 	}
 	else if (m_currentSchedule.m_fActualArrivalTime != 0 && lessThan(m_fGameTime, m_currentSchedule.m_fDepartTime))
 	{
@@ -1090,10 +1096,10 @@ BOOL CMSTSHelpDlg::IsTaskMode(HANDLE hProcess)
 {
 	//是否有前方到站信息
 	SHead head;
-	SList node;
+	SNode node;
 	CHECK(ReadTrainProcess(hProcess, (void *)CURRENT_SCHEDULE_MEM, (LPVOID)&head, sizeof(SHead)))
-	CHECK(ReadTrainProcess(hProcess, (void *)head.head, (LPVOID)&node, sizeof(SList)))
-	return node.m_next != head.head;
+	CHECK(ReadTrainProcess(hProcess, (void *)head.head, (LPVOID)&node, sizeof(SNode)))
+	return node.next != head.head;
 }
 
 void CMSTSHelpDlg::OnAutoDriveChanged()

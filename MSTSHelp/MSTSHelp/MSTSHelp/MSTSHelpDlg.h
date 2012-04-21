@@ -41,13 +41,6 @@ public:
 		AUTO_SKIP_ERROR_TIMER = 12,
 	} TIMER_TYPE;
 
-	struct SForwardLimit
-	{
-		float m_fDistance;
-		float m_fSpeedLimit;
-	};
-
-
 	static const int DATA_SPAN = 1000;
 	float m_fExpectedAccerlate;
 protected:
@@ -118,6 +111,7 @@ private:
 	int m_nBreakLevel;
 	SGameTime m_sGameTime;
 	float m_fGameTime;
+	float m_fTaskTempSpeedLimit;
 private:
 	//Schedule information
 	vector<SSchedule> m_vectSchedule;
@@ -147,7 +141,7 @@ private:
 	afx_msg void OnAutoSave();
 	Locomotive m_loco;
 private:
-	list<SForwardLimit> m_listLimit;
+	vector<SForwardLimit> m_vectLimit;
 	bool m_bIsProcessing;
 	float m_fCurrentPower;
 	BOOL m_isConnectMode;

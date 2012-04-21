@@ -86,18 +86,27 @@ struct SSchedule
 	}
 };
 
-struct SList
+struct SNode
 {
-	SList *m_next;
-	SList *m_pre;
-	void *m_data;
+	SNode *next;
+	SNode *prev;
+	void *pointer;
 };
 
 struct SHead
 {
-	SList *head;
+	SNode *head;
 	SSchedule *currentSchedule;
 };
+
+struct SForwardLimit
+{
+	float m_fDistance;
+	float m_fSpeedLimit;
+	SForwardLimit() {}
+	SForwardLimit(float fDistance, float fSpeedLimit): m_fDistance(fDistance), m_fSpeedLimit(fSpeedLimit) {}
+};
+
 inline BOOL ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
 {
 	if (!ReadProcessMemory(hProcess, lpBaseAddress, lpBuffer, nSize, NULL))
@@ -109,6 +118,7 @@ bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, 
 bool WritePointerMemory(HANDLE hProcess, LPVOID lpBaseAddress, LPCVOID lpBuffer, SIZE_T nSize, int num, ...);
 bool GetTrainHandle(HANDLE &hProcess);
 Direction GetDirection(Locomotive loco, HANDLE hProcess);
+float GetTaskTempSpeedLimit(HANDLE hProcess);
 
 //列车的类型
 //(((this+106)+666)+136)
