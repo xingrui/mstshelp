@@ -204,7 +204,14 @@ Direction GetDirection(Locomotive loco, HANDLE hProcess)
 
 	return InValid;
 }
-
+float GetTaskTempSpeedLimit(HANDLE hProcess)
+{
+	float *fTempLimitPtr;
+	ReadTrainProcess(hProcess, (LPCVOID)0x809B48, &fTempLimitPtr, 4);
+	float fTempLimit;
+	ReadTrainProcess(hProcess, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4);
+	return fTempLimit;
+}
 //列车的类型
 //(((this+106)+666)+136)
 Locomotive GetLocomotive(HANDLE hProcess)
