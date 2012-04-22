@@ -452,6 +452,13 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 			}
 		}
 
+		float fZero = 0;
+
+		if (m_fCurrentSpeed > fCalculatedSpeedLimit + 2 / 3.6f)
+		{
+			WritePointerMemory(m_hTrainProcess, (LPVOID)POWER_INFO_MEM, &fZero, 4, 1, 0x8C);
+		}
+
 		//判断是否要对刹车进行处理
 
 		if (m_fCurrentSpeed > 1.3 * fCalculatedSpeedLimit + 3)
