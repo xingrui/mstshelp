@@ -32,9 +32,9 @@ using std::vector;
 
 #define TAIL_TRACK_MEM 0x809944
 // 车尾所在的TrackNode的地址
-struct STrackNode;
+struct SVectorNode;
 
-struct SSectionData
+struct SVectorSection
 {
 	unsigned short       sectionIndex;//179
 	unsigned short       shapeIndex;  //32250
@@ -62,7 +62,7 @@ struct SSectionTypeData
 
 struct SSubConnectStruct
 {
-	STrackNode *nodePtr;
+	SVectorNode *nodePtr;
 	int nDirect;
 };
 struct SConnectStruct
@@ -111,7 +111,7 @@ struct SAllTrItem
 };
 struct STDBFile
 {
-	STrackNode *trackNodes;
+	SVectorNode *trackNodes;
 	int TrackNodeNumber;
 	int TrackNodeNumber2;
 	int NodeNumMinus1;
@@ -121,7 +121,7 @@ struct STDBFile
 	SAllTrItem *allTrItemPtr;
 	wchar_t TDBFileName[0x400];
 };
-struct STrackNode
+struct SVectorNode
 {
 	DWORD data0;
 	int data4;
@@ -129,7 +129,7 @@ struct STrackNode
 	DWORD data12;
 	SConnectNode *OutConnectNodePtr;
 	DWORD data20;
-	SSectionData *sectionArrayPtr;
+	SVectorSection *sectionArrayPtr;
 	int   nSectionNum;
 	STrItem  **trItemArrayPtr;
 	int   nTrItemNum;
@@ -139,9 +139,9 @@ struct STrackNode
 };
 struct STrackInfo
 {
-	STrackNode     *trackNodePtr;
+	SVectorNode     *vectorNodePtr;
 	int             nCurrentSectionNum;
-	SSectionData  *sectionPtr;
+	SVectorSection  *sectionPtr;
 	int             nDirection;
 	float           fLocationInNode;
 	float           fLocationInSection;
@@ -162,7 +162,7 @@ struct SSpeedPostItem
 	ItemType nType;//8
 	int nSubType; //2
 	int unknown3; //0
-	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
+	float fLocationInVectorNode; // 该Item在VectorNode当中的位置
 	int TrItemSDataSecond;
 	float TrItemPDataFirst;
 	float TrItemPDataSecond;
@@ -257,7 +257,7 @@ struct SSignalItem
 	ItemType nType;//0
 	int nTrItemIndexInTrackNode;
 	int nData8;
-	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
+	float fLocationInVectorNode; // 该Item在VectorNode当中的位置
 	DWORD dwData10;
 	SSignalType *pSignalType14;
 	DWORD dwData18;
@@ -276,7 +276,7 @@ struct SPlatformItem
 	ItemType nType;//3
 	int nTrItemIndexInTrackNode;
 	int nData8;
-	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
+	float fLocationInVectorNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;   // TrItemSData的第二个数据
 	float fTrItemRDataFirst;    // 同上面的，顾名思义吧
 	float fTrItemRDataThird;
@@ -296,7 +296,7 @@ struct SSidingItem
 	int type; // 6
 	int nTrItemIndexInTrackNode;
 	int unknown;
-	float fLocationInTrackNode; // 该Item在VectorNode当中的位置
+	float fLocationInVectorNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;
 	wchar_t *sidingName;   // 指向边线的名称
 	int   nSidingTrItemDataFirst;
@@ -347,9 +347,9 @@ struct SShowSignalItem
 
 struct SProcessData
 {
-	const STrackNode *nodePtr0;
+	const SVectorNode *nodePtr0;
 	int nSectionNum4;
-	SSectionData *sectionPtr8;
+	SVectorSection *sectionPtr8;
 	size_t nData12;
 	float fDistanceFromNodeStart16;
 	float fDistanceFromSectionStart20;
@@ -365,7 +365,7 @@ struct SProcessData
 
 struct STempSpeed
 {
-	STrackNode *nodePtr;
+	SVectorNode *nodePtr;
 	float fStart;
 	float fEnd;
 };
@@ -1223,11 +1223,11 @@ struct SEngineOrWagonInConFile
 	wchar_t EngineDataFirstD4[0x60];
 };
 
-void AddTempSpeedLimit(float currentDistance, STrackNode *node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
-void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, STrackNode *,  int nDirectionOfItemToFind);
-void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction, int nDirectionOfItemToFind);
-void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE, int direction,  int nDirectionOfItemToFind);
-void AddSectionInfo(float currentDistance, const STrackNode &node, vector<SSectionInfo>& sectionVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, STrackSection *pSection);
+void AddTempSpeedLimit(float currentDistance, SVectorNode *node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
+void AddSpeedPostLimit(float currentDistance, const SVectorNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE, int direction, SVectorNode *,  int nDirectionOfItemToFind);
+void AddStationItem(float currentDistance, const SVectorNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int direction, int nDirectionOfItemToFind);
+void AddSignalItem(float currentDistance, const SVectorNode &node, vector<SShowSignalItem>& signalVect, HANDLE, int direction,  int nDirectionOfItemToFind);
+void AddSectionInfo(float currentDistance, const SVectorNode &node, vector<SSectionInfo>& sectionVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, STrackSection *pSection);
 
 bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize, int num, ...);
 CString SpeedPostItemToString(const SSpeedPostItem &item);
@@ -1235,9 +1235,9 @@ CString getTrackSectionString(const SSectionInfo &info);
 CString getStationString(const SStationItem &item);
 bool GetTrainHandle(HANDLE &hProcess);
 void *GetTrainPointer(HANDLE hProcess);
-STrackNode *GetNext(STrackNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
-                    int &nextDirect);
-STrackNode *GetNextNode(HANDLE handle, const STrackNode &node, STrackNode *nodePtr, int direction, int &nextDirect);
+SVectorNode *GetNext(SVectorNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
+                     int &nextDirect);
+SVectorNode *GetNextNode(HANDLE handle, const SVectorNode &node, SVectorNode *nodePtr, int direction, int &nextDirect);
 
 void process_AX(float *fArray, float AX);
 void process_AY(float *fArray, float AY);
@@ -1245,14 +1245,14 @@ void process_AZ(float *fArray, float AZ);
 float *process(HANDLE handle, float *fMatrix, float *fXYZ);
 float *process30(HANDLE handle, float *fMatrix, float *fXYZ);
 
-bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode &node, STrackNode *nodePtr);
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInVectorNode, int nDirection, const SVectorNode &node, SVectorNode *nodePtr);
 CString IteratorList(HANDLE handle, void *head, CString (*func)(HANDLE, void *));
 CString DefaultHandle(HANDLE handle, void *pointer);
-void getSectionData_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, int, int , SSectionTypeData *basePtr);
-int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, float fLocation, SSectionTypeData *basePtr);
+void getSectionData_Modified(HANDLE handle, SProcessData &processData, const SVectorNode &node, int, int , SSectionTypeData *basePtr);
+int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const SVectorNode &node, float fLocation, SSectionTypeData *basePtr);
 
-void getSectionData(HANDLE handle, SProcessData &processData, const STrackNode &node, int sectionNum, float *fArray, SSectionTypeData *basePtr);
-int AdjustAngle(HANDLE handle, SProcessData &processData, const STrackNode &node, float fLocation, SSectionTypeData *basePtr);
+void getSectionData(HANDLE handle, SProcessData &processData, const SVectorNode &node, int sectionNum, float *fArray, SSectionTypeData *basePtr);
+int AdjustAngle(HANDLE handle, SProcessData &processData, const SVectorNode &node, float fLocation, SSectionTypeData *basePtr);
 
 inline void ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)
 {

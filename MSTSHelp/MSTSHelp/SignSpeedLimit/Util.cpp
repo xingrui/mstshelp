@@ -156,7 +156,7 @@ bool ReadPointerMemory(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, 
 	ReadTrainProcess(hProcess, addressPointer, lpBuffer, nSize);
 	return true;
 }
-void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int nDirection, STrackNode *nodePtr, int nDirectionOfItemToFind)
+void AddSpeedPostLimit(float currentDistance, const SVectorNode &node, vector<SSpeedPostLimit>& limitVect, HANDLE handle, int nDirection, SVectorNode *nodePtr, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
 
@@ -186,12 +186,12 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 				{
 					if ((subType & 0x80) || subType & 0x20 && nTrainType & 2 || subType & 0x40 && nTrainType & 4)
 					{
-						float distanceToTrackStart = nDirection ? speedPostItem.fLocationInTrackNode : node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
+						float distanceToTrackStart = nDirection ? speedPostItem.fLocationInVectorNode : node.fTrackNodeLength - speedPostItem.fLocationInVectorNode;
 
 						if (currentDistance + distanceToTrackStart > 0)
 						{
 							// 判断该标志限速是否有效，根据方向判断
-							if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, nDirectionOfItemToFind, node, nodePtr))
+							if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInVectorNode, nDirectionOfItemToFind, node, nodePtr))
 							{
 								float speed = speedPostItem.SpeedpostTrItemDataSecond;
 
@@ -208,11 +208,11 @@ void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SSp
 				{
 					if ((subType & 0x80) || subType & 0x20 && nTrainType & 2 || subType & 0x40 && nTrainType & 4)
 					{
-						float distanceToTrackStart = nDirection ? speedPostItem.fLocationInTrackNode : node.fTrackNodeLength - speedPostItem.fLocationInTrackNode;
+						float distanceToTrackStart = nDirection ? speedPostItem.fLocationInVectorNode : node.fTrackNodeLength - speedPostItem.fLocationInVectorNode;
 
 						if (currentDistance + distanceToTrackStart > 0)
 						{
-							if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInTrackNode, nDirectionOfItemToFind, node, nodePtr))
+							if (IsSpeedPostValid(handle, speedPostItem.fAngle, speedPostItem.fLocationInVectorNode, nDirectionOfItemToFind, node, nodePtr))
 							{
 								limitVect.push_back(SSpeedPostLimit(currentDistance +
 								                                    distanceToTrackStart, -1));
@@ -270,7 +270,7 @@ void TestAndSetSignalItem(HANDLE handle, const SSignalItem &signalItem, int nVal
 	/*** 这里面我也不知道是什么意思 结尾***/
 }
 
-void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
+void AddSignalItem(float currentDistance, const SVectorNode &node, vector<SShowSignalItem>& signalVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
 
@@ -283,7 +283,7 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 		int delta = nDirection ? 1 : -1;
 		SSignalItem savedSignalItem;
 		savedSignalItem.cLightColor21 = 0;
-		savedSignalItem.fLocationInTrackNode = -1;
+		savedSignalItem.fLocationInVectorNode = -1;
 		float fSavedDistanceToTrackStart;
 		SSignalState savedSignalState;
 
@@ -301,7 +301,7 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 				ReadTrainProcess(handle, signalItem.pSignalType14, (LPVOID)&signalType, sizeof(SSignalType));
 				SSignalState signalState;
 				ReadTrainProcess(handle, signalType.pSignalStateArray50 + signalItem.cLightColor21, (LPVOID)&signalState, sizeof(SSignalState));
-				float distanceToTrackStart = nDirection ? signalItem.fLocationInTrackNode : node.fTrackNodeLength - signalItem.fLocationInTrackNode;
+				float distanceToTrackStart = nDirection ? signalItem.fLocationInVectorNode : node.fTrackNodeLength - signalItem.fLocationInVectorNode;
 
 				if (nDirectionOfItemToFind != signalItem.cSignalItemDirection20)
 					continue; // 判断方向
@@ -314,7 +314,7 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 					continue;
 				}
 
-				float fDelta = signalItem.fLocationInTrackNode - savedSignalItem.fLocationInTrackNode;
+				float fDelta = signalItem.fLocationInVectorNode - savedSignalItem.fLocationInVectorNode;
 				fDelta = fDelta < 0 ? -fDelta : fDelta;
 
 				if (fDelta < 0.1)
@@ -328,7 +328,7 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 				}
 				else
 				{
-					if (savedSignalItem.fLocationInTrackNode > 0)
+					if (savedSignalItem.fLocationInVectorNode > 0)
 					{
 						TestAndSetSignalItem(handle, savedSignalItem, savedSignalState.SIGASPF_flags, savedSignalState.fSpeedLimit);
 
@@ -343,7 +343,7 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 			}
 		}
 
-		if (savedSignalItem.fLocationInTrackNode > 0 && fSavedDistanceToTrackStart + currentDistance > 0)
+		if (savedSignalItem.fLocationInVectorNode > 0 && fSavedDistanceToTrackStart + currentDistance > 0)
 		{
 			TestAndSetSignalItem(handle, savedSignalItem, savedSignalState.SIGASPF_flags, savedSignalState.fSpeedLimit);
 			signalVect.push_back(SShowSignalItem(NORMAL, fSavedDistanceToTrackStart + currentDistance, savedSignalState.fSpeedLimit, savedSignalItem.cLightColor21));
@@ -353,12 +353,12 @@ void AddSignalItem(float currentDistance, const STrackNode &node, vector<SShowSi
 	}
 }
 
-void AddTempSpeedLimit(float currentDistance, STrackNode *nodePtr, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction)
+void AddTempSpeedLimit(float currentDistance, SVectorNode *nodePtr, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction)
 {
 	SNode *head;
 	SNode ite;
-	STrackNode node;
-	ReadTrainProcess(handle, (void *)nodePtr, (LPVOID)&node, sizeof(STrackNode));
+	SVectorNode node;
+	ReadTrainProcess(handle, (void *)nodePtr, (LPVOID)&node, sizeof(SVectorNode));
 	ReadTrainProcess(handle, (LPCVOID)TASK_LIMIT_HEAD_MEM, &head, 4);
 	ReadTrainProcess(handle, head, &ite, sizeof(SNode));
 
@@ -391,11 +391,11 @@ void AddTempSpeedLimit(float currentDistance, STrackNode *nodePtr, vector<STempS
 		}
 	}
 }
-void AddSectionInfo(float currentDistance, const STrackNode &node, vector<SSectionInfo>& sectionVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, STrackSection *pSection)
+void AddSectionInfo(float currentDistance, const SVectorNode &node, vector<SSectionInfo>& sectionVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, STrackSection *pSection)
 {
 	int num = node.nSectionNum;
-	SSectionData *pSectionData = new SSectionData[num];
-	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SSectionData));
+	SVectorSection *pSectionData = new SVectorSection[num];
+	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
 	int start = nDirection ? 0 : num - 1;
 	int end = nDirection ? num : -1;
 	int delta = nDirection ? 1 : -1;
@@ -426,7 +426,7 @@ void AddSectionInfo(float currentDistance, const STrackNode &node, vector<SSecti
 
 	delete[] pSectionData;
 }
-void AddStationItem(float currentDistance, const STrackNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
+void AddStationItem(float currentDistance, const SVectorNode &node, vector<SStationItem>& stationVect, vector<SStationItem>& sidingVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
 
@@ -450,7 +450,7 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 				ReadTrainProcess(handle, address, (LPVOID)&platformItem, sizeof(SPlatformItem));
 				wchar_t stationName[0x400];
 				ReadTrainProcess(handle, platformItem.wcpPlatformName28, (LPVOID)stationName, 0x800);
-				float distanceToTrackStart = nDirection ? platformItem.fLocationInTrackNode : node.fTrackNodeLength - platformItem.fLocationInTrackNode;
+				float distanceToTrackStart = nDirection ? platformItem.fLocationInVectorNode : node.fTrackNodeLength - platformItem.fLocationInVectorNode;
 
 				if (distanceToTrackStart + currentDistance > 0)
 				{
@@ -462,7 +462,7 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 					int nType = (fEndPositionToTrackStart > distanceToTrackStart) ^ (nDirection == nDirectionOfItemToFind);
 					stationVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName, !nType, nStationNum));
 
-					if (fEndPosition > platformItem.fLocationInTrackNode)
+					if (fEndPosition > platformItem.fLocationInVectorNode)
 					{
 						stationVect.push_back(SStationItem((distanceToTrackStart + fEndPositionToTrackStart) / 2 + currentDistance, stationName, 2, 0));
 					}
@@ -475,7 +475,7 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 				ReadTrainProcess(handle, address, (LPVOID)&sidingItem, sizeof(SSidingItem));
 				wchar_t stationName[0x400];
 				ReadTrainProcess(handle, sidingItem.sidingName, (LPVOID)stationName, 0x800);
-				float distanceToTrackStart = nDirection ? sidingItem.fLocationInTrackNode : node.fTrackNodeLength - sidingItem.fLocationInTrackNode;
+				float distanceToTrackStart = nDirection ? sidingItem.fLocationInVectorNode : node.fTrackNodeLength - sidingItem.fLocationInVectorNode;
 
 				if (distanceToTrackStart + currentDistance > 0)
 				{
@@ -487,7 +487,7 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 					int nType = (fEndPositionToTrackStart > distanceToTrackStart) ^ (nDirection == nDirectionOfItemToFind);
 					sidingVect.push_back(SStationItem(distanceToTrackStart + currentDistance, stationName, !nType, nSidinigNum));
 
-					if (fEndPosition > sidingItem.fLocationInTrackNode)
+					if (fEndPosition > sidingItem.fLocationInVectorNode)
 					{
 						sidingVect.push_back(SStationItem((distanceToTrackStart + fEndPositionToTrackStart) / 2 + currentDistance, stationName, 2, 0));
 					}
@@ -500,8 +500,8 @@ void AddStationItem(float currentDistance, const STrackNode &node, vector<SStati
 }
 
 
-STrackNode *GetNext(STrackNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
-                    int &nextDirect)
+SVectorNode *GetNext(SVectorNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
+                     int &nextDirect)
 {
 	if (connectNode.nType0 == 2) //JunctionNode
 	{
@@ -526,11 +526,11 @@ STrackNode *GetNext(STrackNode *nodePtr, const SConnectStruct &connectStruct, co
 	return NULL;
 }
 
-STrackNode *GetNextNode(HANDLE handle, const STrackNode &node, STrackNode *nodePtr, int direction, int &nextDirect)
+SVectorNode *GetNextNode(HANDLE handle, const SVectorNode &node, SVectorNode *nodePtr, int direction, int &nextDirect)
 {
 	SConnectNode connectNode;
 	SConnectStruct connectStruct;
-	STrackNode *next;
+	SVectorNode *next;
 	SConnectNode *connectNodePtr = direction ? node.OutConnectNodePtr : node.InConnectNodePtr;
 	ReadTrainProcess(handle, (void *)connectNodePtr, (LPVOID)&connectNode, sizeof(SConnectNode));
 	ReadTrainProcess(handle, (void *)connectNode.nodePointer20, (LPVOID)&connectStruct, sizeof(SConnectStruct));
@@ -543,7 +543,7 @@ CString SpeedPostItemToString(const SSpeedPostItem &item)
 	CString tmp;
 	tmp.Format(L"%d %d %d\r\n", item.nType, item.nSubType, item.unknown3);
 	result += tmp;
-	tmp.Format(L"%f %d\r\n", item.fLocationInTrackNode, item.TrItemSDataSecond);
+	tmp.Format(L"%f %d\r\n", item.fLocationInVectorNode, item.TrItemSDataSecond);
 	result += tmp;
 	tmp.Format(L"%f %f %d %d\r\n", item.TrItemPDataFirst, item.TrItemPDataSecond, item.TrItemPDataThird, item.TrItemPDataFourth);
 	result += tmp;
@@ -602,7 +602,7 @@ float *process(HANDLE handle, float *fMatrix, float *fXYZ)
 	return fMatrix;
 }
 
-bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode &node, STrackNode *nodePtr)
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInVectorNode, int nDirection, const SVectorNode &node, SVectorNode *nodePtr)
 {
 	SProcessData processData;
 	float fDirection[3];
@@ -616,7 +616,7 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 	ReadTrainProcess(handle, (LPCVOID)mem, (LPVOID)&sectionTypePtr, 4);
 	processData.nodePtr0 = nodePtr;
 	getSectionData_Modified(handle, processData, node, 0, 0, sectionTypePtr);
-	AdjustAngle_Modified(handle, processData, node, fLocationInTrackNode, sectionTypePtr);
+	AdjustAngle_Modified(handle, processData, node, fLocationInVectorNode, sectionTypePtr);
 
 	if (nDirection)
 	{
@@ -640,6 +640,11 @@ CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void 
 	ReadTrainProcess(handle, headPtr, &head, 4);
 	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
 
+	if (iteNode.pointer != headPtr)
+	{
+		return strResult;
+	}
+
 	while (iteNode.next != head && count < 10000)
 	{
 		SNode *next = iteNode.next;
@@ -662,18 +667,18 @@ CString DefaultHandle(HANDLE handle, void *pointer)
 	return result;
 }
 
-void getSectionData_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, int, int, SSectionTypeData *basePtr)
+void getSectionData_Modified(HANDLE handle, SProcessData &processData, const SVectorNode &node, int, int, SSectionTypeData *basePtr)
 {
 	processData.sectionPtr8 = node.sectionArrayPtr;
-	SSectionData sectionData;
-	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SSectionData));
+	SVectorSection sectionData;
+	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SVectorSection));
 	processData.fAngle24[0] = sectionData.AX;
 	processData.fAngle24[1] = sectionData.AY;
 	processData.fAngle24[2] = sectionData.AZ;
 	process(handle, processData.fMatrix, processData.fAngle24);
 }
 
-int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, float fLocation, SSectionTypeData *basePtr)
+int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const SVectorNode &node, float fLocation, SSectionTypeData *basePtr)
 {
 	float fRemainDistance = fLocation;
 	unsigned short sectionIndex;
@@ -693,8 +698,8 @@ int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackN
 		ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fCurrentSectionLength, 4);
 	}
 
-	SSectionData sectionData;
-	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SSectionData));
+	SVectorSection sectionData;
+	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SVectorSection));
 	SSectionTypeData *typePtr = basePtr + sectionData.sectionIndex;
 	processData.fAngle24[0] = sectionData.AX;
 	processData.fAngle24[1] = sectionData.AY;
