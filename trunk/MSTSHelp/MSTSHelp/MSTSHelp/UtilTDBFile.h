@@ -3,9 +3,9 @@
 #include "Util.h"
 #include <vector>
 using std::vector;
-struct STrackNode;
+struct SVectorNode;
 struct STDBFile;
-struct SSectionData
+struct SVectorSection
 {
 	unsigned short       sectionIndex;//179
 	unsigned short       shapeIndex;  //32250
@@ -27,7 +27,7 @@ struct SSectionData
 };
 struct SSubConnectStruct
 {
-	STrackNode *nodePtr;
+	SVectorNode *nodePtr;
 	int nDirect;
 };
 struct SConnectStruct
@@ -68,7 +68,7 @@ struct SAllTrItem
 };
 struct STDBFile
 {
-	STrackNode *trackNodes;
+	SVectorNode *trackNodes;
 	int TrackNodeNumber;
 	int TrackNodeNumber2;
 	int NodeNumMinus1;
@@ -78,7 +78,7 @@ struct STDBFile
 	SAllTrItem *allTrItemPtr;
 	wchar_t TDBFileName[0x400];
 };
-struct STrackNode
+struct SVectorNode
 {
 	DWORD data0;
 	int data4;
@@ -86,7 +86,7 @@ struct STrackNode
 	DWORD data12;
 	SConnectNode *OutConnectNodePtr;
 	DWORD data20;
-	SSectionData *sectionArrayPtr;
+	SVectorSection *sectionArrayPtr;
 	int   nSectionNum;
 	STrItem  **trItemArrayPtr;
 	int   nTrItemNum;
@@ -100,9 +100,9 @@ struct SSectionTypeData
 };
 struct SProcessData
 {
-	const STrackNode *nodePtr0;
+	const SVectorNode *nodePtr0;
 	int nSectionNum4;
-	SSectionData *sectionPtr8;
+	SVectorSection *sectionPtr8;
 	size_t nData12;
 	float fDistanceFromNodeStart16;
 	float fDistanceFromSectionStart20;
@@ -143,16 +143,16 @@ struct SSpeedPostItem
 };
 struct STrackInfo
 {
-	STrackNode     *trackNodePtr;
+	SVectorNode     *vectorNodePtr;
 	int             nCurrentSectionNum;
-	SSectionData  *sectionPtr;
+	SVectorSection  *sectionPtr;
 	int             nDirection;
 	float           fLocationInNode;
 	float           fLocationInSection;
 };
 struct STempSpeed
 {
-	STrackNode *nodePtr;
+	SVectorNode *nodePtr;
 	float fStart;
 	float fEnd;
 };

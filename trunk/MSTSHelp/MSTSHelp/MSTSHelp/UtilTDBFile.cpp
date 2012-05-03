@@ -58,18 +58,18 @@ float *process(HANDLE handle, float *fMatrix, float *fXYZ)
 	process_AZ(fMatrix, fXYZ[2]);
 	return fMatrix;
 }
-void getSectionData_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, int, int, SSectionTypeData *basePtr)
+void getSectionData_Modified(HANDLE handle, SProcessData &processData, const SVectorNode &node, int, int, SSectionTypeData *basePtr)
 {
 	processData.sectionPtr8 = node.sectionArrayPtr;
-	SSectionData sectionData;
-	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SSectionData));
+	SVectorSection sectionData;
+	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SVectorSection));
 	processData.fAngle24[0] = sectionData.AX;
 	processData.fAngle24[1] = sectionData.AY;
 	processData.fAngle24[2] = sectionData.AZ;
 	process(handle, processData.fMatrix, processData.fAngle24);
 }
 
-int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackNode &node, float fLocation, SSectionTypeData *basePtr)
+int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const SVectorNode &node, float fLocation, SSectionTypeData *basePtr)
 {
 	float fRemainDistance = fLocation;
 	unsigned short sectionIndex;
@@ -89,8 +89,8 @@ int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackN
 		ReadTrainProcess(handle, (LPCVOID)(basePtr + sectionIndex), (LPVOID)&fCurrentSectionLength, 4);
 	}
 
-	SSectionData sectionData;
-	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SSectionData));
+	SVectorSection sectionData;
+	ReadTrainProcess(handle, (LPCVOID)processData.sectionPtr8, (LPVOID)&sectionData, sizeof(SVectorSection));
 	SSectionTypeData *typePtr = basePtr + sectionData.sectionIndex;
 	processData.fAngle24[0] = sectionData.AX;
 	processData.fAngle24[1] = sectionData.AY;
@@ -115,7 +115,7 @@ int AdjustAngle_Modified(HANDLE handle, SProcessData &processData, const STrackN
 	process(handle, processData.fMatrix, processData.fAngle24);
 	return 1;
 }
-bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const STrackNode &node, STrackNode *nodePtr)
+bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, int nDirection, const SVectorNode &node, SVectorNode *nodePtr)
 {
 	SProcessData processData;
 	float fDirection[3];
@@ -141,8 +141,8 @@ bool IsSpeedPostValid(HANDLE handle, float angle, float fLocationInTrackNode, in
 	float result = inner_product(fDirection, fArray);
 	return result > 0;
 }
-STrackNode *GetNext(STrackNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
-                    int &nextDirect)
+SVectorNode *GetNext(SVectorNode *nodePtr, const SConnectStruct &connectStruct, const SConnectNode &connectNode,
+                     int &nextDirect)
 {
 	if (connectNode.nType0 == 2) //JunctionNode
 	{
@@ -166,23 +166,23 @@ STrackNode *GetNext(STrackNode *nodePtr, const SConnectStruct &connectStruct, co
 	//EndNode Or can not find the pointer in the struct.
 	return NULL;
 }
-STrackNode *GetNextNode(HANDLE handle, const STrackNode &node, STrackNode *nodePtr, int direction, int &nextDirect)
+SVectorNode *GetNextNode(HANDLE handle, const SVectorNode &node, SVectorNode *nodePtr, int direction, int &nextDirect)
 {
 	SConnectNode connectNode;
 	SConnectStruct connectStruct;
-	STrackNode *next;
+	SVectorNode *next;
 	SConnectNode *connectNodePtr = direction ? node.OutConnectNodePtr : node.InConnectNodePtr;
 	ReadTrainProcess(handle, (void *)connectNodePtr, (LPVOID)&connectNode, sizeof(SConnectNode));
 	ReadTrainProcess(handle, (void *)connectNode.nodePointer20, (LPVOID)&connectStruct, sizeof(SConnectStruct));
 	next = GetNext(nodePtr, connectStruct, connectNode, nextDirect);
 	return next;
 }
-void AddTempSpeedLimit(float currentDistance, STrackNode *nodePtr, vector<SForwardLimit>& limitVect, HANDLE handle, int direction, float fTempSpeedLimit)
+void AddTempSpeedLimit(float currentDistance, SVectorNode *nodePtr, vector<SForwardLimit>& limitVect, HANDLE handle, int direction, float fTempSpeedLimit)
 {
 	SNode *head;
 	SNode ite;
-	STrackNode node;
-	ReadTrainProcess(handle, (void *)nodePtr, (LPVOID)&node, sizeof(STrackNode));
+	SVectorNode node;
+	ReadTrainProcess(handle, (void *)nodePtr, (LPVOID)&node, sizeof(SVectorNode));
 	ReadTrainProcess(handle, (LPCVOID)TASK_LIMIT_HEAD_MEM, &head, 4);
 	ReadTrainProcess(handle, head, &ite, sizeof(SNode));
 
@@ -215,7 +215,7 @@ void AddTempSpeedLimit(float currentDistance, STrackNode *nodePtr, vector<SForwa
 		}
 	}
 }
-void AddSpeedPostLimit(float currentDistance, const STrackNode &node, vector<SForwardLimit>& limitVect, HANDLE handle, int nDirection, STrackNode *nodePtr, int nDirectionOfItemToFind)
+void AddSpeedPostLimit(float currentDistance, const SVectorNode &node, vector<SForwardLimit>& limitVect, HANDLE handle, int nDirection, SVectorNode *nodePtr, int nDirectionOfItemToFind)
 {
 	int num = node.nTrItemNum;
 
@@ -304,7 +304,7 @@ void TestAndSetSignalItem(HANDLE handle, const SSignalItem &signalItem, int nVal
 	/*** 这里面我也不知道是什么意思 结尾***/
 }
 
-void AddSignalItem(float currentDistance, const STrackNode &node, vector<SForwardLimit>& limitVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, float fCarriageLength)
+void AddSignalItem(float currentDistance, const SVectorNode &node, vector<SForwardLimit>& limitVect, HANDLE handle, int nDirection, int nDirectionOfItemToFind, float fCarriageLength)
 {
 	int num = node.nTrItemNum;
 
@@ -404,28 +404,28 @@ void GetForwardSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitLi
 	}
 
 	float forwardLength;
-	STrackNode trackNode;
+	SVectorNode vectorNode;
 	int nDirectOfHeadNode = headInfo.nDirection == bIsForward;
-	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.trackNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
+	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.vectorNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
 
 	if (nDirectOfHeadNode)
 		forwardLength = - headInfo.fLocationInNode;
 	else
-		forwardLength = headInfo.fLocationInNode - trackNode.fTrackNodeLength;
+		forwardLength = headInfo.fLocationInNode - vectorNode.fTrackNodeLength;
 
 	int nOffset = bIsForward ? 0x62 : 0x66;
 	float fCarriageLength;
 	ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
 	fCarriageLength /= 2;
 	int nDirectOfNextNode = nDirectOfHeadNode;
-	STrackNode *nextNodePtr = headInfo.trackNodePtr;
+	SVectorNode *nextNodePtr = headInfo.vectorNodePtr;
 
 	while (forwardLength < 4000 && nextNodePtr)
 	{
-		STrackNode *currentNodePtr = nextNodePtr;
+		SVectorNode *currentNodePtr = nextNodePtr;
 		int nDirectOfCurrentNode = nDirectOfNextNode;
-		STrackNode trackNode;
-		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(STrackNode));
+		SVectorNode trackNode;
+		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(SVectorNode));
 		AddTempSpeedLimit(forwardLength, currentNodePtr, limitList, m_hTrainProcess, nDirectOfCurrentNode, fTempLimit);
 		AddSpeedPostLimit(forwardLength, trackNode, limitList, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, !nDirectOfCurrentNode);
 		AddSignalItem(forwardLength, trackNode, limitList, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, fCarriageLength);
