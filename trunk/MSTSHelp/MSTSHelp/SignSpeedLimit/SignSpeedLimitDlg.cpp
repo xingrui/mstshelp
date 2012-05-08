@@ -446,15 +446,14 @@ void CSignSpeedLimitDlg::OnGetData()
 
 	if (m_bShowTrackInfo)
 	{
-		for (size_t i = backSectionVect.size(); i > 0;)
+		/*for (size_t i = backSectionVect.size(); i > 0;)
 		{
 			--i;
 			CString msg;
 			msg.Format(L"%.1f %.1f ", -backSectionVect[i].fEnd, -backSectionVect[i].fStart);
 			m_textContent += msg;
 			m_textContent += getTrackSectionString(backSectionVect[i]);
-		}
-
+		}*/
 		for (size_t i = 0; i < sectionVect.size(); ++i)
 		{
 			CString msg;
