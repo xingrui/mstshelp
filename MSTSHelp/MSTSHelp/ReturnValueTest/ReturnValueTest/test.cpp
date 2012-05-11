@@ -1,5 +1,10 @@
-struct A
+class A
 {
+public:
+	A(const A& b){a = b.a;}
+	A& operator =(const A&b){a = b.a;}
+	A(){a = 5;}
+	~A(){ a = 0;}
 	int a;
 	int b;
 	int c;
