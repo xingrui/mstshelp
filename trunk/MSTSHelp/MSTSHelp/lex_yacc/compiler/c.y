@@ -221,9 +221,18 @@ struct_declaration_list
          ; 
   
 struct_declaration 
-         : specifier_qualifier_list struct_declarator_list ';' 
+         : struct_specifier_qualifier_list struct_declarator_list ';' 
          ; 
   
+struct_specifier_qualifier_list 
+         : sub_struct_specifier_qualifier_list
+         | IDENTIFIER 
+         | type_qualifier struct_specifier_qualifier_list 
+         ; 
+sub_struct_specifier_qualifier_list
+         : type_specifier sub_struct_specifier_qualifier_list 
+		 | type_specifier
+		 
 specifier_qualifier_list 
          : type_specifier specifier_qualifier_list 
          | type_specifier 
