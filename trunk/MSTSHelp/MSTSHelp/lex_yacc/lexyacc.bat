@@ -1,1 +1,1 @@
-@cmd /k call compile.bat
+@cmd /k call preprocess.bat

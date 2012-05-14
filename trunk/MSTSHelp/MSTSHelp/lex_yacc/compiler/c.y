@@ -2,6 +2,7 @@
 #include <iostream>
 extern int yylex();
 void yyerror(const char*msg);
+void function();
 extern char yytext[]; 
 extern int column; 
 %}
@@ -355,62 +356,13 @@ initializer_list
          | initializer_list ',' initializer 
          ; 
   
-statement 
-         : labeled_statement 
-         | compound_statement 
-         | expression_statement 
-         | selection_statement 
-         | iteration_statement 
-         | jump_statement 
-         ; 
-  
-labeled_statement 
-         : IDENTIFIER ':' statement 
-         | CASE constant_expression ':' statement 
-         | DEFAULT ':' statement 
-         ; 
-  
 compound_statement 
-         : '{' '}' 
-         | '{' statement_list '}' 
-         | '{' declaration_list '}' 
-         | '{' declaration_list statement_list '}' 
+         : '{' {function();} 
          ; 
   
 declaration_list 
          : declaration 
          | declaration_list declaration 
-         ; 
-  
-statement_list 
-         : statement 
-         | statement_list statement 
-         ; 
-  
-expression_statement 
-         : ';' 
-         | expression ';' 
-         ; 
-  
-selection_statement 
-         : IF '(' expression ')' statement 
-         | IF '(' expression ')' statement ELSE statement 
-         | SWITCH '(' expression ')' statement 
-         ; 
-  
-iteration_statement 
-         : WHILE '(' expression ')' statement 
-         | DO statement WHILE '(' expression ')' ';' 
-         | FOR '(' expression_statement expression_statement ')' statement 
-         | FOR '(' expression_statement expression_statement expression ')' statement 
-         ; 
-  
-jump_statement 
-         : GOTO IDENTIFIER ';' 
-         | CONTINUE ';' 
-         | BREAK ';' 
-         | RETURN ';' 
-         | RETURN expression ';' 
          ; 
   
 translation_unit 
@@ -431,6 +383,16 @@ function_definition
          ; 
   
 %% 
+void function()
+{
+	int count = 0;
+	int type;
+	while((type = yylex()) != '}' || count != 0)
+	{
+		if(type == '{') ++count;
+		else if(type == '}') --count;
+	}
+}
 void yyerror(const char*msg)
 {
 	printf("\n%*s\n%*s\n", column, "^", column, msg);
