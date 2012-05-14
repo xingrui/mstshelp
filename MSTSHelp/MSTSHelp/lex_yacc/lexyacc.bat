@@ -1,0 +1,1 @@
+@cmd /k call compile.bat
