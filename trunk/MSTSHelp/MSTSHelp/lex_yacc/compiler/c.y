@@ -255,6 +255,7 @@ struct_declarator
 enum_specifier 
          : ENUM '{' enumerator_list '}' 
          | ENUM IDENTIFIER '{' enumerator_list '}' 
+		 | ENUM IDENTIFIER '{' enumerator_list ',' '}' 
          | ENUM IDENTIFIER 
          ; 
   
