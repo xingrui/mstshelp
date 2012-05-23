@@ -30,6 +30,7 @@ BEGIN_MESSAGE_MAP(CAirViewDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	//}}AFX_MSG_MAP
+	ON_WM_SIZE()
 END_MESSAGE_MAP()
 
 
@@ -68,6 +69,8 @@ void CAirViewDlg::OnPaint()
 	}
 	else
 	{
+		CPaintDC dc(this);
+		DrawTracks(&dc);
 		CDialog::OnPaint();
 	}
 }
@@ -79,3 +82,21 @@ HCURSOR CAirViewDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+void CAirViewDlg::DrawTracks(CPaintDC *pDC)
+{
+	CRect rect;
+	GetClientRect(&rect);
+	pDC->SetMapMode(MM_ISOTROPIC);
+	pDC->SetWindowExt(1000, 1000);
+	pDC->SetViewportExt(rect.right, -rect.bottom);
+	pDC->SetViewportOrg(rect.right / 2, rect.bottom /2);
+	pDC->Rectangle(-500, -500, 500, 500);
+}
+
+
+void CAirViewDlg::OnSize(UINT nType, int cx, int cy)
+{
+	CDialog::OnSize(nType, cx, cy);
+	Invalidate();
+	UpdateWindow();
+}
