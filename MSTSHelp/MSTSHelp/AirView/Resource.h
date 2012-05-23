@@ -6,7 +6,7 @@
 #define IDD_AIRVIEW_DIALOG				102
 
 // 新对象的下一组默认值
-// 
+//
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 
