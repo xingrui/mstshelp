@@ -7,18 +7,18 @@
 // CAirViewDlg 对话框
 class CAirViewDlg : public CDialog
 {
-// 构造
+	// 构造
 public:
-	CAirViewDlg(CWnd* pParent = NULL);	// 标准构造函数
+	CAirViewDlg(CWnd *pParent = NULL);	// 标准构造函数
 
-// 对话框数据
+	// 对话框数据
 	enum { IDD = IDD_AIRVIEW_DIALOG };
 
-	protected:
-	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV 支持
+protected:
+	virtual void DoDataExchange(CDataExchange *pDX);	// DDX/DDV 支持
 
 
-// 实现
+	// 实现
 protected:
 	HICON m_hIcon;
 

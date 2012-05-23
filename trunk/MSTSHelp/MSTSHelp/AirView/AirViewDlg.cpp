@@ -15,13 +15,13 @@
 
 
 
-CAirViewDlg::CAirViewDlg(CWnd* pParent /*=NULL*/)
+CAirViewDlg::CAirViewDlg(CWnd *pParent /*=NULL*/)
 	: CDialog(CAirViewDlg::IDD, pParent)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
 
-void CAirViewDlg::DoDataExchange(CDataExchange* pDX)
+void CAirViewDlg::DoDataExchange(CDataExchange *pDX)
 {
 	CDialog::DoDataExchange(pDX);
 }
@@ -38,14 +38,11 @@ END_MESSAGE_MAP()
 BOOL CAirViewDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
-
 	// 设置此对话框的图标。当应用程序主窗口不是对话框时，框架将自动
 	//  执行此操作
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
-
 	// TODO: 在此添加额外的初始化代码
-
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -58,9 +55,7 @@ void CAirViewDlg::OnPaint()
 	if (IsIconic())
 	{
 		CPaintDC dc(this); // 用于绘制的设备上下文
-
 		SendMessage(WM_ICONERASEBKGND, reinterpret_cast<WPARAM>(dc.GetSafeHdc()), 0);
-
 		// 使图标在工作矩形中居中
 		int cxIcon = GetSystemMetrics(SM_CXICON);
 		int cyIcon = GetSystemMetrics(SM_CYICON);
@@ -68,7 +63,6 @@ void CAirViewDlg::OnPaint()
 		GetClientRect(&rect);
 		int x = (rect.Width() - cxIcon + 1) / 2;
 		int y = (rect.Height() - cyIcon + 1) / 2;
-
 		// 绘制图标
 		dc.DrawIcon(x, y, m_hIcon);
 	}
