@@ -48,7 +48,7 @@ BOOL CAirViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_hTrainProcess = NULL;
 	m_currentAngle = 0;
-	SetTimer(0, 1000, NULL);
+	SetTimer(0, 100, NULL);
 	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -99,7 +99,8 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 	CBrush brush, *pOldBrush;
 	brush.CreateSolidBrush(RGB(120, 255, 200));
 	pOldBrush = pDC->SelectObject(&brush);
-	pDC->Ellipse(-20, -20, 20, 20);//CRect()为你要画的圆的外接矩形
+	int nRadius = 8 * 4000 / rect.right;
+	pDC->Ellipse(-nRadius, -nRadius, nRadius, nRadius);//CRect()为你要画的圆的外接矩形
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
 	float currentAngle = -m_currentAngle;
@@ -232,7 +233,7 @@ void CAirViewDlg::GetTrackData()
 	size_t trainInfo;
 	ReadTrainProcess(m_hTrainProcess, (void *)TRAIN_INFO_MEM, (LPVOID)&trainInfo, 4);
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
-	m_currentAngle -= 1.57;
+	m_currentAngle -= 1.57f;
 	BOOL bIsForward;
 
 	if (trainInfo & 0x80) // Forward Or Backward
@@ -286,7 +287,7 @@ void CAirViewDlg::GetTrackData()
 	int nDirectOfPrevNode = nDirectOfHeadNode;
 	SVectorNode *prevNodePtr = headInfo.vectorNodePtr;
 
-	while (backwardLength < 1000 && prevNodePtr)
+	while (backwardLength < 4000 && prevNodePtr)
 	{
 		SVectorNode *currentNodePtr = prevNodePtr;
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
