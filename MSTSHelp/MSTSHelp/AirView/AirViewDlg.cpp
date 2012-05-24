@@ -104,7 +104,8 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 
 	for (size_t i = 0; i < m_vectSectionInfo.size(); ++i)
 	{
-		SSectionInfo* pInfo = &m_vectSectionInfo[i];
+		SSectionInfo *pInfo = &m_vectSectionInfo[i];
+
 		if (pInfo->nDirection == 0)
 		{
 			// 直轨道
@@ -116,13 +117,31 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 		}
 		else if (pInfo->nDirection == 1)
 		{
-			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			// 右转
+			float fRadius = pInfo->fRadius;
+			float fCenterX = fCurrentX, fCenterY = fCurrentY;
+			float fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX += fRadius * sin(currentAngle);
+			fCenterY -= fRadius * cos(currentAngle);
+			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
+			fCurrentX = fCenterX - fRadius * sin(currentAngle);
+			fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			         fCurrentX, fCurrentY, fPreX, fPreY);
 		}
 		else
 		{
-			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			// 左转
+			float fRadius = pInfo->fRadius;
+			float fCenterX = fCurrentX, fCenterY = fCurrentY;
+			float fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX -= fRadius * sin(currentAngle);
+			fCenterY += fRadius * cos(currentAngle);
+			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
+			fCurrentX = fCenterX + fRadius * sin(currentAngle);
+			fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			         fPreX, fPreY, fCurrentX, fCurrentY);
 		}
 	}
 
@@ -232,7 +251,7 @@ void CAirViewDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CDialog::OnTimer(nIDEvent);
-	//GetDataAndPaint();
+	GetDataAndPaint();
 }
 
 void CAirViewDlg::OnDestroy()
