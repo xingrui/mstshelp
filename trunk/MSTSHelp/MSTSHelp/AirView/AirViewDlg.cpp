@@ -104,23 +104,24 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 
 	for (size_t i = 0; i < m_vectSectionInfo.size(); ++i)
 	{
-		if (m_vectSectionInfo[i].nDirection == 0)
+		SSectionInfo* pInfo = &m_vectSectionInfo[i];
+		if (pInfo->nDirection == 0)
 		{
 			// 直轨道
-			float fLength = m_vectSectionInfo[i].fEnd - m_vectSectionInfo[i].fStart;
+			float fLength = pInfo->fEnd - pInfo->fStart;
 			pDC->MoveTo(fCurrentX, fCurrentY);
 			fCurrentX += fLength * cos(currentAngle);
 			fCurrentY += fLength * sin(currentAngle);
 			pDC->LineTo(fCurrentX, fCurrentY);
 		}
-		else if (m_vectSectionInfo[i].nDirection == 1)
+		else if (pInfo->nDirection == 1)
 		{
-			currentAngle += m_vectSectionInfo[i].fAngle;
+			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			// 右转
 		}
 		else
 		{
-			currentAngle -= m_vectSectionInfo[i].fAngle;
+			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			// 左转
 		}
 	}
@@ -141,7 +142,7 @@ void CAirViewDlg::GetDataAndPaint()
 	}
 
 	GetTrackData();
-	OnPaint();
+	Invalidate();
 }
 
 void CAirViewDlg::GetTrackData()
