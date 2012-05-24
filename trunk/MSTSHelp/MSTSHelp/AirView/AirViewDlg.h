@@ -22,6 +22,7 @@ protected:
 	// й╣ож
 protected:
 	HANDLE m_hTrainProcess;
+	float m_currentAngle;
 	HICON m_hIcon;
 	vector<SSectionInfo> m_vectSectionInfo;
 	vector<SSectionInfo> m_backVectSectionInfo;

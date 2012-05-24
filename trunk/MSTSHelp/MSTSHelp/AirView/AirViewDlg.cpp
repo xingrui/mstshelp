@@ -47,6 +47,7 @@ BOOL CAirViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_hTrainProcess = NULL;
+	m_currentAngle = 0;
 	SetTimer(0, 1000, NULL);
 	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -92,14 +93,23 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 	CRect rect;
 	GetClientRect(&rect);
 	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetWindowExt(2000, 2000);
+	pDC->SetWindowExt(4000, 4000);
 	pDC->SetViewportExt(rect.right, -rect.bottom);
 	pDC->SetViewportOrg(rect.right / 2, rect.bottom / 2);
-	float currentAngle = 0;
+	CBrush brush, *pOldBrush;
+	brush.CreateSolidBrush(RGB(120, 255, 200));
+	pOldBrush = pDC->SelectObject(&brush);
+	pDC->Ellipse(-20, -20, 20, 20);//CRect()为你要画的圆的外接矩形
+	pDC->SelectObject(pOldBrush);
+	brush.DeleteObject();
+	float currentAngle = -m_currentAngle;
 
-	if (!m_vectSectionInfo.empty())
-		m_vectSectionInfo[0].fStart = 0;
+	if (m_vectSectionInfo.empty())
+		return;
 
+	SSectionInfo info = m_vectSectionInfo[0];
+	info.fEnd = 0;
+	m_vectSectionInfo[0].fStart = 0;
 	float fCurrentX = 0, fCurrentY = 0;
 
 	for (size_t i = 0; i < m_vectSectionInfo.size(); ++i)
@@ -145,7 +155,56 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 		}
 	}
 
-	//pDC->Rectangle(-500, -500, 500, 500);
+	currentAngle = -m_currentAngle + 3.1415926f;
+	fCurrentX = 0, fCurrentY = 0;
+
+	for (size_t i = 0; i <= m_backVectSectionInfo.size(); ++i)
+	{
+		SSectionInfo *pInfo;
+
+		if (i == 0)
+			pInfo = &info;
+		else
+			pInfo = &m_backVectSectionInfo[i - 1];
+
+		if (pInfo->nDirection == 0)
+		{
+			// 直轨道
+			float fLength = pInfo->fEnd - pInfo->fStart;
+			pDC->MoveTo(fCurrentX, fCurrentY);
+			fCurrentX += fLength * cos(currentAngle);
+			fCurrentY += fLength * sin(currentAngle);
+			pDC->LineTo(fCurrentX, fCurrentY);
+		}
+		else if (pInfo->nDirection != 1)
+		{
+			// 右转
+			float fRadius = pInfo->fRadius;
+			float fCenterX = fCurrentX, fCenterY = fCurrentY;
+			float fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX += fRadius * sin(currentAngle);
+			fCenterY -= fRadius * cos(currentAngle);
+			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
+			fCurrentX = fCenterX - fRadius * sin(currentAngle);
+			fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			         fCurrentX, fCurrentY, fPreX, fPreY);
+		}
+		else
+		{
+			// 左转
+			float fRadius = pInfo->fRadius;
+			float fCenterX = fCurrentX, fCenterY = fCurrentY;
+			float fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX -= fRadius * sin(currentAngle);
+			fCenterY += fRadius * cos(currentAngle);
+			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
+			fCurrentX = fCenterX + fRadius * sin(currentAngle);
+			fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			         fPreX, fPreY, fCurrentX, fCurrentY);
+		}
+	}
 }
 
 void CAirViewDlg::GetDataAndPaint()
@@ -172,6 +231,7 @@ void CAirViewDlg::GetTrackData()
 	//headInfo is the information of the head of the train.
 	size_t trainInfo;
 	ReadTrainProcess(m_hTrainProcess, (void *)TRAIN_INFO_MEM, (LPVOID)&trainInfo, 4);
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
 	BOOL bIsForward;
 
 	if (trainInfo & 0x80) // Forward Or Backward
