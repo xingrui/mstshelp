@@ -232,6 +232,7 @@ void CAirViewDlg::GetTrackData()
 	size_t trainInfo;
 	ReadTrainProcess(m_hTrainProcess, (void *)TRAIN_INFO_MEM, (LPVOID)&trainInfo, 4);
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
+	m_currentAngle -= 1.57;
 	BOOL bIsForward;
 
 	if (trainInfo & 0x80) // Forward Or Backward
