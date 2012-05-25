@@ -31,9 +31,9 @@ protected:
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
-	void DrawScale(CPaintDC *pDC, int nSize, float fMapSize);
-	void DrawTracks(CPaintDC *pDC);
-	void DrawArc(CPaintDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
+	void DrawScale(CDC *pDC, int nSize, float fMapSize);
+	void DrawTracks(CDC *pDC);
+	void DrawArc(CDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 	void GetDataAndPaint();
 	void GetTrackData();
 	afx_msg void OnPaint();
