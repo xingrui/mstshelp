@@ -215,22 +215,26 @@ void CAirViewDlg::GetDataAndPaint()
 {
 	if (!GetTrainHandle(m_hTrainProcess))
 	{
-		return;
+		m_vectSectionInfo.clear();
+		m_backVectSectionInfo.clear();
 	}
-
-	if (!GetTrainPointer(m_hTrainProcess))
-	{
-		return;
-	}
-
-	try
-	{
-		GetTrackData();
-	}
-	catch (int)
+	else if (!GetTrainPointer(m_hTrainProcess))
 	{
 		m_vectSectionInfo.clear();
 		m_backVectSectionInfo.clear();
+		return;
+	}
+	else
+	{
+		try
+		{
+			GetTrackData();
+		}
+		catch (int)
+		{
+			m_vectSectionInfo.clear();
+			m_backVectSectionInfo.clear();
+		}
 	}
 
 	Invalidate();
