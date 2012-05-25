@@ -24,6 +24,7 @@ protected:
 protected:
 	HANDLE m_hTrainProcess;
 	float m_currentAngle;
+	float m_fDistance;
 	HICON m_hIcon;
 	vector<SSectionInfo> m_vectSectionInfo;
 	vector<SSectionInfo> m_backVectSectionInfo;
@@ -45,4 +46,6 @@ public:
 	afx_msg void OnDestroy();
 public:
 	afx_msg void OnBnClickedOk();
+public:
+	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 };
