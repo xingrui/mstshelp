@@ -6,6 +6,7 @@
 
 #include "..\SignSpeedLimit\Util.h"
 // CAirViewDlg 对话框
+const int TIMES = 100;
 class CAirViewDlg : public CDialog
 {
 	// 构造
@@ -30,6 +31,7 @@ protected:
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	void DrawTracks(CPaintDC *pDC);
+	void DrawArc(CPaintDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 	void GetDataAndPaint();
 	void GetTrackData();
 	afx_msg void OnPaint();
