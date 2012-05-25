@@ -91,6 +91,7 @@ void CAirViewDlg::OnPaint()
 		CBitmap *pOldBit = MemDC.SelectObject(&MemBitmap);
 		MemDC.FillSolidRect(0, 0, nWidth, nHeight, ::GetSysColor(COLOR_3DFACE));
 		DrawTracks(&MemDC);
+		MemDC.SetMapMode(MM_TEXT);
 		pDC->BitBlt(0, 0, nWidth, nHeight, &MemDC, -nWidth / 2, -nHeight / 2, SRCCOPY);
 		MemBitmap.DeleteObject();
 		MemDC.DeleteDC();
@@ -247,8 +248,6 @@ void CAirViewDlg::DrawTracks(CDC *pDC)
 			        fPreX, fPreY, fCurrentX, fCurrentY);
 		}
 	}
-
-	pDC->SetMapMode(MM_TEXT);
 }
 
 void CAirViewDlg::GetDataAndPaint()
