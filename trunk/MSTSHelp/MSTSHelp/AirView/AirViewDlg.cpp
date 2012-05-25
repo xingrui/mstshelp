@@ -34,6 +34,7 @@ BEGIN_MESSAGE_MAP(CAirViewDlg, CDialog)
 	ON_WM_TIMER()
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDOK, &CAirViewDlg::OnBnClickedOk)
+	ON_WM_MOUSEWHEEL()
 END_MESSAGE_MAP()
 
 
@@ -48,6 +49,7 @@ BOOL CAirViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_hTrainProcess = NULL;
 	m_currentAngle = 0;
+	m_fDistance = 4000;
 	SetTimer(0, 200, NULL);
 	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -96,13 +98,13 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 	CRect rect;
 	GetClientRect(&rect);
 	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetWindowExt(4000 * TIMES, 4000 * TIMES);
+	pDC->SetWindowExt(m_fDistance * TIMES, m_fDistance * TIMES);
 	pDC->SetViewportExt(rect.right, -rect.bottom);
 	pDC->SetViewportOrg(rect.right / 2, rect.bottom / 2);
 	CBrush brush, *pOldBrush;
 	brush.CreateSolidBrush(RGB(120, 255, 200));
 	pOldBrush = pDC->SelectObject(&brush);
-	int nRadius = 8 * 4000 * TIMES / rect.right;
+	int nRadius = 8 * m_fDistance * TIMES / rect.right;
 	pDC->Ellipse(-nRadius, -nRadius, nRadius, nRadius);
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
@@ -278,7 +280,7 @@ void CAirViewDlg::GetTrackData()
 	STrackSection *pSection;
 	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, &pSection, 4, 1, 0xC);
 
-	while (forwardLength < 4 * 1000 && nextNodePtr)
+	while (forwardLength < m_fDistance && nextNodePtr)
 	{
 		SVectorNode *currentNodePtr = nextNodePtr;
 		int nDirectOfCurrentNode = nDirectOfNextNode;
@@ -303,7 +305,7 @@ void CAirViewDlg::GetTrackData()
 	int nDirectOfPrevNode = nDirectOfHeadNode;
 	SVectorNode *prevNodePtr = headInfo.vectorNodePtr;
 
-	while (backwardLength < 4000 && prevNodePtr)
+	while (backwardLength < m_fDistance && prevNodePtr)
 	{
 		SVectorNode *currentNodePtr = prevNodePtr;
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
@@ -342,6 +344,25 @@ void CAirViewDlg::OnDestroy()
 
 void CAirViewDlg::OnBnClickedOk()
 {
-	// TODO: 在此添加控件通知处理程序代码
 	GetDataAndPaint();
+}
+
+BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+	if (zDelta > 0)
+	{
+		m_fDistance /= 1.5;
+
+		if (m_fDistance < 1000)
+			m_fDistance = 1000;
+	}
+	else
+	{
+		m_fDistance *= 1.5;
+
+		if (m_fDistance > 400000)
+			m_fDistance = 400000;
+	}
+
+	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
 }
