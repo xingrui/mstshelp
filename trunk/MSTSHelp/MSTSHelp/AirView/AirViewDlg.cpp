@@ -89,12 +89,12 @@ HCURSOR CAirViewDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
-void CAirViewDlg::DrawArc(CPaintDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+void CAirViewDlg::DrawArc(CDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
 	pDC->Arc(TIMES * x1, TIMES * y1, TIMES * x2, TIMES * y2, TIMES * x3, TIMES * y3, TIMES * x4, TIMES * y4);
 }
 // »æÖÆ±ÈÀý³ß
-void CAirViewDlg::DrawScale(CPaintDC *pDC, int nSize, float fMapSize)
+void CAirViewDlg::DrawScale(CDC *pDC, int nSize, float fMapSize)
 {
 	pDC->MoveTo(5, 15);
 	pDC->LineTo(55, 15);
@@ -113,7 +113,7 @@ void CAirViewDlg::DrawScale(CPaintDC *pDC, int nSize, float fMapSize)
 	textRect.right = 105;
 	pDC->DrawText(str, textRect, NULL);
 }
-void CAirViewDlg::DrawTracks(CPaintDC *pDC)
+void CAirViewDlg::DrawTracks(CDC *pDC)
 {
 	CRect rect;
 	GetClientRect(&rect);
