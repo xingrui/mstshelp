@@ -48,7 +48,7 @@ BOOL CAirViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_hTrainProcess = NULL;
 	m_currentAngle = 0;
-	SetTimer(0, 100, NULL);
+	SetTimer(0, 200, NULL);
 	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
@@ -87,20 +87,23 @@ HCURSOR CAirViewDlg::OnQueryDragIcon()
 {
 	return static_cast<HCURSOR>(m_hIcon);
 }
-
+void CAirViewDlg::DrawArc(CPaintDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
+{
+	pDC->Arc(TIMES * x1, TIMES * y1, TIMES * x2, TIMES * y2, TIMES * x3, TIMES * y3, TIMES * x4, TIMES * y4);
+}
 void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 {
 	CRect rect;
 	GetClientRect(&rect);
 	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetWindowExt(4000, 4000);
+	pDC->SetWindowExt(4000 * TIMES, 4000 * TIMES);
 	pDC->SetViewportExt(rect.right, -rect.bottom);
 	pDC->SetViewportOrg(rect.right / 2, rect.bottom / 2);
 	CBrush brush, *pOldBrush;
 	brush.CreateSolidBrush(RGB(120, 255, 200));
 	pOldBrush = pDC->SelectObject(&brush);
-	int nRadius = 8 * 4000 / rect.right;
-	pDC->Ellipse(-nRadius, -nRadius, nRadius, nRadius);//CRect()为你要画的圆的外接矩形
+	int nRadius = 8 * 4000 * TIMES / rect.right;
+	pDC->Ellipse(-nRadius, -nRadius, nRadius, nRadius);
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
 	float currentAngle = -m_currentAngle;
@@ -121,10 +124,10 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 		{
 			// 直轨道
 			float fLength = pInfo->fEnd - pInfo->fStart;
-			pDC->MoveTo(fCurrentX, fCurrentY);
+			pDC->MoveTo(fCurrentX * TIMES, fCurrentY * TIMES);
 			fCurrentX += fLength * cos(currentAngle);
 			fCurrentY += fLength * sin(currentAngle);
-			pDC->LineTo(fCurrentX, fCurrentY);
+			pDC->LineTo(fCurrentX * TIMES, fCurrentY * TIMES);
 		}
 		else if (pInfo->nDirection == 1)
 		{
@@ -137,8 +140,8 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			fCurrentX = fCenterX - fRadius * sin(currentAngle);
 			fCurrentY = fCenterY + fRadius * cos(currentAngle);
-			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			         fCurrentX, fCurrentY, fPreX, fPreY);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fCurrentX, fCurrentY, fPreX, fPreY);
 		}
 		else
 		{
@@ -151,8 +154,8 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			fCurrentX = fCenterX + fRadius * sin(currentAngle);
 			fCurrentY = fCenterY - fRadius * cos(currentAngle);
-			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			         fPreX, fPreY, fCurrentX, fCurrentY);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fPreX, fPreY, fCurrentX, fCurrentY);
 		}
 	}
 
@@ -172,10 +175,10 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 		{
 			// 直轨道
 			float fLength = pInfo->fEnd - pInfo->fStart;
-			pDC->MoveTo(fCurrentX, fCurrentY);
+			pDC->MoveTo(fCurrentX * TIMES, fCurrentY * TIMES);
 			fCurrentX += fLength * cos(currentAngle);
 			fCurrentY += fLength * sin(currentAngle);
-			pDC->LineTo(fCurrentX, fCurrentY);
+			pDC->LineTo(fCurrentX * TIMES, fCurrentY * TIMES);
 		}
 		else if (pInfo->nDirection != 1)
 		{
@@ -188,8 +191,8 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			fCurrentX = fCenterX - fRadius * sin(currentAngle);
 			fCurrentY = fCenterY + fRadius * cos(currentAngle);
-			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			         fCurrentX, fCurrentY, fPreX, fPreY);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fCurrentX, fCurrentY, fPreX, fPreY);
 		}
 		else
 		{
@@ -202,8 +205,8 @@ void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
 			fCurrentX = fCenterX + fRadius * sin(currentAngle);
 			fCurrentY = fCenterY - fRadius * cos(currentAngle);
-			pDC->Arc(fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			         fPreX, fPreY, fCurrentX, fCurrentY);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fPreX, fPreY, fCurrentX, fCurrentY);
 		}
 	}
 }
@@ -220,7 +223,16 @@ void CAirViewDlg::GetDataAndPaint()
 		return;
 	}
 
-	GetTrackData();
+	try
+	{
+		GetTrackData();
+	}
+	catch (int)
+	{
+		m_vectSectionInfo.clear();
+		m_backVectSectionInfo.clear();
+	}
+
 	Invalidate();
 }
 
