@@ -93,10 +93,31 @@ void CAirViewDlg::DrawArc(CPaintDC *pDC, float x1, float y1, float x2, float y2,
 {
 	pDC->Arc(TIMES * x1, TIMES * y1, TIMES * x2, TIMES * y2, TIMES * x3, TIMES * y3, TIMES * x4, TIMES * y4);
 }
+// »æÖÆ±ÈÀý³ß
+void CAirViewDlg::DrawScale(CPaintDC *pDC, int nSize, float fMapSize)
+{
+	pDC->MoveTo(5, 15);
+	pDC->LineTo(55, 15);
+	CString str;
+	float fNum = fMapSize * 50 / nSize ;
+
+	if (fNum > 1000)
+		str.Format(L"%.1f km", fNum / 1000);
+	else
+		str.Format(L"%.0f m", fNum);
+
+	CRect textRect;
+	textRect.top = 20;
+	textRect.bottom = 40;
+	textRect.left = 5;
+	textRect.right = 105;
+	pDC->DrawText(str, textRect, NULL);
+}
 void CAirViewDlg::DrawTracks(CPaintDC *pDC)
 {
 	CRect rect;
 	GetClientRect(&rect);
+	DrawScale(pDC, rect.bottom, m_fDistance);
 	pDC->SetMapMode(MM_ISOTROPIC);
 	pDC->SetWindowExt(m_fDistance * TIMES, m_fDistance * TIMES);
 	pDC->SetViewportExt(rect.right, -rect.bottom);
