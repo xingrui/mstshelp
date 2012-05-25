@@ -4,7 +4,7 @@
 #pragma once
 
 
-#include "..\SignSpeedLimit\Util.h"
+#include "Util.h"
 // CAirViewDlg ¶Ô»°¿ò
 const int TIMES = 100;
 class CAirViewDlg : public CDialog

@@ -218,7 +218,7 @@
 				</FileConfiguration>
 			</File>
 			<File
-				RelativePath="..\SignSpeedLimit\Util.cpp"
+				RelativePath=".\Util.cpp"
 				>
 			</File>
 		</Filter>
@@ -241,6 +241,10 @@
 			</File>
 			<File
 				RelativePath=".\stdafx.h"
+				>
+			</File>
+			<File
+				RelativePath=".\Util.h"
 				>
 			</File>
 		</Filter>
