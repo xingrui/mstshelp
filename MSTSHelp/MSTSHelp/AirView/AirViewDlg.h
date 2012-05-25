@@ -49,4 +49,6 @@ public:
 	afx_msg void OnBnClickedOk();
 public:
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
+public:
+	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
 };

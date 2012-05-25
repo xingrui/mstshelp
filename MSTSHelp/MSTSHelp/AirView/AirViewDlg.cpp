@@ -35,6 +35,7 @@ BEGIN_MESSAGE_MAP(CAirViewDlg, CDialog)
 	ON_WM_DESTROY()
 	ON_BN_CLICKED(IDOK, &CAirViewDlg::OnBnClickedOk)
 	ON_WM_MOUSEWHEEL()
+	ON_WM_ERASEBKGND()
 END_MESSAGE_MAP()
 
 
@@ -78,7 +79,21 @@ void CAirViewDlg::OnPaint()
 	else
 	{
 		CPaintDC dc(this);
-		DrawTracks(&dc);
+		CRect rect;
+		CDC *pDC = &dc;
+		GetClientRect(&rect);
+		int nWidth = rect.Width();
+		int nHeight = rect.Height();
+		CDC MemDC;
+		CBitmap MemBitmap;
+		MemDC.CreateCompatibleDC(NULL);
+		MemBitmap.CreateCompatibleBitmap(pDC, nWidth, nHeight);
+		CBitmap *pOldBit = MemDC.SelectObject(&MemBitmap);
+		MemDC.FillSolidRect(0, 0, nWidth, nHeight, ::GetSysColor(COLOR_3DFACE));
+		DrawTracks(&MemDC);
+		pDC->BitBlt(0, 0, nWidth, nHeight, &MemDC, -nWidth / 2, -nHeight / 2, SRCCOPY);
+		MemBitmap.DeleteObject();
+		MemDC.DeleteDC();
 		CDialog::OnPaint();
 	}
 }
@@ -232,6 +247,8 @@ void CAirViewDlg::DrawTracks(CDC *pDC)
 			        fPreX, fPreY, fCurrentX, fCurrentY);
 		}
 	}
+
+	pDC->SetMapMode(MM_TEXT);
 }
 
 void CAirViewDlg::GetDataAndPaint()
@@ -386,4 +403,9 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	}
 
 	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
+}
+
+BOOL CAirViewDlg::OnEraseBkgnd(CDC *pDC)
+{
+	return TRUE;
 }
