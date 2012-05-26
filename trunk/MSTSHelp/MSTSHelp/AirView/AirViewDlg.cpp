@@ -389,7 +389,6 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 			m_fDistance = 400000;
 	}
 
-	Invalidate();
 	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
 }
 
