@@ -289,22 +289,10 @@ void CAirViewDlg::GetTrackData()
 	ReadTrainProcess(m_hTrainProcess, (void *)TRAIN_INFO_MEM, (LPVOID)&trainInfo, 4);
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
 	m_currentAngle -= 1.57f;
-	BOOL bIsForward;
-
-	if (trainInfo & 0x80) // Forward Or Backward
-	{
-		ReadTrainProcess(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
-		bIsForward = FALSE;
-	}
-	else
-	{
-		ReadTrainProcess(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
-		bIsForward = TRUE;
-	}
-
+	ReadTrainProcess(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
 	float forwardLength;
 	SVectorNode trackNode;
-	int nDirectOfHeadNode = headInfo.nDirection == bIsForward;
+	int nDirectOfHeadNode = headInfo.nDirection;
 	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.vectorNodePtr, (LPVOID)&trackNode, sizeof(SVectorNode));
 
 	if (nDirectOfHeadNode)
@@ -317,7 +305,7 @@ void CAirViewDlg::GetTrackData()
 	STrackSection *pSection;
 	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, &pSection, 4, 1, 0xC);
 
-	while (forwardLength < m_fDistance && nextNodePtr)
+	while (forwardLength < 8 * m_fDistance && nextNodePtr)
 	{
 		SVectorNode *currentNodePtr = nextNodePtr;
 		int nDirectOfCurrentNode = nDirectOfNextNode;
@@ -342,7 +330,7 @@ void CAirViewDlg::GetTrackData()
 	int nDirectOfPrevNode = nDirectOfHeadNode;
 	SVectorNode *prevNodePtr = headInfo.vectorNodePtr;
 
-	while (backwardLength < m_fDistance && prevNodePtr)
+	while (backwardLength < 8 * m_fDistance && prevNodePtr)
 	{
 		SVectorNode *currentNodePtr = prevNodePtr;
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
