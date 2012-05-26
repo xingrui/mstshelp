@@ -1202,6 +1202,7 @@ struct SEngFile // Size 0xD2C
 	short sDataD2A;
 };
 #pragma pack ()
+
 struct STrackSection
 {
 	float fSectionSizeSecondLength0; // This value is 0 when this section is not straight, so this value is calculated by data in SectionCurve
@@ -1213,14 +1214,33 @@ struct STrackSection
 };
 struct SEngineOrWagonInConFile
 {
-	SWagFile *wagFilePtr0;
-	SEngFile *engFilePtr4;
-	DWORD dwData8; // 1
-	DWORD dwDataC; // 0
-	DWORD strangeData10; // 0x566064A
-	wchar_t EngineDataSecond14[0x40];
-	wchar_t wagFileName94[0x20];
-	wchar_t EngineDataFirstD4[0x60];
+	SWagFile *pWagFile0;
+	SEngFile *pEngFile4;
+	int nCarriageType8; // 1 Eng 3 Wag
+	int nWagNameHashValueC; // 0
+	int nEngNamehashValue10;
+	wchar_t wcDirectoryName14[0x20];
+	wchar_t wcUnknown54[0x20];
+	wchar_t wcWagonDataFirst94[0x20];
+	wchar_t wcEngineDataFirstD4[0x20];
+	int nIsFlip114;
+	int nIsInverse118;
+	void *pEngineVariables;
+	DWORD dwData120;
+	DWORD dwData124;
+	DWORD dwData128;
+	int nUid12C;
+};
+struct SCarriageInTrackNode
+{
+	SVectorNode *pVectorNode0; // 所在的TrackNode指针
+	float fLocationInVectorNode4; // 在TrackNode当中的位置
+	SEngineOrWagonInConFile *pEngineOrWagonInConFile8;
+	void *pSrvFileC;
+	void *pCarriage10; // 另一个非常重要的指针，内有制动数据等重要信息
+	int nCarriageMemoryIndex14; // *(*828108 + 8 * nIndexInMemory) == pCarriage10
+	BYTE cDirection18; // 铁轨方向
+	BYTE cData19[3];
 };
 
 void AddTempSpeedLimit(float currentDistance, SVectorNode *node, vector<STempSpeedLimit>& limitVect, HANDLE handle, int direction);
