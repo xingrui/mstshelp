@@ -258,6 +258,40 @@ void CSignSpeedLimitDlg::OnGetData()
 		AddStationItem(forwardLength, vectorNode, stationVect, sidingVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode);
 		AddSignalItem(forwardLength, vectorNode, signalVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode);
 		AddSectionInfo(forwardLength, vectorNode, sectionVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, pSection);
+		CString res;
+		res.Format(L"0X%X 0X%X %.1f %.1f ", currentNodePtr, vectorNode.pPtr44, forwardLength, vectorNode.fTrackNodeLength + forwardLength);
+		m_textContent += res;
+
+		if (vectorNode.pPtr44 != NULL)
+		{
+			SNode node;
+			ReadTrainProcess(m_hTrainProcess, vectorNode.pPtr44, &node, sizeof(SNode));
+
+			if (node.pointer == vectorNode.pPtr44)
+			{
+				ReadTrainProcess(m_hTrainProcess, node.next, &node, sizeof(SNode));
+				SCarriageInTrackNode carriageInTrackNode;
+				ReadTrainProcess(m_hTrainProcess, node.pointer, &carriageInTrackNode, sizeof(SCarriageInTrackNode));
+				wchar_t srvFileName[0x100];
+				wchar_t *pSrvFileName;
+				ReadTrainProcess(m_hTrainProcess, (char *)carriageInTrackNode.pSrvFileC + 0x10, &pSrvFileName, 4);
+				ReadTrainProcess(m_hTrainProcess, pSrvFileName, &srvFileName, 0x200);
+				int nCarriageType;
+				ReadTrainProcess(m_hTrainProcess, (char *)carriageInTrackNode.pEngineOrWagonInConFile8 + 8, &nCarriageType, 4);
+				wchar_t name[0x20];
+				int dest = nCarriageType == 1 ? 0xD4 : 0x94;
+				ReadTrainProcess(m_hTrainProcess, (char *)carriageInTrackNode.pEngineOrWagonInConFile8 + dest, name, 0x40);
+				m_textContent += srvFileName;
+			}
+		}
+
+		m_textContent += "\r\n";
+		/*if(node.pointer != node.next)
+		{
+			CString res;
+			res.Format(L"%.1f\r\n", forwardLength);
+			m_textContent += res;
+		}*/
 		forwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
