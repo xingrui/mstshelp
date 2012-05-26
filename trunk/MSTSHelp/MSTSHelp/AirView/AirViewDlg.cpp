@@ -252,18 +252,10 @@ void CAirViewDlg::DrawTracks(CDC *pDC)
 
 void CAirViewDlg::GetDataAndPaint()
 {
-	if (!GetTrainHandle(m_hTrainProcess))
-	{
-		m_vectSectionInfo.clear();
-		m_backVectSectionInfo.clear();
-	}
-	else if (!GetTrainPointer(m_hTrainProcess))
-	{
-		m_vectSectionInfo.clear();
-		m_backVectSectionInfo.clear();
-		return;
-	}
-	else
+	m_vectSectionInfo.clear();
+	m_backVectSectionInfo.clear();
+
+	if (GetTrainHandle(m_hTrainProcess) && GetTrainPointer(m_hTrainProcess))
 	{
 		try
 		{
@@ -271,8 +263,6 @@ void CAirViewDlg::GetDataAndPaint()
 		}
 		catch (int)
 		{
-			m_vectSectionInfo.clear();
-			m_backVectSectionInfo.clear();
 		}
 	}
 
@@ -283,6 +273,8 @@ void CAirViewDlg::GetTrackData()
 {
 	m_vectSectionInfo.clear();
 	m_backVectSectionInfo.clear();
+	vector<SSectionInfo> vectSectionInfo;
+	vector<SSectionInfo> backVectSectionInfo;
 	STrackInfo headInfo;
 	//headInfo is the information of the head of the train.
 	size_t trainInfo;
@@ -311,7 +303,7 @@ void CAirViewDlg::GetTrackData()
 		int nDirectOfCurrentNode = nDirectOfNextNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		AddSectionInfo(forwardLength, vectorNode, m_vectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, pSection);
+		AddSectionInfo(forwardLength, vectorNode, vectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, pSection);
 		forwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -336,13 +328,16 @@ void CAirViewDlg::GetTrackData()
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		AddSectionInfo(backwardLength, vectorNode, m_backVectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode, pSection);
+		AddSectionInfo(backwardLength, vectorNode, backVectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode, pSection);
 		backwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
 		/************************************************************************/
 		prevNodePtr = GetNextNode(m_hTrainProcess, vectorNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfPrevNode);
 	}
+
+	m_vectSectionInfo.swap(vectSectionInfo);
+	m_backVectSectionInfo.swap(backVectSectionInfo);
 }
 
 void CAirViewDlg::OnSize(UINT nType, int cx, int cy)
