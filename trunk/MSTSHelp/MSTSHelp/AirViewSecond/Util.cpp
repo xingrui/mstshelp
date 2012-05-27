@@ -112,24 +112,22 @@ void AddSectionInfo(float currentDistance, const SVectorNode &node, vector<SSect
 	for (int i = start; i != end; i += delta)
 	{
 		STrackSection *pCurSection = pSection + pSectionData[i].sectionIndex;
-		STrackSection curSection;
-		ReadTrainProcess(handle, pCurSection, &curSection, sizeof(STrackSection));
-		float fRaidus = curSection.fSectionCurveFirstRadius4;
+		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
 		int nAngle = -1;
 
-		if (curSection.fSectionCurveSecondAngle8 == 0)
+		if (pCurSection->fSectionCurveSecondAngle8 == 0)
 			nAngle = 0;
-		else if ((curSection.fSectionCurveSecondAngle8 > 0) ^ nDirectionOfItemToFind)
+		else if ((pCurSection->fSectionCurveSecondAngle8 > 0) ^ nDirectionOfItemToFind)
 			nAngle = 1;
 
 		float fDis = currentDistance + fCurrentLength;
-		fDis += (nDirection != nDirectionOfItemToFind) * curSection.fSectionSizeSecondLength0;
+		fDis += (nDirection != nDirectionOfItemToFind) * pCurSection->fSectionSizeSecondLength0;
 		float fHeightAngle = nDirectionOfItemToFind ? -pSectionData[i].AX : pSectionData[i].AX;
 
 		if (fDis > 0)
-			sectionVect.push_back(SSectionInfo(currentDistance + fCurrentLength, currentDistance + fCurrentLength + curSection.fSectionSizeSecondLength0, nAngle, fRaidus, fHeightAngle));
+			sectionVect.push_back(SSectionInfo(currentDistance + fCurrentLength, currentDistance + fCurrentLength + pCurSection->fSectionSizeSecondLength0, nAngle, fRaidus, fHeightAngle));
 
-		fCurrentLength += curSection.fSectionSizeSecondLength0;
+		fCurrentLength += pCurSection->fSectionSizeSecondLength0;
 	}
 
 	delete[] pSectionData;
