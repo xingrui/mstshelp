@@ -90,7 +90,9 @@ void CAirViewDlg::OnPaint()
 		MemBitmap.CreateCompatibleBitmap(&dc, nWidth, nHeight);
 		CBitmap *pOldBit = MemDC.SelectObject(&MemBitmap);
 		MemDC.FillSolidRect(0, 0, nWidth, nHeight, ::GetSysColor(COLOR_3DFACE));
-		DrawTracks(&MemDC);
+		DrawScale(&MemDC, rect.bottom, m_fDistance);
+		SetPaintMode(&MemDC);
+		DrawPathTracks(&MemDC);
 		MemDC.SetMapMode(MM_TEXT);
 		dc.BitBlt(0, 0, nWidth, nHeight, &MemDC, -nWidth / 2, -nHeight / 2, SRCCOPY);
 		MemBitmap.DeleteObject();
@@ -137,18 +139,54 @@ void CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirecti
 	int start = nDirection ? 0 : num - 1;
 	int end = nDirection ? num : -1;
 	int delta = nDirection ? 1 : -1;
+	float fCurrentX = startX;
+	float fCurrentY = startY;
 
 	for (int i = start; i != end; i += delta)
 	{
-		STrackSection curSection = m_pTrackSectionArray[pSectionData[i].sectionIndex];
-		float fRaidus = curSection.fSectionCurveFirstRadius4;
+		STrackSection *pCurSection = m_pTrackSectionArray + pSectionData[i].sectionIndex;
+		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
+
+		if (pCurSection->fSectionCurveSecondAngle8 == 0)
+		{
+			float fLength = pCurSection->fSectionSizeSecondLength0;
+			pDC->MoveTo(fCurrentX * TIMES, fCurrentY * TIMES);
+			fCurrentX += fLength * cos(currentAngle);
+			fCurrentY += fLength * sin(currentAngle);
+			pDC->LineTo(fCurrentX * TIMES, fCurrentY * TIMES);
+		}
+		else if ((pCurSection->fSectionCurveSecondAngle8 > 0) ^ nDirection)
+		{
+			float fRadius = pCurSection->fSectionCurveFirstRadius4;
+			float fCenterX = fCurrentX, fCenterY = fCurrentY;
+			float fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX += fRadius * sin(currentAngle);
+			fCenterY -= fRadius * cos(currentAngle);
+			currentAngle -= pCurSection->fSectionSizeSecondLength0 / fRadius;
+			fCurrentX = fCenterX - fRadius * sin(currentAngle);
+			fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fCurrentX, fCurrentY, fPreX, fPreY);
+		}
+		else
+		{
+			float fRadius = pCurSection->fSectionCurveFirstRadius4;
+			float fCenterX = fCurrentX, fCenterY = fCurrentY;
+			float fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX -= fRadius * sin(currentAngle);
+			fCenterY += fRadius * cos(currentAngle);
+			currentAngle += pCurSection->fSectionSizeSecondLength0 / fRadius;
+			fCurrentX = fCenterX + fRadius * sin(currentAngle);
+			fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fCurrentX, fCurrentY, fPreX, fPreY);
+		}
 	}
 }
-void CAirViewDlg::DrawTracks(CDC *pDC)
+void CAirViewDlg::SetPaintMode(CDC *pDC)
 {
 	CRect rect;
 	GetClientRect(&rect);
-	DrawScale(pDC, rect.bottom, m_fDistance);
 	pDC->SetMapMode(MM_ISOTROPIC);
 	pDC->SetWindowExt(m_fDistance * TIMES, m_fDistance * TIMES);
 	pDC->SetViewportExt(rect.right, -rect.bottom);
@@ -160,6 +198,12 @@ void CAirViewDlg::DrawTracks(CDC *pDC)
 	pDC->Ellipse(-nRadius, -nRadius, nRadius, nRadius);
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
+}
+void DrawTracksSecond(CDC *pDC)
+{
+}
+void CAirViewDlg::DrawPathTracks(CDC *pDC)
+{
 	float currentAngle = -m_currentAngle;
 
 	if (m_vectSectionInfo.empty())
