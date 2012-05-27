@@ -51,6 +51,7 @@ BOOL CAirViewDlg::OnInitDialog()
 	m_hTrainProcess = NULL;
 	m_currentAngle = 0;
 	m_fDistance = 4000;
+	m_pTrackSectionArray = new STrackSection[0x10000];
 	SetTimer(0, 200, NULL);
 	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
@@ -80,19 +81,18 @@ void CAirViewDlg::OnPaint()
 	{
 		CPaintDC dc(this);
 		CRect rect;
-		CDC *pDC = &dc;
 		GetClientRect(&rect);
 		int nWidth = rect.Width();
 		int nHeight = rect.Height();
 		CDC MemDC;
 		CBitmap MemBitmap;
 		MemDC.CreateCompatibleDC(NULL);
-		MemBitmap.CreateCompatibleBitmap(pDC, nWidth, nHeight);
+		MemBitmap.CreateCompatibleBitmap(&dc, nWidth, nHeight);
 		CBitmap *pOldBit = MemDC.SelectObject(&MemBitmap);
 		MemDC.FillSolidRect(0, 0, nWidth, nHeight, ::GetSysColor(COLOR_3DFACE));
 		DrawTracks(&MemDC);
 		MemDC.SetMapMode(MM_TEXT);
-		pDC->BitBlt(0, 0, nWidth, nHeight, &MemDC, -nWidth / 2, -nHeight / 2, SRCCOPY);
+		dc.BitBlt(0, 0, nWidth, nHeight, &MemDC, -nWidth / 2, -nHeight / 2, SRCCOPY);
 		MemBitmap.DeleteObject();
 		MemDC.DeleteDC();
 		CDialog::OnPaint();
@@ -128,6 +128,21 @@ void CAirViewDlg::DrawScale(CDC *pDC, int nSize, float fMapSize)
 	textRect.left = 5;
 	textRect.right = 105;
 	pDC->DrawText(str, textRect, NULL);
+}
+void CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirection, float startX, float startY, float currentAngle, HANDLE handle)
+{
+	int num = node.nSectionNum;
+	SVectorSection *pSectionData = new SVectorSection[num];
+	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
+	int start = nDirection ? 0 : num - 1;
+	int end = nDirection ? num : -1;
+	int delta = nDirection ? 1 : -1;
+
+	for (int i = start; i != end; i += delta)
+	{
+		STrackSection curSection = m_pTrackSectionArray[pSectionData[i].sectionIndex];
+		float fRaidus = curSection.fSectionCurveFirstRadius4;
+	}
 }
 void CAirViewDlg::DrawTracks(CDC *pDC)
 {
@@ -275,6 +290,9 @@ void CAirViewDlg::GetTrackData()
 	m_backVectSectionInfo.clear();
 	vector<SSectionInfo> vectSectionInfo;
 	vector<SSectionInfo> backVectSectionInfo;
+	STrackSection *pSection;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, &pSection, 4, 1, 0xC);
+	ReadTrainProcess(m_hTrainProcess, pSection, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection));
 	STrackInfo headInfo;
 	//headInfo is the information of the head of the train.
 	size_t trainInfo;
@@ -294,8 +312,6 @@ void CAirViewDlg::GetTrackData()
 
 	int nDirectOfNextNode = nDirectOfHeadNode;
 	SVectorNode *nextNodePtr = headInfo.vectorNodePtr;
-	STrackSection *pSection;
-	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, &pSection, 4, 1, 0xC);
 
 	while (forwardLength < 8 * m_fDistance && nextNodePtr)
 	{
@@ -303,7 +319,7 @@ void CAirViewDlg::GetTrackData()
 		int nDirectOfCurrentNode = nDirectOfNextNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		AddSectionInfo(forwardLength, vectorNode, vectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, pSection);
+		AddSectionInfo(forwardLength, vectorNode, vectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, m_pTrackSectionArray);
 		forwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -328,7 +344,7 @@ void CAirViewDlg::GetTrackData()
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		AddSectionInfo(backwardLength, vectorNode, backVectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode, pSection);
+		AddSectionInfo(backwardLength, vectorNode, backVectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode, m_pTrackSectionArray);
 		backwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -357,6 +373,7 @@ void CAirViewDlg::OnTimer(UINT_PTR nIDEvent)
 void CAirViewDlg::OnDestroy()
 {
 	CDialog::OnDestroy();
+	delete[] m_pTrackSectionArray;
 
 	if (m_hTrainProcess)
 		CloseHandle(m_hTrainProcess);
