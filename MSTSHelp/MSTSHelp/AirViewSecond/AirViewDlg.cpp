@@ -199,7 +199,7 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
 }
-void DrawTracksSecond(CDC *pDC)
+void CAirViewDlg::DrawAllTracks(CDC *pDC)
 {
 }
 void CAirViewDlg::DrawPathTracks(CDC *pDC)
