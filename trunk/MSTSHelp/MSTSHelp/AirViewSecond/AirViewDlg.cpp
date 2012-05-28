@@ -187,17 +187,17 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 {
 	CRect rect;
 	GetClientRect(&rect);
-	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetWindowExt(m_fDistance * TIMES, m_fDistance * TIMES);
-	pDC->SetViewportExt(rect.right, -rect.bottom);
 	pDC->SetViewportOrg(rect.right / 2, rect.bottom / 2);
 	CBrush brush, *pOldBrush;
 	brush.CreateSolidBrush(RGB(120, 255, 200));
 	pOldBrush = pDC->SelectObject(&brush);
-	int nRadius = 8 * m_fDistance * TIMES / rect.right;
+	int nRadius = 5;
 	pDC->Ellipse(-nRadius, -nRadius, nRadius, nRadius);
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
+	pDC->SetMapMode(MM_ISOTROPIC);
+	pDC->SetWindowExt(m_fDistance * TIMES, m_fDistance * TIMES);
+	pDC->SetViewportExt(rect.right, -rect.bottom);
 }
 void CAirViewDlg::DrawAllTracks(CDC *pDC)
 {
