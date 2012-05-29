@@ -95,8 +95,16 @@ void CAirViewDlg::OnPaint()
 		MemDC.FillSolidRect(0, 0, nWidth, nHeight, ::GetSysColor(COLOR_3DFACE));
 		DrawScale(&MemDC, rect.bottom, m_fDistance);
 		SetPaintMode(&MemDC);
-		DrawAllTracks(&MemDC);
-		DrawPathTracks(&MemDC);
+
+		try
+		{
+			DrawAllTracks(&MemDC);
+		}
+		catch (int)
+		{
+		}
+
+		//DrawPathTracks(&MemDC);
 		MemDC.SetMapMode(MM_TEXT);
 		dc.BitBlt(0, 0, nWidth, nHeight, &MemDC, -nWidth / 2, -nHeight / 2, SRCCOPY);
 		MemBitmap.DeleteObject();
@@ -155,6 +163,115 @@ void CAirViewDlg::DrawScale(CDC *pDC, int nSize, float fMapSize)
 	textRect.right = 105;
 	pDC->DrawText(str, textRect, NULL);
 }
+SLocation CAirViewDlg::calculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle)
+{
+	int num = node.nSectionNum;
+	SVectorSection *pSectionData = new SVectorSection[num];
+	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
+	int nDirection = 1;
+	int start = nDirection ? 0 : num - 1;
+	int end = nDirection ? num : -1;
+	int delta = nDirection ? 1 : -1;
+	float fCurrentX = 0;
+	float fCurrentY = 0;
+	float currentAngle;
+	float fDistance;
+	float fCurrentLength = 0;
+
+	if (nDirection)
+	{
+		currentAngle = pSectionData[0].AY;
+		fDistance = fCurrentLocation;
+	}
+	else
+	{
+		SVectorSection *pSection = pSectionData + num - 1;
+		currentAngle = pSection->AY;
+		STrackSection *pCurSection = m_pTrackSectionArray + pSection->sectionIndex;
+		currentAngle += pCurSection->fSectionCurveSecondAngle8;
+		currentAngle += (float)M_PI;
+		fDistance = node.fTrackNodeLength - fCurrentLocation;
+	}
+
+	currentAngle = (float)M_PI_2 - currentAngle;
+
+	for (int i = start; i != end; i += delta)
+	{
+		STrackSection *pCurSection = m_pTrackSectionArray + pSectionData[i].sectionIndex;
+		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
+		float fSectionLength = pCurSection->fSectionSizeSecondLength0;
+
+		if (fDistance > fCurrentLength + fSectionLength)
+		{
+			fCurrentLength += fSectionLength;
+
+			if (pCurSection->fSectionCurveSecondAngle8 == 0)
+			{
+				fCurrentX += fSectionLength * cos(currentAngle);
+				fCurrentY += fSectionLength * sin(currentAngle);
+			}
+			else if ((pCurSection->fSectionCurveSecondAngle8 > 0) ^ nDirection)
+			{
+				float fRadius = pCurSection->fSectionCurveFirstRadius4;
+				float fCenterX = fCurrentX, fCenterY = fCurrentY;
+				float fPreX = fCurrentX, fPreY = fCurrentY;
+				fCenterX -= fRadius * sin(currentAngle);
+				fCenterY += fRadius * cos(currentAngle);
+				currentAngle += pCurSection->fSectionSizeSecondLength0 / fRadius;
+				fCurrentX = fCenterX + fRadius * sin(currentAngle);
+				fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			}
+			else
+			{
+				float fRadius = pCurSection->fSectionCurveFirstRadius4;
+				float fCenterX = fCurrentX, fCenterY = fCurrentY;
+				float fPreX = fCurrentX, fPreY = fCurrentY;
+				fCenterX += fRadius * sin(currentAngle);
+				fCenterY -= fRadius * cos(currentAngle);
+				currentAngle -= pCurSection->fSectionSizeSecondLength0 / fRadius;
+				fCurrentX = fCenterX - fRadius * sin(currentAngle);
+				fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			}
+		}
+		else
+		{
+			float fRemainLength = fDistance - fCurrentLength;
+
+			if (pCurSection->fSectionCurveSecondAngle8 == 0)
+			{
+				fCurrentX += fRemainLength * cos(currentAngle);
+				fCurrentY += fRemainLength * sin(currentAngle);
+			}
+			else if ((pCurSection->fSectionCurveSecondAngle8 > 0) ^ nDirection)
+			{
+				float fRadius = pCurSection->fSectionCurveFirstRadius4;
+				float fCenterX = fCurrentX, fCenterY = fCurrentY;
+				float fPreX = fCurrentX, fPreY = fCurrentY;
+				fCenterX -= fRadius * sin(currentAngle);
+				fCenterY += fRadius * cos(currentAngle);
+				currentAngle += fRemainLength / fRadius;
+				fCurrentX = fCenterX + fRadius * sin(currentAngle);
+				fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			}
+			else
+			{
+				float fRadius = pCurSection->fSectionCurveFirstRadius4;
+				float fCenterX = fCurrentX, fCenterY = fCurrentY;
+				float fPreX = fCurrentX, fPreY = fCurrentY;
+				fCenterX += fRadius * sin(currentAngle);
+				fCenterY -= fRadius * cos(currentAngle);
+				currentAngle -= fRemainLength / fRadius;
+				fCurrentX = fCenterX - fRadius * sin(currentAngle);
+				fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			}
+
+			break;
+		}
+	}
+
+	delete []pSectionData;
+	return SLocation(-fCurrentX, -fCurrentY);
+}
 SLocation CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirection, const SLocation &startLocation, HANDLE handle)
 {
 	int num = node.nSectionNum;
@@ -179,7 +296,7 @@ SLocation CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDi
 		currentAngle += pCurSection->fSectionCurveSecondAngle8;
 		currentAngle += (float)M_PI;
 	}
-	
+
 	currentAngle = (float)M_PI_2 - currentAngle;
 
 	for (int i = start; i != end; i += delta)
@@ -206,7 +323,7 @@ SLocation CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDi
 			fCurrentX = fCenterX + fRadius * sin(currentAngle);
 			fCurrentY = fCenterY - fRadius * cos(currentAngle);
 			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-				fPreX, fPreY, fCurrentX, fCurrentY);
+			        fPreX, fPreY, fCurrentX, fCurrentY);
 		}
 		else
 		{
@@ -219,10 +336,10 @@ SLocation CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDi
 			fCurrentX = fCenterX - fRadius * sin(currentAngle);
 			fCurrentY = fCenterY + fRadius * cos(currentAngle);
 			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-				fCurrentX, fCurrentY, fPreX, fPreY);
+			        fCurrentX, fCurrentY, fPreX, fPreY);
 		}
 	}
-	
+
 	delete []pSectionData;
 	return SLocation(fCurrentX, fCurrentY);
 }
@@ -247,38 +364,73 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 	if (!GetTrainHandle(m_hTrainProcess) || !GetTrainPointer(m_hTrainProcess))
 		return;
 
+	m_setVectorNode.clear();
+	std::queue<SQueueData> tmp;
+	swap(m_queueVectorNode, tmp);
 	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
-	m_currentAngle -= (float)M_PI_2;
 	STrackInfo headInfo;
-	ReadTrainProcess(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
-	float forwardLength;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
 	SVectorNode vectorNode;
-	int nDirectOfHeadNode = headInfo.nDirection;
-	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.vectorNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	SVectorSection vectorSection;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)vectorNode.sectionArrayPtr, &vectorSection, sizeof(SVectorSection));
-	SLocation location(0, 0);
-	int nDirectOfNextNode = nDirectOfHeadNode;
-	SVectorNode *nextNodePtr = headInfo.vectorNodePtr;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)headInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	m_setVectorNode.insert(headInfo.pVectorNode);
+	//////////////////////////////////////////////////////////////////////
+	float fDistance = headInfo.fLocationInNode;
+	SLocation location = calculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
+	//////////////////////////////////////////////////////////////////////
+	SQueueData queueData;
+	SConnectNode connectNode;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)vectorNode.InConnectNodePtr, (LPVOID)&connectNode, sizeof(SConnectNode));
 
-	if (nDirectOfHeadNode)
-		forwardLength = - headInfo.fLocationInNode;
-	else
-		forwardLength = headInfo.fLocationInNode - vectorNode.fTrackNodeLength;
-
-	while (forwardLength < 8 * m_fDistance && nextNodePtr)
+	if (connectNode.nType0 == 2)
 	{
-		SVectorNode *currentNodePtr = nextNodePtr;
-		int nDirectOfCurrentNode = nDirectOfNextNode;
-		SVectorNode vectorNode;
-		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		location = DrawVectorNode(pDC, vectorNode, nDirectOfCurrentNode, location, m_hTrainProcess);
-		forwardLength += vectorNode.fTrackNodeLength;
-		/************************************************************************/
-		/* Get Next Node Pointer                                                */
-		/************************************************************************/
-		nextNodePtr = GetNextNode(m_hTrainProcess, vectorNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfNextNode);
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&queueData.connectStruct, sizeof(SConnectStruct));
+		queueData.location = location;
+		queueData.pVectorNode = headInfo.pVectorNode;
+		m_queueVectorNode.push(queueData);
+	}
+
+	location = DrawVectorNode(pDC, vectorNode, 1, location, m_hTrainProcess);
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)vectorNode.OutConnectNodePtr, (LPVOID)&connectNode, sizeof(SConnectNode));
+
+	if (connectNode.nType0 == 2)
+	{
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&queueData.connectStruct, sizeof(SConnectStruct));
+		queueData.location = location;
+		queueData.pVectorNode = headInfo.pVectorNode;
+		m_queueVectorNode.push(queueData);
+	}
+
+	while (!m_queueVectorNode.empty())
+	{
+		SQueueData queueData = m_queueVectorNode.front();
+		m_queueVectorNode.pop();
+
+		for (int i = 0; i < 3; ++i)
+		{
+			SSubConnectStruct *pSubConnectStruct = queueData.connectStruct.subStruct + i;
+
+			if (pSubConnectStruct->pVectorNode != queueData.pVectorNode)
+			{
+				if (m_setVectorNode.find(pSubConnectStruct->pVectorNode) != m_setVectorNode.end())
+					continue;
+
+				m_setVectorNode.insert(pSubConnectStruct->pVectorNode);
+				SVectorNode tmpNode;
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)pSubConnectStruct->pVectorNode, (LPVOID)&tmpNode, sizeof(SVectorNode));
+				SLocation endLocation = DrawVectorNode(pDC, tmpNode, queueData.connectStruct.subStruct[i].nDirect, queueData.location, m_hTrainProcess);
+				SConnectNode *pConnectNode = pSubConnectStruct->nDirect ? tmpNode.OutConnectNodePtr : tmpNode.InConnectNodePtr;
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)pConnectNode, (LPVOID)&connectNode, sizeof(SConnectNode));
+				SQueueData newQueueData;
+
+				if (connectNode.nType0 == 2)
+				{
+					ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&newQueueData.connectStruct, sizeof(SConnectStruct));
+					newQueueData.location = endLocation;
+					newQueueData.pVectorNode = pSubConnectStruct->pVectorNode;
+					m_queueVectorNode.push(newQueueData);
+				}
+			}
+		}
 	}
 }
 void CAirViewDlg::DrawPathTracks(CDC *pDC)
@@ -421,7 +573,7 @@ void CAirViewDlg::GetTrackData()
 	float forwardLength;
 	SVectorNode vectorNode;
 	int nDirectOfHeadNode = headInfo.nDirection;
-	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.vectorNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 
 	if (nDirectOfHeadNode)
 		forwardLength = - headInfo.fLocationInNode;
@@ -429,7 +581,7 @@ void CAirViewDlg::GetTrackData()
 		forwardLength = headInfo.fLocationInNode - vectorNode.fTrackNodeLength;
 
 	int nDirectOfNextNode = nDirectOfHeadNode;
-	SVectorNode *nextNodePtr = headInfo.vectorNodePtr;
+	SVectorNode *nextNodePtr = headInfo.pVectorNode;
 
 	while (forwardLength < 8 * m_fDistance && nextNodePtr)
 	{
@@ -454,7 +606,7 @@ void CAirViewDlg::GetTrackData()
 		backwardLength = headInfo.fLocationInNode - vectorNode.fTrackNodeLength;
 
 	int nDirectOfPrevNode = nDirectOfHeadNode;
-	SVectorNode *prevNodePtr = headInfo.vectorNodePtr;
+	SVectorNode *prevNodePtr = headInfo.pVectorNode;
 
 	while (backwardLength < 8 * m_fDistance && prevNodePtr)
 	{
@@ -508,8 +660,8 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	{
 		m_fDistance /= 1.5;
 
-		if (m_fDistance < 1000)
-			m_fDistance = 1000;
+		if (m_fDistance < 200)
+			m_fDistance = 200;
 	}
 	else
 	{

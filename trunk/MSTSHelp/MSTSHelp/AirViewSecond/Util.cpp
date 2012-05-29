@@ -140,20 +140,20 @@ SVectorNode *GetNext(SVectorNode *nodePtr, const SConnectStruct &connectStruct, 
 {
 	if (connectNode.nType0 == 2) //JunctionNode
 	{
-		if (nodePtr == connectStruct.subStruct[0].nodePtr)
+		if (nodePtr == connectStruct.subStruct[0].pVectorNode)
 		{
 			nextDirect = connectStruct.subStruct[1 + connectNode.direction80].nDirect;
-			return connectStruct.subStruct[1 + connectNode.direction80].nodePtr;
+			return connectStruct.subStruct[1 + connectNode.direction80].pVectorNode;
 		}
-		else if (nodePtr == connectStruct.subStruct[1].nodePtr)
+		else if (nodePtr == connectStruct.subStruct[1].pVectorNode)
 		{
 			nextDirect = connectStruct.subStruct[0].nDirect;
-			return connectStruct.subStruct[0].nodePtr;
+			return connectStruct.subStruct[0].pVectorNode;
 		}
-		else if (nodePtr == connectStruct.subStruct[2].nodePtr)
+		else if (nodePtr == connectStruct.subStruct[2].pVectorNode)
 		{
 			nextDirect = connectStruct.subStruct[0].nDirect;
-			return connectStruct.subStruct[0].nodePtr;
+			return connectStruct.subStruct[0].pVectorNode;
 		}
 	}
 
