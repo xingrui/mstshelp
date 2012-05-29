@@ -13,15 +13,14 @@ using std::queue;
 const int TIMES = 100;
 struct SLocation
 {
-	float fPointX;
-	float fPointY;
-	SLocation(float x = 0, float y = 0): fPointX(x), fPointY(y) {}
+	double fPointX;
+	double fPointY;
+	SLocation(double x = 0, double y = 0): fPointX(x), fPointY(y) {}
 };
 struct SQueueData
 {
 	SConnectStruct connectStruct;
 	SVectorNode *pVectorNode;
-	SLocation location;
 };
 class CAirViewDlg : public CDialog
 {
@@ -48,6 +47,7 @@ protected:
 	queue<SQueueData> m_queueVectorNode;
 	set<SVectorNode *> m_setVectorNode;
 	STrackInfo m_currentHeadInfo;
+	SLocation m_startLocation;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
@@ -55,11 +55,11 @@ protected:
 	void DrawPathTracks(CDC *pDC);
 	void DrawAllTracks(CDC *pDC);
 	void SetPaintMode(CDC *pDC);
-	SLocation calculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle);
-	SLocation DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirection,  const SLocation &startLocation, HANDLE handle);
-	void DrawArc(CDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
-	void DrawMoveTo(CDC *pDC, float x1, float y1);
-	void DrawLineTo(CDC *pDC, float x1, float y1);
+	void calculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle);
+	void DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle);
+	void DrawArc(CDC *pDC, double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4);
+	void DrawMoveTo(CDC *pDC, double x1, double y1);
+	void DrawLineTo(CDC *pDC, double x1, double y1);
 	void GetDataAndPaint();
 	void GetTrackData();
 	afx_msg void OnPaint();
