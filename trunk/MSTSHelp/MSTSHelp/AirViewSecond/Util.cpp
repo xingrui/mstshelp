@@ -1,5 +1,8 @@
 #include "stdafx.h"
 #include "Util.h"
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES
+#endif
 #include <cmath>
 vector<CString> g_colorToStringVect;
 vector<CString> g_ESignalTypeToStringVect;
@@ -25,7 +28,7 @@ CString getTrackSectionString(const SSectionInfo &info)
 		msg += temp;
 	}
 
-	temp.Format(L" ÆÂ¶È %.5f", info.fAngle * 180 / 3.1415926f);
+	temp.Format(L" ÆÂ¶È %.5f", info.fAngle * 180 / M_PI);
 	msg += temp;
 	msg += L"\r\n";
 	return msg;

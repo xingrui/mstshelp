@@ -7,6 +7,12 @@
 #include "Util.h"
 // CAirViewDlg 对话框
 const int TIMES = 100;
+struct SLocation
+{
+	float fPointX;
+	float fPointY;
+	SLocation(float x, float y): fPointX(x), fPointY(y) {}
+};
 class CAirViewDlg : public CDialog
 {
 	// 构造
@@ -36,7 +42,7 @@ protected:
 	void DrawPathTracks(CDC *pDC);
 	void DrawAllTracks(CDC *pDC);
 	void SetPaintMode(CDC *pDC);
-	void DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirection, float startX, float startY, float currentAngle, HANDLE handle);
+	SLocation DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirection,  const SLocation &startLocation, HANDLE handle);
 	void DrawArc(CDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
 	void DrawMoveTo(CDC *pDC, float x1, float y1);
 	void DrawLineTo(CDC *pDC, float x1, float y1);
