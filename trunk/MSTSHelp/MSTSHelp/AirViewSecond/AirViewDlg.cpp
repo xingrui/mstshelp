@@ -98,13 +98,20 @@ void CAirViewDlg::OnPaint()
 
 		try
 		{
+			ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
+			ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+			ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
+			m_currentAngle = (float)M_PI_2 - m_currentAngle;
 			DrawAllTracks(&MemDC);
+			CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
+			CPen *oldPen = MemDC.SelectObject(&pen);
+			DrawPathTracks(&MemDC);
+			MemDC.SelectObject(oldPen);
 		}
 		catch (int)
 		{
 		}
 
-		//DrawPathTracks(&MemDC);
 		MemDC.SetMapMode(MM_TEXT);
 		dc.BitBlt(0, 0, nWidth, nHeight, &MemDC, -nWidth / 2, -nHeight / 2, SRCCOPY);
 		MemBitmap.DeleteObject();
@@ -367,14 +374,11 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 	m_setVectorNode.clear();
 	std::queue<SQueueData> tmp;
 	swap(m_queueVectorNode, tmp);
-	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
-	STrackInfo headInfo;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
 	SVectorNode vectorNode;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)headInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	m_setVectorNode.insert(headInfo.pVectorNode);
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	m_setVectorNode.insert(m_currentHeadInfo.pVectorNode);
 	//////////////////////////////////////////////////////////////////////
-	float fDistance = headInfo.fLocationInNode;
+	float fDistance = m_currentHeadInfo.fLocationInNode;
 	SLocation location = calculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
 	//////////////////////////////////////////////////////////////////////
 	SQueueData queueData;
@@ -385,7 +389,7 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 	{
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&queueData.connectStruct, sizeof(SConnectStruct));
 		queueData.location = location;
-		queueData.pVectorNode = headInfo.pVectorNode;
+		queueData.pVectorNode = m_currentHeadInfo.pVectorNode;
 		m_queueVectorNode.push(queueData);
 	}
 
@@ -396,7 +400,7 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 	{
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&queueData.connectStruct, sizeof(SConnectStruct));
 		queueData.location = location;
-		queueData.pVectorNode = headInfo.pVectorNode;
+		queueData.pVectorNode = m_currentHeadInfo.pVectorNode;
 		m_queueVectorNode.push(queueData);
 	}
 
@@ -435,108 +439,63 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 }
 void CAirViewDlg::DrawPathTracks(CDC *pDC)
 {
-	float currentAngle = -m_currentAngle;
-
-	if (m_vectSectionInfo.empty())
+	if (!GetTrainHandle(m_hTrainProcess) || !GetTrainPointer(m_hTrainProcess))
 		return;
 
-	SSectionInfo info = m_vectSectionInfo[0];
-	info.fEnd = 0;
-	m_vectSectionInfo[0].fStart = 0;
-	float fCurrentX = 0, fCurrentY = 0;
+	float forwardLength;
+	SVectorNode vectorNode;
+	int nDirectOfHeadNode = m_currentHeadInfo.nDirection;
+	ReadTrainProcess(m_hTrainProcess, (void *)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	SLocation beginLocation = calculateCurrentLocation(vectorNode, m_currentHeadInfo.fLocationInNode, m_hTrainProcess);
 
-	for (size_t i = 0; i < m_vectSectionInfo.size(); ++i)
+	if (nDirectOfHeadNode)
+		forwardLength = - m_currentHeadInfo.fLocationInNode;
+	else
+		forwardLength = m_currentHeadInfo.fLocationInNode - vectorNode.fTrackNodeLength;
+
+	int nDirectOfNextNode;
+	SLocation endlocation = DrawVectorNode(pDC, vectorNode, 1, beginLocation, m_hTrainProcess);
+	SLocation location = nDirectOfHeadNode ? endlocation : beginLocation;
+	SVectorNode *nextNodePtr = GetNextNode(m_hTrainProcess, vectorNode, m_currentHeadInfo.pVectorNode, nDirectOfHeadNode, nDirectOfNextNode);
+
+	while (forwardLength < 8 * m_fDistance && nextNodePtr)
 	{
-		SSectionInfo *pInfo = &m_vectSectionInfo[i];
-
-		if (pInfo->nDirection == 0)
-		{
-			// 直轨道
-			float fLength = pInfo->fEnd - pInfo->fStart;
-			DrawMoveTo(pDC, fCurrentX, fCurrentY);
-			fCurrentX += fLength * cos(currentAngle);
-			fCurrentY += fLength * sin(currentAngle);
-			DrawLineTo(pDC, fCurrentX, fCurrentY);
-		}
-		else if (pInfo->nDirection == 1)
-		{
-			// 右转
-			float fRadius = pInfo->fRadius;
-			float fCenterX = fCurrentX, fCenterY = fCurrentY;
-			float fPreX = fCurrentX, fPreY = fCurrentY;
-			fCenterX += fRadius * sin(currentAngle);
-			fCenterY -= fRadius * cos(currentAngle);
-			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
-			fCurrentX = fCenterX - fRadius * sin(currentAngle);
-			fCurrentY = fCenterY + fRadius * cos(currentAngle);
-			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			        fCurrentX, fCurrentY, fPreX, fPreY);
-		}
-		else
-		{
-			// 左转
-			float fRadius = pInfo->fRadius;
-			float fCenterX = fCurrentX, fCenterY = fCurrentY;
-			float fPreX = fCurrentX, fPreY = fCurrentY;
-			fCenterX -= fRadius * sin(currentAngle);
-			fCenterY += fRadius * cos(currentAngle);
-			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
-			fCurrentX = fCenterX + fRadius * sin(currentAngle);
-			fCurrentY = fCenterY - fRadius * cos(currentAngle);
-			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			        fPreX, fPreY, fCurrentX, fCurrentY);
-		}
+		SVectorNode *currentNodePtr = nextNodePtr;
+		int nDirectOfCurrentNode = nDirectOfNextNode;
+		SVectorNode vectorNode;
+		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
+		location = DrawVectorNode(pDC, vectorNode, nDirectOfCurrentNode, location, m_hTrainProcess);
+		forwardLength += vectorNode.fTrackNodeLength;
+		/************************************************************************/
+		/* Get Next Node Pointer                                                */
+		/************************************************************************/
+		nextNodePtr = GetNextNode(m_hTrainProcess, vectorNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfNextNode);
 	}
 
-	currentAngle = -m_currentAngle + (float)M_PI;
-	fCurrentX = 0, fCurrentY = 0;
+	nDirectOfHeadNode = !nDirectOfHeadNode;
+	float backwardLength;
 
-	for (size_t i = 0; i <= m_backVectSectionInfo.size(); ++i)
+	if (nDirectOfHeadNode)
+		backwardLength = - m_currentHeadInfo.fLocationInNode;
+	else
+		backwardLength = m_currentHeadInfo.fLocationInNode - vectorNode.fTrackNodeLength;
+
+	int nDirectOfPrevNode = nDirectOfHeadNode;
+	location = nDirectOfHeadNode ? endlocation : beginLocation;
+	SVectorNode *prevNodePtr = GetNextNode(m_hTrainProcess, vectorNode, m_currentHeadInfo.pVectorNode, nDirectOfHeadNode, nDirectOfPrevNode);
+
+	while (backwardLength < 8 * m_fDistance && prevNodePtr)
 	{
-		SSectionInfo *pInfo;
-
-		if (i == 0)
-			pInfo = &info;
-		else
-			pInfo = &m_backVectSectionInfo[i - 1];
-
-		if (pInfo->nDirection == 0)
-		{
-			// 直轨道
-			float fLength = pInfo->fEnd - pInfo->fStart;
-			DrawMoveTo(pDC, fCurrentX, fCurrentY);
-			fCurrentX += fLength * cos(currentAngle);
-			fCurrentY += fLength * sin(currentAngle);
-			DrawLineTo(pDC, fCurrentX, fCurrentY);
-		}
-		else if (pInfo->nDirection != 1)
-		{
-			// 右转
-			float fRadius = pInfo->fRadius;
-			float fCenterX = fCurrentX, fCenterY = fCurrentY;
-			float fPreX = fCurrentX, fPreY = fCurrentY;
-			fCenterX += fRadius * sin(currentAngle);
-			fCenterY -= fRadius * cos(currentAngle);
-			currentAngle -= (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
-			fCurrentX = fCenterX - fRadius * sin(currentAngle);
-			fCurrentY = fCenterY + fRadius * cos(currentAngle);
-			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			        fCurrentX, fCurrentY, fPreX, fPreY);
-		}
-		else
-		{
-			// 左转
-			float fRadius = pInfo->fRadius;
-			float fCenterX = fCurrentX, fCenterY = fCurrentY;
-			float fPreX = fCurrentX, fPreY = fCurrentY;
-			fCenterX -= fRadius * sin(currentAngle);
-			fCenterY += fRadius * cos(currentAngle);
-			currentAngle += (pInfo->fEnd - pInfo->fStart) / pInfo->fRadius;
-			fCurrentX = fCenterX + fRadius * sin(currentAngle);
-			fCurrentY = fCenterY - fRadius * cos(currentAngle);
-			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
-			        fPreX, fPreY, fCurrentX, fCurrentY);
-		}
+		SVectorNode *currentNodePtr = prevNodePtr;
+		int nDirectOfCurrentNode = nDirectOfPrevNode;
+		SVectorNode vectorNode;
+		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
+		location = DrawVectorNode(pDC, vectorNode, nDirectOfCurrentNode, location, m_hTrainProcess);
+		backwardLength += vectorNode.fTrackNodeLength;
+		/************************************************************************/
+		/* Get Next Node Pointer                                                */
+		/************************************************************************/
+		prevNodePtr = GetNextNode(m_hTrainProcess, vectorNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfPrevNode);
 	}
 }
 
