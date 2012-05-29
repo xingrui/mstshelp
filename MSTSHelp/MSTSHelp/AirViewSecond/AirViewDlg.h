@@ -38,6 +38,8 @@ protected:
 	void SetPaintMode(CDC *pDC);
 	void DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirection, float startX, float startY, float currentAngle, HANDLE handle);
 	void DrawArc(CDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4);
+	void DrawMoveTo(CDC *pDC, float x1, float y1);
+	void DrawLineTo(CDC *pDC, float x1, float y1);
 	void GetDataAndPaint();
 	void GetTrackData();
 	afx_msg void OnPaint();
