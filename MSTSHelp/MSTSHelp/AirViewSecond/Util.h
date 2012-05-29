@@ -62,7 +62,7 @@ struct SSectionTypeData
 
 struct SSubConnectStruct
 {
-	SVectorNode *nodePtr;
+	SVectorNode *pVectorNode;
 	int nDirect;
 };
 struct SConnectStruct
@@ -139,7 +139,7 @@ struct SVectorNode
 };
 struct STrackInfo
 {
-	SVectorNode     *vectorNodePtr;
+	SVectorNode     *pVectorNode;
 	int             nCurrentSectionNum;
 	SVectorSection  *sectionPtr;
 	int             nDirection;
