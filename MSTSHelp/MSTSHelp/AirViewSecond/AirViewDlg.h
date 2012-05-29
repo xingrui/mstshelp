@@ -47,6 +47,7 @@ protected:
 	STrackSection *m_pTrackSectionArray;
 	queue<SQueueData> m_queueVectorNode;
 	set<SVectorNode *> m_setVectorNode;
+	STrackInfo m_currentHeadInfo;
 
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
