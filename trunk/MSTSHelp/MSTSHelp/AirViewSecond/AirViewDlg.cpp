@@ -98,15 +98,18 @@ void CAirViewDlg::OnPaint()
 
 		try
 		{
-			ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
-			ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
-			ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
-			m_currentAngle = (float)M_PI_2 - m_currentAngle;
-			DrawAllTracks(&MemDC);
-			CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
-			CPen *oldPen = MemDC.SelectObject(&pen);
-			DrawPathTracks(&MemDC);
-			MemDC.SelectObject(oldPen);
+			if (GetTrainHandle(m_hTrainProcess) && GetTrainPointer(m_hTrainProcess))
+			{
+				ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
+				m_currentAngle = (float)M_PI_2 - m_currentAngle;
+				DrawAllTracks(&MemDC);
+				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
+				CPen *oldPen = MemDC.SelectObject(&pen);
+				DrawPathTracks(&MemDC);
+				MemDC.SelectObject(oldPen);
+			}
 		}
 		catch (int)
 		{
@@ -413,7 +416,7 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 		{
 			SSubConnectStruct *pSubConnectStruct = queueData.connectStruct.subStruct + i;
 
-			if (pSubConnectStruct->pVectorNode != queueData.pVectorNode)
+			if (pSubConnectStruct->pVectorNode != queueData.pVectorNode && pSubConnectStruct->pVectorNode != NULL)
 			{
 				if (m_setVectorNode.find(pSubConnectStruct->pVectorNode) != m_setVectorNode.end())
 					continue;
