@@ -109,7 +109,27 @@ HCURSOR CAirViewDlg::OnQueryDragIcon()
 }
 void CAirViewDlg::DrawArc(CDC *pDC, float x1, float y1, float x2, float y2, float x3, float y3, float x4, float y4)
 {
-	pDC->Arc(TIMES * x1, TIMES * y1, TIMES * x2, TIMES * y2, TIMES * x3, TIMES * y3, TIMES * x4, TIMES * y4);
+	int nX1 = (int)(TIMES * x1);
+	int nY1 = (int)(TIMES * y1);
+	int nX2 = (int)(TIMES * x2);
+	int nY2 = (int)(TIMES * y2);
+	int nX3 = (int)(TIMES * x3);
+	int nY3 = (int)(TIMES * y3);
+	int nX4 = (int)(TIMES * x4);
+	int nY4 = (int)(TIMES * y4);
+	pDC->Arc(nX1, nY1 , nX2, nY2, nX3, nY3, nX4, nY4);
+}
+void CAirViewDlg::DrawMoveTo(CDC *pDC, float x1, float y1)
+{
+	int nX1 = (int)(TIMES * x1);
+	int nY1 = (int)(TIMES * y1);
+	pDC->MoveTo(nX1, nY1);
+}
+void CAirViewDlg::DrawLineTo(CDC *pDC, float x1, float y1)
+{
+	int nX1 = (int)(TIMES * x1);
+	int nY1 = (int)(TIMES * y1);
+	pDC->LineTo(nX1, nY1);
 }
 // 绘制比例尺
 void CAirViewDlg::DrawScale(CDC *pDC, int nSize, float fMapSize)
@@ -150,10 +170,10 @@ void CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, int nDirecti
 		if (pCurSection->fSectionCurveSecondAngle8 == 0)
 		{
 			float fLength = pCurSection->fSectionSizeSecondLength0;
-			pDC->MoveTo(fCurrentX * TIMES, fCurrentY * TIMES);
+			DrawMoveTo(pDC, fCurrentX, fCurrentY);
 			fCurrentX += fLength * cos(currentAngle);
 			fCurrentY += fLength * sin(currentAngle);
-			pDC->LineTo(fCurrentX * TIMES, fCurrentY * TIMES);
+			DrawLineTo(pDC, fCurrentX, fCurrentY);
 		}
 		else if ((pCurSection->fSectionCurveSecondAngle8 > 0) ^ nDirection)
 		{
@@ -196,7 +216,7 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
 	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetWindowExt(m_fDistance * TIMES, m_fDistance * TIMES);
+	pDC->SetWindowExt((int)(m_fDistance * TIMES), (int)(m_fDistance * TIMES));
 	pDC->SetViewportExt(rect.right, -rect.bottom);
 }
 void CAirViewDlg::DrawAllTracks(CDC *pDC)
@@ -222,10 +242,10 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 		{
 			// 直轨道
 			float fLength = pInfo->fEnd - pInfo->fStart;
-			pDC->MoveTo(fCurrentX * TIMES, fCurrentY * TIMES);
+			DrawMoveTo(pDC, fCurrentX, fCurrentY);
 			fCurrentX += fLength * cos(currentAngle);
 			fCurrentY += fLength * sin(currentAngle);
-			pDC->LineTo(fCurrentX * TIMES, fCurrentY * TIMES);
+			DrawLineTo(pDC, fCurrentX, fCurrentY);
 		}
 		else if (pInfo->nDirection == 1)
 		{
@@ -273,10 +293,10 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 		{
 			// 直轨道
 			float fLength = pInfo->fEnd - pInfo->fStart;
-			pDC->MoveTo(fCurrentX * TIMES, fCurrentY * TIMES);
+			DrawMoveTo(pDC, fCurrentX, fCurrentY);
 			fCurrentX += fLength * cos(currentAngle);
 			fCurrentY += fLength * sin(currentAngle);
-			pDC->LineTo(fCurrentX * TIMES, fCurrentY * TIMES);
+			DrawLineTo(pDC, fCurrentX, fCurrentY);
 		}
 		else if (pInfo->nDirection != 1)
 		{
