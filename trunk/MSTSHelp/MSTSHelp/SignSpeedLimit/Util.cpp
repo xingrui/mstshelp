@@ -640,7 +640,7 @@ CString IteratorList(HANDLE handle, void *headPtr, CString (*func)(HANDLE, void 
 	ReadTrainProcess(handle, headPtr, &head, 4);
 	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
 
-	if (iteNode.pointer != headPtr)
+	if (iteNode.pointer != head)
 	{
 		return strResult;
 	}
