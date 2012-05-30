@@ -106,9 +106,20 @@ void CAirViewDlg::OnPaint()
 				m_currentAngle = (float)M_PI_2 - m_currentAngle;
 				DrawAllTracks(&MemDC);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
-				CPen *oldPen = MemDC.SelectObject(&pen);
+				CPen *pOldPen = MemDC.SelectObject(&pen);
 				DrawPathTracks(&MemDC);
-				MemDC.SelectObject(oldPen);
+				MemDC.SelectObject(pOldPen);
+				pen.DeleteObject();
+				CBrush brush, *pOldBrush;
+				brush.CreateSolidBrush(RGB(255, 0, 0));
+				pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+				pOldBrush = MemDC.SelectObject(&brush);
+				pOldPen = MemDC.SelectObject(&pen);
+				DrawAllAITracks(&MemDC);
+				MemDC.SelectObject(pOldPen);
+				MemDC.SelectObject(pOldBrush);
+				brush.DeleteObject();
+				pen.DeleteObject();
 			}
 		}
 		catch (int)
@@ -288,6 +299,74 @@ void CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handl
 
 	delete []pSectionData;
 }
+void CAirViewDlg::DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle, float fLocation, CString strName)
+{
+	int num = node.nSectionNum;
+	SVectorSection *pSectionData = new SVectorSection[num];
+	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
+	float fCurrentLength = 0;
+
+	for (int i = 0; i != num; ++i)
+	{
+		STrackSection *pCurSection = m_pTrackSectionArray + pSectionData[i].sectionIndex;
+		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
+		float fSectionLength = pCurSection->fSectionSizeSecondLength0;
+
+		if (fLocation > fCurrentLength + fSectionLength)
+		{
+			fCurrentLength += fSectionLength;
+		}
+		else
+		{
+			float fRemainLength = fLocation - fCurrentLength;
+			double fCurrentX = pSectionData[i].TileX2 * 2048 + pSectionData[i].X - m_startLocation.fPointX;
+			double fCurrentY = pSectionData[i].TileZ2 * 2048 + pSectionData[i].Z - m_startLocation.fPointY;
+			float currentAngle = (float)M_PI_2 - pSectionData[i].AY;
+			float fZ = pSectionData[i].Y;
+
+			if (pCurSection->fSectionCurveSecondAngle8 == 0)
+			{
+				fCurrentX += fRemainLength * cos(currentAngle);
+				fCurrentY += fRemainLength * sin(currentAngle);
+			}
+			else if (pCurSection->fSectionCurveSecondAngle8 < 0)
+			{
+				float fRadius = pCurSection->fSectionCurveFirstRadius4;
+				double fCenterX = fCurrentX, fCenterY = fCurrentY;
+				double fPreX = fCurrentX, fPreY = fCurrentY;
+				fCenterX -= fRadius * sin(currentAngle);
+				fCenterY += fRadius * cos(currentAngle);
+				currentAngle += fRemainLength / fRadius;
+				fCurrentX = fCenterX + fRadius * sin(currentAngle);
+				fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			}
+			else
+			{
+				float fRadius = pCurSection->fSectionCurveFirstRadius4;
+				double fCenterX = fCurrentX, fCenterY = fCurrentY;
+				double fPreX = fCurrentX, fPreY = fCurrentY;
+				fCenterX += fRadius * sin(currentAngle);
+				fCenterY -= fRadius * cos(currentAngle);
+				currentAngle -= fRemainLength / fRadius;
+				fCurrentX = fCenterX - fRadius * sin(currentAngle);
+				fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			}
+
+			CRect rect;
+			GetClientRect(&rect);
+			float fEllipse = 5 * m_fDistance / rect.Height();
+			int nX1 = (int)((fCurrentX - fEllipse) * TIMES);
+			int nY1 = (int)((fCurrentY - fEllipse) * TIMES);
+			int nX2 = (int)((fCurrentX + fEllipse) * TIMES);
+			int nY2 = (int)((fCurrentY + fEllipse) * TIMES);
+			pDC->Ellipse(nX1, nY1, nX2, nY2);
+			pDC->TextOut(nX2, nY2, strName);
+			break;
+		}
+	}
+
+	delete []pSectionData;
+}
 void CAirViewDlg::SetPaintMode(CDC *pDC)
 {
 	CRect rect;
@@ -303,6 +382,57 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 	pDC->SetMapMode(MM_ISOTROPIC);
 	pDC->SetWindowExt((int)(m_fDistance * TIMES), (int)(m_fDistance * TIMES));
 	pDC->SetViewportExt(rect.right, -rect.bottom);
+}
+void CAirViewDlg::DrawAllAITracks(CDC *pDC)
+{
+	if (!GetTrainHandle(m_hTrainProcess) || !GetTrainPointer(m_hTrainProcess))
+		return;
+
+	int count = 0;
+	SNode *head;
+	SNode iteNode;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x809AF8, &head, 4);
+	ReadTrainProcess(m_hTrainProcess, head, &iteNode, sizeof(SNode));
+
+	if (iteNode.pointer != head)
+	{
+		return;
+	}
+
+	while (iteNode.next != head && count < 10000)
+	{
+		SNode *next = iteNode.next;
+		ReadTrainProcess(m_hTrainProcess, next, &iteNode, sizeof(SNode));
+		size_t pVectorNode;
+		float fLocation;
+		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x4C, &pVectorNode, 4);
+		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x5C, &fLocation, 4);
+		size_t pWCTrain_Config;
+		wchar_t trainTrips[0x100];
+		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x10, &pWCTrain_Config, 4);
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)pWCTrain_Config, trainTrips, 0x40);
+		wchar_t trainTrips2[0x100];
+		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x8, &pWCTrain_Config, 4);
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)pWCTrain_Config, trainTrips2, 0x40);
+		CString strOutput = trainTrips;
+		//strOutput += L" : ";
+		//strOutput += trainTrips2;
+		CString result;
+		result.Format(L"0x%X %s\r\n", pVectorNode, trainTrips);
+
+		if (pVectorNode != NULL)
+		{
+			SVectorNode vectorNode;
+			ReadTrainProcess(m_hTrainProcess, (LPCVOID)pVectorNode, &vectorNode, sizeof(SVectorNode));
+			DrawPointInVectorNode(pDC, vectorNode, m_hTrainProcess, fLocation, strOutput);
+			//DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
+		}
+
+		++count;
+	}
+
+	CString strCount;
+	strCount.Format(L"Total Count : %d", count);
 }
 void CAirViewDlg::DrawAllTracks(CDC *pDC)
 {

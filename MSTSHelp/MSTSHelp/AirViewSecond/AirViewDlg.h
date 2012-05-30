@@ -54,9 +54,11 @@ protected:
 	void DrawScale(CDC *pDC, int nSize, float fMapSize);
 	void DrawPathTracks(CDC *pDC);
 	void DrawAllTracks(CDC *pDC);
+	void DrawAllAITracks(CDC *pDC);
 	void SetPaintMode(CDC *pDC);
 	void calculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle);
 	void DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle);
+	void DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle, float fLocation, CString strName);
 	void DrawArc(CDC *pDC, double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4);
 	void DrawMoveTo(CDC *pDC, double x1, double y1);
 	void DrawLineTo(CDC *pDC, double x1, double y1);
