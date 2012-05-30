@@ -208,7 +208,6 @@ SVectorNode *GetNext(SVectorNode *nodePtr, const SConnectStruct &connectStruct, 
                      int &nextDirect);
 SVectorNode *GetNextNode(HANDLE handle, const SVectorNode &node, SVectorNode *nodePtr, int direction, int &nextDirect);
 
-
 void getSectionData(HANDLE handle, SProcessData &processData, const SVectorNode &node, int sectionNum, float *fArray, SSectionTypeData *basePtr);
 
 inline void ReadTrainProcess(HANDLE hProcess, LPCVOID lpBaseAddress, LPVOID lpBuffer, SIZE_T nSize)

@@ -88,19 +88,20 @@ HCURSOR CMSTSMemoryViewerDlg::OnQueryDragIcon()
 
 CString AITrainHandle(HANDLE handle, void *pointer)
 {
-	size_t mem;
+	size_t pWagFile;
 	wchar_t name[0x20];
-	ReadTrainProcess(handle, (char *)pointer + 0x11C, &mem, 4);
-	ReadTrainProcess(handle, (LPCVOID)(mem + 8), name, 0x40);
-	ReadTrainProcess(handle, (char *)pointer + 76, &mem, 4);
-	size_t mem2;
+	ReadTrainProcess(handle, (char *)pointer + 0x11C, &pWagFile, 4);
+	ReadTrainProcess(handle, (LPCVOID)(pWagFile + 8), name, 0x40);
+	size_t pVectorNode;
+	ReadTrainProcess(handle, (char *)pointer + 0x4C, &pVectorNode, 4);
+	size_t pWCTrain_Config;
 	wchar_t trainTrips[0x20];
-	ReadTrainProcess(handle, (char *)pointer + 8, &mem2, 4);
-	ReadTrainProcess(handle, (LPCVOID)mem2, trainTrips, 0x40);
+	ReadTrainProcess(handle, (char *)pointer + 0x10, &pWCTrain_Config, 4);
+	ReadTrainProcess(handle, (LPCVOID)pWCTrain_Config, trainTrips, 0x40);
 	CString result;
-	result.Format(L"0x%X %s %s\r\n", mem, name, trainTrips);
+	result.Format(L"0x%X %s %s\r\n", pVectorNode, name, trainTrips);
 
-	if (mem == NULL)
+	if (pVectorNode == NULL)
 	{
 		return CString();
 	}
@@ -270,11 +271,11 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), tailName, 200);
 		m_textContent.Format(L"headName : %s\r\ntailName : %s\r\n", headName, tailName);
-		m_textContent += showAllCarriage(m_hTrainProcess);
+		//m_textContent += showAllCarriage(m_hTrainProcess);
 		m_textContent += showAllAITrain(m_hTrainProcess);
 		//m_textContent += showAllTaskLimit(m_hTrainProcess);
 		//m_textContent += showContentIn80A038(m_hTrainProcess);
-		m_textContent = showWagEngConFiles(m_hTrainProcess);
+		//m_textContent = showWagEngConFiles(m_hTrainProcess);
 		void *InputMem = NULL;
 		swscanf_s(m_strDBListHead, L"%x", &InputMem);
 
