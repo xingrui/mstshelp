@@ -407,6 +407,10 @@ void CAirViewDlg::DrawAllAITracks(CDC *pDC)
 		float fLocation;
 		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x4C, &pVectorNode, 4);
 		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x5C, &fLocation, 4);
+		size_t pbackVectorNode;
+		float fbackLocation;
+		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0xB4, &pbackVectorNode, 4);
+		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0xC4, &fbackLocation, 4);
 		size_t pWCTrain_Config;
 		wchar_t trainTrips[0x100];
 		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x10, &pWCTrain_Config, 4);
@@ -425,6 +429,8 @@ void CAirViewDlg::DrawAllAITracks(CDC *pDC)
 			SVectorNode vectorNode;
 			ReadTrainProcess(m_hTrainProcess, (LPCVOID)pVectorNode, &vectorNode, sizeof(SVectorNode));
 			DrawPointInVectorNode(pDC, vectorNode, m_hTrainProcess, fLocation, strOutput);
+			ReadTrainProcess(m_hTrainProcess, (LPCVOID)pbackVectorNode, &vectorNode, sizeof(SVectorNode));
+			DrawPointInVectorNode(pDC, vectorNode, m_hTrainProcess, fbackLocation, strOutput);
 			//DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
 		}
 
