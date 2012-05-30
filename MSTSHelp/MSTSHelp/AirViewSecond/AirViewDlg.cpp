@@ -529,7 +529,7 @@ void CAirViewDlg::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: 在此添加消息处理程序代码和/或调用默认值
 	CDialog::OnTimer(nIDEvent);
-	GetDataAndPaint();
+	Invalidate();
 }
 
 void CAirViewDlg::OnDestroy()
