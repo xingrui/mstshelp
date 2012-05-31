@@ -501,7 +501,8 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 				m_setVectorNode.insert(pSubConnectStruct->pVectorNode);
 				SVectorNode tmpNode;
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)pSubConnectStruct->pVectorNode, (LPVOID)&tmpNode, sizeof(SVectorNode));
-				if(DrawVectorNode(pDC, tmpNode, m_hTrainProcess))
+
+				if (DrawVectorNode(pDC, tmpNode, m_hTrainProcess))
 				{
 					SConnectNode *pConnectNode = pSubConnectStruct->nDirect ? tmpNode.OutConnectNodePtr : tmpNode.InConnectNodePtr;
 					ReadTrainProcess(m_hTrainProcess, (LPCVOID)pConnectNode, (LPVOID)&connectNode, sizeof(SConnectNode));
