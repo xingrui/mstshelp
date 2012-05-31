@@ -54,6 +54,7 @@ protected:
 	void DrawScale(CDC *pDC, int nSize, float fMapSize);
 	void DrawPathTracks(CDC *pDC);
 	void DrawAllTracks(CDC *pDC);
+	void DrawAllTracksByTDBFile(CDC *pDC);
 	void DrawAllAITracks(CDC *pDC);
 	void SetPaintMode(CDC *pDC);
 	void calculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle);
