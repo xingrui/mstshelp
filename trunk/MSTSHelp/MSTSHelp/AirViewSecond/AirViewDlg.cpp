@@ -247,16 +247,18 @@ void CAirViewDlg::calculateCurrentLocation(const SVectorNode &node, float fCurre
 
 	delete []pSectionData;
 }
-void CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle)
+bool CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle)
 {
 	int num = node.nSectionNum;
 	SVectorSection *pSectionData = new SVectorSection[num];
 	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
+	double fCurrentX;
+	double fCurrentY;
 
 	for (int i = 0; i != num; ++i)
 	{
-		double fCurrentX = pSectionData[i].TileX2 * 2048 + pSectionData[i].X - m_startLocation.fPointX;
-		double fCurrentY = pSectionData[i].TileZ2 * 2048 + pSectionData[i].Z - m_startLocation.fPointY;
+		fCurrentX = pSectionData[i].TileX2 * 2048 + pSectionData[i].X - m_startLocation.fPointX;
+		fCurrentY = pSectionData[i].TileZ2 * 2048 + pSectionData[i].Z - m_startLocation.fPointY;
 		double currentAngle;
 		currentAngle = pSectionData[i].AY;
 		currentAngle = M_PI_2 - currentAngle;
@@ -300,6 +302,8 @@ void CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handl
 	}
 
 	delete []pSectionData;
+	float minDistance = m_fDistance < 10000 ? 10000 : m_fDistance;
+	return fCurrentX * fCurrentX + fCurrentY * fCurrentY < 64 * minDistance * minDistance;
 }
 void CAirViewDlg::DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle, float fLocation, CString strName)
 {
@@ -420,7 +424,7 @@ void CAirViewDlg::DrawAllAITracks(CDC *pDC)
 		wchar_t trainTrips2[0x100];
 		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x8, &pWCTrain_Config, 4);
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)pWCTrain_Config, trainTrips2, 0x40);
-		CString strOutput = trainTrips;
+		CString strOutput = trainTrips2;
 		//strOutput += L" : ";
 		//strOutput += trainTrips2;
 		CString result;
@@ -497,16 +501,18 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 				m_setVectorNode.insert(pSubConnectStruct->pVectorNode);
 				SVectorNode tmpNode;
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)pSubConnectStruct->pVectorNode, (LPVOID)&tmpNode, sizeof(SVectorNode));
-				DrawVectorNode(pDC, tmpNode, m_hTrainProcess);
-				SConnectNode *pConnectNode = pSubConnectStruct->nDirect ? tmpNode.OutConnectNodePtr : tmpNode.InConnectNodePtr;
-				ReadTrainProcess(m_hTrainProcess, (LPCVOID)pConnectNode, (LPVOID)&connectNode, sizeof(SConnectNode));
-				SQueueData newQueueData;
-
-				if (connectNode.nType0 == 2)
+				if(DrawVectorNode(pDC, tmpNode, m_hTrainProcess))
 				{
-					ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&newQueueData.connectStruct, sizeof(SConnectStruct));
-					newQueueData.pVectorNode = pSubConnectStruct->pVectorNode;
-					m_queueVectorNode.push(newQueueData);
+					SConnectNode *pConnectNode = pSubConnectStruct->nDirect ? tmpNode.OutConnectNodePtr : tmpNode.InConnectNodePtr;
+					ReadTrainProcess(m_hTrainProcess, (LPCVOID)pConnectNode, (LPVOID)&connectNode, sizeof(SConnectNode));
+					SQueueData newQueueData;
+
+					if (connectNode.nType0 == 2)
+					{
+						ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&newQueueData.connectStruct, sizeof(SConnectStruct));
+						newQueueData.pVectorNode = pSubConnectStruct->pVectorNode;
+						m_queueVectorNode.push(newQueueData);
+					}
 				}
 			}
 		}
