@@ -104,7 +104,8 @@ void CAirViewDlg::OnPaint()
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
 				m_currentAngle = (float)M_PI_2 - m_currentAngle;
-				DrawAllTracks(&MemDC);
+				//DrawAllTracks(&MemDC);
+				DrawAllTracksByTDBFile(&MemDC);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
 				CPen *pOldPen = MemDC.SelectObject(&pen);
 				DrawPathTracks(&MemDC);
@@ -518,6 +519,32 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 			}
 		}
 	}
+}
+void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
+{
+	SVectorNode vectorNode;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	float fDistance = m_currentHeadInfo.fLocationInNode;
+	calculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
+	struct STDBFilePart
+	{
+		SVectorNode **ppTrackNodePtrArray0;
+		int nTrackNodeNumber4;
+	};
+	STDBFilePart tdbFile;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A038, &tdbFile, sizeof(STDBFilePart), 2, 0xC, 0);
+	size_t *ppVectorNode = new size_t[tdbFile.nTrackNodeNumber4];
+	ReadTrainProcess(m_hTrainProcess, tdbFile.ppTrackNodePtrArray0, ppVectorNode, 4 * tdbFile.nTrackNodeNumber4);
+
+	for (int i = 0; i < tdbFile.nTrackNodeNumber4; ++i)
+	{
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)ppVectorNode[i], &vectorNode, sizeof(SVectorNode));
+
+		if (vectorNode.data0 == 1)
+			DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
+	}
+
+	delete[] ppVectorNode;
 }
 void CAirViewDlg::DrawPathTracks(CDC *pDC)
 {
