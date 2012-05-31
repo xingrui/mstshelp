@@ -253,8 +253,8 @@ bool CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handl
 	int num = node.nSectionNum;
 	SVectorSection *pSectionData = new SVectorSection[num];
 	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
-	double fCurrentX;
-	double fCurrentY;
+	double fCurrentX = 0;
+	double fCurrentY = 0;
 
 	for (int i = 0; i != num; ++i)
 	{
