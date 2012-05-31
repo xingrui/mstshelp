@@ -115,6 +115,8 @@ void CAirViewDlg::OnPaint()
 				pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
 				pOldBrush = MemDC.SelectObject(&brush);
 				pOldPen = MemDC.SelectObject(&pen);
+				CGdiObject *pObject = MemDC.SelectStockObject(ANSI_FIXED_FONT);
+				MemDC.SetBkMode(TRANSPARENT);
 				DrawAllAITracks(&MemDC);
 				MemDC.SelectObject(pOldPen);
 				MemDC.SelectObject(pOldBrush);
@@ -423,8 +425,10 @@ void CAirViewDlg::DrawAllAITracks(CDC *pDC)
 		//strOutput += trainTrips2;
 		CString result;
 		result.Format(L"0x%X %s\r\n", pVectorNode, trainTrips);
+		DWORD dwData;
+		ReadTrainProcess(m_hTrainProcess, (char *)iteNode.pointer + 0x144, &dwData, 4);
 
-		if (pVectorNode != NULL)
+		if (pVectorNode && dwData)
 		{
 			SVectorNode vectorNode;
 			ReadTrainProcess(m_hTrainProcess, (LPCVOID)pVectorNode, &vectorNode, sizeof(SVectorNode));
