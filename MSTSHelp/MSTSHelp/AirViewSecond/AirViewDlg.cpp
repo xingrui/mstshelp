@@ -52,12 +52,89 @@ BOOL CAirViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_hTrainProcess = NULL;
-	m_currentAngle = 0;
 	m_fDistance = 4000;
-	m_pTrackSectionArray = new STrackSection[0x10000];
+	InitSavedData();
+	m_savedData.pTrackSectionArray = new STrackSection[0x10000];
 	SetTimer(0, 200, NULL);
 	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
+}
+
+BOOL CAirViewDlg::GetHandleAndPrepareData()
+{
+	if (m_hTrainProcess)
+	{
+		DWORD dwState;
+
+		if (GetExitCodeProcess(m_hTrainProcess, &dwState))
+		{
+			if (dwState == STILL_ACTIVE)
+			{
+				void *pTrain = GetTrainPointer(m_hTrainProcess);
+
+				if (pTrain == NULL)
+					return FALSE;
+				else if (pTrain == m_savedData.pTrain)
+				{
+					ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+					return TRUE;
+				}
+				else
+				{
+					m_savedData.pTrain = pTrain;
+					ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+					ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
+					m_savedData.vectDrawUnit.clear();
+					GetAllTracksDataByTDBFile();
+					return TRUE;
+				}
+			}
+			else
+			{
+				CloseHandle(m_hTrainProcess);
+				m_hTrainProcess  = NULL;
+			}
+		}
+		else
+		{
+			CloseHandle(m_hTrainProcess);
+			m_hTrainProcess  = NULL;
+		}
+	}
+
+	HWND hWnd = ::FindWindow(L"TrainSim", NULL);
+
+	if (hWnd)
+	{
+		DWORD nProcID;
+		GetWindowThreadProcessId(hWnd, &nProcID);
+		m_hTrainProcess = OpenProcess(PROCESS_ALL_ACCESS, 0, nProcID);
+
+		if (!m_hTrainProcess)
+		{
+			return FALSE;
+		}
+		else
+		{
+			void *pTrain = GetTrainPointer(m_hTrainProcess);
+
+			if (pTrain)
+			{
+				m_savedData.pTrain = pTrain;
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+				ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
+				m_savedData.vectDrawUnit.clear();
+				GetAllTracksDataByTDBFile();
+				return TRUE;
+			}
+			else
+				return FALSE;
+		}
+	}
+	else
+	{
+		return FALSE;
+	}
 }
 
 // 如果向对话框添加最小化按钮，则需要下面的代码
@@ -98,14 +175,9 @@ void CAirViewDlg::OnPaint()
 
 		try
 		{
-			if (GetTrainHandle(m_hTrainProcess) && GetTrainPointer(m_hTrainProcess))
+			if (GetHandleAndPrepareData())
 			{
-				ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
-				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
-				ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
-				m_currentAngle = (float)M_PI_2 - m_currentAngle;
-				//DrawAllTracks(&MemDC);
-				DrawAllTracksByTDBFile(&MemDC);
+				DrawUnits(&MemDC);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
 				CPen *pOldPen = MemDC.SelectObject(&pen);
 				DrawPathTracks(&MemDC);
@@ -123,6 +195,10 @@ void CAirViewDlg::OnPaint()
 				MemDC.SelectObject(pOldBrush);
 				brush.DeleteObject();
 				pen.DeleteObject();
+			}
+			else
+			{
+				m_savedData.pTrain = NULL;
 			}
 		}
 		catch (int)
@@ -187,7 +263,7 @@ void CAirViewDlg::DrawScale(CDC *pDC, int nSize, float fMapSize)
 	textRect.right = 105;
 	pDC->DrawText(str, textRect, NULL);
 }
-void CAirViewDlg::calculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle)
+void CAirViewDlg::CalculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle)
 {
 	int num = node.nSectionNum;
 	SVectorSection *pSectionData = new SVectorSection[num];
@@ -198,7 +274,7 @@ void CAirViewDlg::calculateCurrentLocation(const SVectorNode &node, float fCurre
 
 	for (int i = 0; i < num; ++i)
 	{
-		STrackSection *pCurSection = m_pTrackSectionArray + pSectionData[i].sectionIndex;
+		STrackSection *pCurSection = m_savedData.pTrackSectionArray + pSectionData[i].sectionIndex;
 		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
 		float fSectionLength = pCurSection->fSectionSizeSecondLength0;
 
@@ -263,7 +339,7 @@ bool CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handl
 		double currentAngle;
 		currentAngle = pSectionData[i].AY;
 		currentAngle = M_PI_2 - currentAngle;
-		STrackSection *pCurSection = m_pTrackSectionArray + pSectionData[i].sectionIndex;
+		STrackSection *pCurSection = m_savedData.pTrackSectionArray + pSectionData[i].sectionIndex;
 		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
 
 		if (pCurSection->fSectionCurveSecondAngle8 == 0)
@@ -315,7 +391,7 @@ void CAirViewDlg::DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDL
 
 	for (int i = 0; i != num; ++i)
 	{
-		STrackSection *pCurSection = m_pTrackSectionArray + pSectionData[i].sectionIndex;
+		STrackSection *pCurSection = m_savedData.pTrackSectionArray + pSectionData[i].sectionIndex;
 		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
 		float fSectionLength = pCurSection->fSectionSizeSecondLength0;
 
@@ -392,9 +468,6 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 }
 void CAirViewDlg::DrawAllAITracks(CDC *pDC)
 {
-	if (!GetTrainHandle(m_hTrainProcess) || !GetTrainPointer(m_hTrainProcess))
-		return;
-
 	int count = 0;
 	SNode *head;
 	SNode iteNode;
@@ -451,18 +524,14 @@ void CAirViewDlg::DrawAllAITracks(CDC *pDC)
 }
 void CAirViewDlg::DrawAllTracks(CDC *pDC)
 {
-	if (!GetTrainHandle(m_hTrainProcess) || !GetTrainPointer(m_hTrainProcess))
-		return;
-
-	m_setVectorNode.clear();
-	std::queue<SQueueData> tmp;
-	swap(m_queueVectorNode, tmp);
+	set<SVectorNode *> setVectorNode;
+	queue<SQueueData> queueVectorNode;
 	SVectorNode vectorNode;
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	m_setVectorNode.insert(m_currentHeadInfo.pVectorNode);
+	setVectorNode.insert(m_currentHeadInfo.pVectorNode);
 	//////////////////////////////////////////////////////////////////////
 	float fDistance = m_currentHeadInfo.fLocationInNode;
-	calculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
+	CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
 	//////////////////////////////////////////////////////////////////////
 	SQueueData queueData;
 	SConnectNode connectNode;
@@ -472,7 +541,7 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 	{
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&queueData.connectStruct, sizeof(SConnectStruct));
 		queueData.pVectorNode = m_currentHeadInfo.pVectorNode;
-		m_queueVectorNode.push(queueData);
+		queueVectorNode.push(queueData);
 	}
 
 	DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
@@ -482,13 +551,13 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 	{
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&queueData.connectStruct, sizeof(SConnectStruct));
 		queueData.pVectorNode = m_currentHeadInfo.pVectorNode;
-		m_queueVectorNode.push(queueData);
+		queueVectorNode.push(queueData);
 	}
 
-	while (!m_queueVectorNode.empty())
+	while (!queueVectorNode.empty())
 	{
-		SQueueData queueData = m_queueVectorNode.front();
-		m_queueVectorNode.pop();
+		SQueueData queueData = queueVectorNode.front();
+		queueVectorNode.pop();
 
 		for (int i = 0; i < 3; ++i)
 		{
@@ -496,10 +565,10 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 
 			if (pSubConnectStruct->pVectorNode != queueData.pVectorNode && pSubConnectStruct->pVectorNode != NULL)
 			{
-				if (m_setVectorNode.find(pSubConnectStruct->pVectorNode) != m_setVectorNode.end())
+				if (setVectorNode.find(pSubConnectStruct->pVectorNode) != setVectorNode.end())
 					continue;
 
-				m_setVectorNode.insert(pSubConnectStruct->pVectorNode);
+				setVectorNode.insert(pSubConnectStruct->pVectorNode);
 				SVectorNode tmpNode;
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)pSubConnectStruct->pVectorNode, (LPVOID)&tmpNode, sizeof(SVectorNode));
 
@@ -513,11 +582,37 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 					{
 						ReadTrainProcess(m_hTrainProcess, (LPCVOID)connectNode.nodePointer20, (LPVOID)&newQueueData.connectStruct, sizeof(SConnectStruct));
 						newQueueData.pVectorNode = pSubConnectStruct->pVectorNode;
-						m_queueVectorNode.push(newQueueData);
+						queueVectorNode.push(newQueueData);
 					}
 				}
 			}
 		}
+	}
+}
+void CAirViewDlg::DrawUnits(CDC *pDC)
+{
+	vector<SDrawUnit>::iterator it = m_savedData.vectDrawUnit.begin();
+
+	while (it != m_savedData.vectDrawUnit.end())
+	{
+		if (it->nType == 1)
+		{
+			DrawMoveTo(pDC, it->fromX - m_startLocation.fPointX, it->fromY - m_startLocation.fPointY);
+			DrawLineTo(pDC, it->toX - m_startLocation.fPointX, it->toY - m_startLocation.fPointY);
+		}
+		else
+		{
+			DrawArc(pDC, it->centerX - it->radius - m_startLocation.fPointX,
+			        it->centerY - it->radius - m_startLocation.fPointY,
+			        it->centerX + it->radius - m_startLocation.fPointX,
+			        it->centerY + it->radius - m_startLocation.fPointY,
+			        it->fromX - m_startLocation.fPointX,
+			        it->fromY - m_startLocation.fPointY,
+			        it->toX - m_startLocation.fPointX,
+			        it->toY - m_startLocation.fPointY);
+		}
+
+		++it;
 	}
 }
 void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
@@ -525,7 +620,7 @@ void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
 	SVectorNode vectorNode;
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 	float fDistance = m_currentHeadInfo.fLocationInNode;
-	calculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
+	CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
 	struct STDBFilePart
 	{
 		SVectorNode **ppTrackNodePtrArray0;
@@ -546,16 +641,111 @@ void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
 
 	delete[] ppVectorNode;
 }
+void CAirViewDlg::GetAllTracksDataByTDBFile()
+{
+	SVectorNode vectorNode;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	struct STDBFilePart
+	{
+		SVectorNode **ppTrackNodePtrArray0;
+		int nTrackNodeNumber4;
+	};
+	STDBFilePart tdbFile;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A038, &tdbFile, sizeof(STDBFilePart), 2, 0xC, 0);
+	size_t *ppVectorNode = new size_t[tdbFile.nTrackNodeNumber4];
+	ReadTrainProcess(m_hTrainProcess, tdbFile.ppTrackNodePtrArray0, ppVectorNode, 4 * tdbFile.nTrackNodeNumber4);
+
+	for (int i = 0; i < tdbFile.nTrackNodeNumber4; ++i)
+	{
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)ppVectorNode[i], &vectorNode, sizeof(SVectorNode));
+
+		if (vectorNode.data0 == 1)
+			GetVectorNodeData(vectorNode, m_hTrainProcess);
+	}
+
+	delete[] ppVectorNode;
+}
+void CAirViewDlg::GetVectorNodeData(const SVectorNode &node, HANDLE handle)
+{
+	int num = node.nSectionNum;
+	SVectorSection *pSectionData = new SVectorSection[num];
+	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
+	double fCurrentX = 0;
+	double fCurrentY = 0;
+	SDrawUnit drawUnit;
+
+	for (int i = 0; i != num; ++i)
+	{
+		fCurrentX = pSectionData[i].TileX2 * 2048 + pSectionData[i].X;
+		fCurrentY = pSectionData[i].TileZ2 * 2048 + pSectionData[i].Z;
+		double currentAngle;
+		currentAngle = pSectionData[i].AY;
+		currentAngle = M_PI_2 - currentAngle;
+		STrackSection *pCurSection = m_savedData.pTrackSectionArray + pSectionData[i].sectionIndex;
+		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
+
+		if (pCurSection->fSectionCurveSecondAngle8 == 0)
+		{
+			drawUnit.nType = 1;
+			float fLength = pCurSection->fSectionSizeSecondLength0;
+			drawUnit.fromX = fCurrentX;
+			drawUnit.fromY = fCurrentY;
+			fCurrentX += fLength * cos(currentAngle);
+			fCurrentY += fLength * sin(currentAngle);
+			drawUnit.toX = fCurrentX;
+			drawUnit.toY = fCurrentY;
+		}
+		else if (pCurSection->fSectionCurveSecondAngle8 < 0)
+		{
+			drawUnit.nType = 2;
+			double fRadius = pCurSection->fSectionCurveFirstRadius4;
+			double fCenterX = fCurrentX, fCenterY = fCurrentY;
+			double fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX -= fRadius * sin(currentAngle);
+			fCenterY += fRadius * cos(currentAngle);
+			currentAngle += pCurSection->fSectionSizeSecondLength0 / fRadius;
+			fCurrentX = fCenterX + fRadius * sin(currentAngle);
+			fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			drawUnit.centerX = fCenterX;
+			drawUnit.centerY = fCenterY;
+			drawUnit.fromX = fPreX;
+			drawUnit.fromY = fPreY;
+			drawUnit.toX = fCurrentX;
+			drawUnit.toY = fCurrentY;
+			drawUnit.radius = fRadius;
+		}
+		else
+		{
+			drawUnit.nType = 2;
+			double fRadius = pCurSection->fSectionCurveFirstRadius4;
+			double fCenterX = fCurrentX, fCenterY = fCurrentY;
+			double fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX += fRadius * sin(currentAngle);
+			fCenterY -= fRadius * cos(currentAngle);
+			currentAngle -= pCurSection->fSectionSizeSecondLength0 / fRadius;
+			fCurrentX = fCenterX - fRadius * sin(currentAngle);
+			fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			drawUnit.centerX = fCenterX;
+			drawUnit.centerY = fCenterY;
+			drawUnit.fromX = fCurrentX;
+			drawUnit.fromY = fCurrentY;
+			drawUnit.toX = fPreX;
+			drawUnit.toY = fPreY;
+			drawUnit.radius = fRadius;
+		}
+
+		m_savedData.vectDrawUnit.push_back(drawUnit);
+	}
+
+	delete []pSectionData;
+}
 void CAirViewDlg::DrawPathTracks(CDC *pDC)
 {
-	if (!GetTrainHandle(m_hTrainProcess) || !GetTrainPointer(m_hTrainProcess))
-		return;
-
 	float forwardLength;
 	SVectorNode vectorNode;
 	int nDirectOfHeadNode = m_currentHeadInfo.nDirection;
 	ReadTrainProcess(m_hTrainProcess, (void *)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	calculateCurrentLocation(vectorNode, m_currentHeadInfo.fLocationInNode, m_hTrainProcess);
+	CalculateCurrentLocation(vectorNode, m_currentHeadInfo.fLocationInNode, m_hTrainProcess);
 
 	if (nDirectOfHeadNode)
 		forwardLength = - m_currentHeadInfo.fLocationInNode;
@@ -631,9 +821,7 @@ void CAirViewDlg::GetTrackData()
 	m_backVectSectionInfo.clear();
 	vector<SSectionInfo> vectSectionInfo;
 	vector<SSectionInfo> backVectSectionInfo;
-	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8098F8, &m_currentAngle, 4);
-	m_currentAngle -= (float)M_PI_2;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
 	STrackInfo headInfo;
 	ReadTrainProcess(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
 	float forwardLength;
@@ -655,7 +843,7 @@ void CAirViewDlg::GetTrackData()
 		int nDirectOfCurrentNode = nDirectOfNextNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		AddSectionInfo(forwardLength, vectorNode, vectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, m_pTrackSectionArray);
+		AddSectionInfo(forwardLength, vectorNode, vectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, m_savedData.pTrackSectionArray);
 		forwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -680,7 +868,7 @@ void CAirViewDlg::GetTrackData()
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		AddSectionInfo(backwardLength, vectorNode, backVectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode, m_pTrackSectionArray);
+		AddSectionInfo(backwardLength, vectorNode, backVectSectionInfo, m_hTrainProcess, nDirectOfCurrentNode, nDirectOfCurrentNode, m_savedData.pTrackSectionArray);
 		backwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -709,7 +897,7 @@ void CAirViewDlg::OnTimer(UINT_PTR nIDEvent)
 void CAirViewDlg::OnDestroy()
 {
 	CDialog::OnDestroy();
-	delete[] m_pTrackSectionArray;
+	delete[] m_savedData.pTrackSectionArray;
 
 	if (m_hTrainProcess)
 		CloseHandle(m_hTrainProcess);
