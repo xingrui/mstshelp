@@ -177,6 +177,10 @@ void CAirViewDlg::OnPaint()
 		{
 			if (GetHandleAndPrepareData())
 			{
+				SVectorNode vectorNode;
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+				float fDistance = m_currentHeadInfo.fLocationInNode;
+				CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
 				DrawUnits(&MemDC);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
 				CPen *pOldPen = MemDC.SelectObject(&pen);
@@ -529,10 +533,6 @@ void CAirViewDlg::DrawAllTracks(CDC *pDC)
 	SVectorNode vectorNode;
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 	setVectorNode.insert(m_currentHeadInfo.pVectorNode);
-	//////////////////////////////////////////////////////////////////////
-	float fDistance = m_currentHeadInfo.fLocationInNode;
-	CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
-	//////////////////////////////////////////////////////////////////////
 	SQueueData queueData;
 	SConnectNode connectNode;
 	ReadTrainProcess(m_hTrainProcess, (LPCVOID)vectorNode.InConnectNodePtr, (LPVOID)&connectNode, sizeof(SConnectNode));
@@ -618,9 +618,6 @@ void CAirViewDlg::DrawUnits(CDC *pDC)
 void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
 {
 	SVectorNode vectorNode;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	float fDistance = m_currentHeadInfo.fLocationInNode;
-	CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
 	struct STDBFilePart
 	{
 		SVectorNode **ppTrackNodePtrArray0;
@@ -745,7 +742,6 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 	SVectorNode vectorNode;
 	int nDirectOfHeadNode = m_currentHeadInfo.nDirection;
 	ReadTrainProcess(m_hTrainProcess, (void *)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	CalculateCurrentLocation(vectorNode, m_currentHeadInfo.fLocationInNode, m_hTrainProcess);
 
 	if (nDirectOfHeadNode)
 		forwardLength = - m_currentHeadInfo.fLocationInNode;
