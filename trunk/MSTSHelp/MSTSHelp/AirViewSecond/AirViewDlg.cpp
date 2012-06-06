@@ -76,13 +76,11 @@ BOOL CAirViewDlg::GetHandleAndPrepareData()
 					return FALSE;
 				else if (pTrain == m_savedData.pTrain)
 				{
-					ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
 					return TRUE;
 				}
 				else
 				{
 					m_savedData.pTrain = pTrain;
-					ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
 					ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
 					m_savedData.vectDrawUnit.clear();
 					GetAllTracksDataByTDBFile();
@@ -121,7 +119,6 @@ BOOL CAirViewDlg::GetHandleAndPrepareData()
 			if (pTrain)
 			{
 				m_savedData.pTrain = pTrain;
-				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
 				ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
 				m_savedData.vectDrawUnit.clear();
 				GetAllTracksDataByTDBFile();
@@ -177,6 +174,7 @@ void CAirViewDlg::OnPaint()
 		{
 			if (GetHandleAndPrepareData())
 			{
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
 				SVectorNode vectorNode;
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 				float fDistance = m_currentHeadInfo.fLocationInNode;
@@ -640,8 +638,6 @@ void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
 }
 void CAirViewDlg::GetAllTracksDataByTDBFile()
 {
-	SVectorNode vectorNode;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 	struct STDBFilePart
 	{
 		SVectorNode **ppTrackNodePtrArray0;
@@ -651,6 +647,7 @@ void CAirViewDlg::GetAllTracksDataByTDBFile()
 	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A038, &tdbFile, sizeof(STDBFilePart), 2, 0xC, 0);
 	size_t *ppVectorNode = new size_t[tdbFile.nTrackNodeNumber4];
 	ReadTrainProcess(m_hTrainProcess, tdbFile.ppTrackNodePtrArray0, ppVectorNode, 4 * tdbFile.nTrackNodeNumber4);
+	SVectorNode vectorNode;
 
 	for (int i = 0; i < tdbFile.nTrackNodeNumber4; ++i)
 	{
