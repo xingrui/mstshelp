@@ -55,19 +55,17 @@ protected:
 	// 实现
 protected:
 	SSavedData m_savedData;
+	HANDLE m_hTrainProcess;
+	float m_fMapSize;
+	HICON m_hIcon;
+	STrackInfo m_currentHeadInfo;
+	SLocation m_startLocation;
+
 	void InitSavedData()
 	{
 		m_savedData.pTrain = NULL;
 		m_savedData.vectDrawUnit.clear();
 	}
-	HANDLE m_hTrainProcess;
-	float m_fDistance;
-	HICON m_hIcon;
-	vector<SSectionInfo> m_vectSectionInfo;
-	vector<SSectionInfo> m_backVectSectionInfo;
-	STrackInfo m_currentHeadInfo;
-	SLocation m_startLocation;
-
 	// 生成的消息映射函数
 	virtual BOOL OnInitDialog();
 	BOOL GetHandleAndPrepareData();
