@@ -52,7 +52,7 @@ BOOL CAirViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, TRUE);			// 设置大图标
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_hTrainProcess = NULL;
-	m_fDistance = 4000;
+	m_fMapSize = 4000;
 	InitSavedData();
 	m_savedData.pTrackSectionArray = new STrackSection[0x10000];
 	SetTimer(0, 200, NULL);
@@ -167,7 +167,7 @@ void CAirViewDlg::OnPaint()
 		MemBitmap.CreateCompatibleBitmap(&dc, nWidth, nHeight);
 		CBitmap *pOldBit = MemDC.SelectObject(&MemBitmap);
 		MemDC.FillSolidRect(0, 0, nWidth, nHeight, ::GetSysColor(COLOR_3DFACE));
-		DrawScale(&MemDC, rect.bottom, m_fDistance);
+		DrawScale(&MemDC, rect.bottom, m_fMapSize);
 		SetPaintMode(&MemDC);
 
 		try
@@ -381,7 +381,7 @@ bool CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handl
 	}
 
 	delete []pSectionData;
-	float minDistance = m_fDistance < 10000 ? 10000 : m_fDistance;
+	float minDistance = m_fMapSize < 10000 ? 10000 : m_fMapSize;
 	return fCurrentX * fCurrentX + fCurrentY * fCurrentY < 64 * minDistance * minDistance;
 }
 void CAirViewDlg::DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle, float fLocation, CString strName)
@@ -439,7 +439,7 @@ void CAirViewDlg::DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDL
 
 			CRect rect;
 			GetClientRect(&rect);
-			float fEllipse = 5 * m_fDistance / rect.Height();
+			float fEllipse = 5 * m_fMapSize / rect.Height();
 			int nX1 = (int)((fCurrentX - fEllipse) * TIMES);
 			int nY1 = (int)((fCurrentY - fEllipse) * TIMES);
 			int nX2 = (int)((fCurrentX + fEllipse) * TIMES);
@@ -465,7 +465,7 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
 	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetWindowExt((int)(m_fDistance * TIMES), (int)(m_fDistance * TIMES));
+	pDC->SetWindowExt((int)(m_fMapSize * TIMES), (int)(m_fMapSize * TIMES));
 	pDC->SetViewportExt(rect.right, -rect.bottom);
 }
 void CAirViewDlg::DrawAllAITracks(CDC *pDC)
@@ -749,7 +749,7 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 	DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
 	SVectorNode *nextNodePtr = GetNextNode(m_hTrainProcess, vectorNode, m_currentHeadInfo.pVectorNode, nDirectOfHeadNode, nDirectOfNextNode);
 
-	while (forwardLength < 8 * m_fDistance && nextNodePtr)
+	while (forwardLength < 8 * m_fMapSize && nextNodePtr)
 	{
 		SVectorNode *currentNodePtr = nextNodePtr;
 		int nDirectOfCurrentNode = nDirectOfNextNode;
@@ -774,7 +774,7 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 	int nDirectOfPrevNode = nDirectOfHeadNode;
 	SVectorNode *prevNodePtr = GetNextNode(m_hTrainProcess, vectorNode, m_currentHeadInfo.pVectorNode, nDirectOfHeadNode, nDirectOfPrevNode);
 
-	while (backwardLength < 8 * m_fDistance && prevNodePtr)
+	while (backwardLength < 8 * m_fMapSize && prevNodePtr)
 	{
 		SVectorNode *currentNodePtr = prevNodePtr;
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
@@ -791,9 +791,6 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 
 void CAirViewDlg::GetDataAndPaint()
 {
-	m_vectSectionInfo.clear();
-	m_backVectSectionInfo.clear();
-
 	if (GetTrainHandle(m_hTrainProcess) && GetTrainPointer(m_hTrainProcess))
 	{
 		try
@@ -810,8 +807,6 @@ void CAirViewDlg::GetDataAndPaint()
 
 void CAirViewDlg::GetTrackData()
 {
-	m_vectSectionInfo.clear();
-	m_backVectSectionInfo.clear();
 	vector<SSectionInfo> vectSectionInfo;
 	vector<SSectionInfo> backVectSectionInfo;
 	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
@@ -830,7 +825,7 @@ void CAirViewDlg::GetTrackData()
 	int nDirectOfNextNode = nDirectOfHeadNode;
 	SVectorNode *nextNodePtr = headInfo.pVectorNode;
 
-	while (forwardLength < 8 * m_fDistance && nextNodePtr)
+	while (forwardLength < 8 * m_fMapSize && nextNodePtr)
 	{
 		SVectorNode *currentNodePtr = nextNodePtr;
 		int nDirectOfCurrentNode = nDirectOfNextNode;
@@ -855,7 +850,7 @@ void CAirViewDlg::GetTrackData()
 	int nDirectOfPrevNode = nDirectOfHeadNode;
 	SVectorNode *prevNodePtr = headInfo.pVectorNode;
 
-	while (backwardLength < 8 * m_fDistance && prevNodePtr)
+	while (backwardLength < 8 * m_fMapSize && prevNodePtr)
 	{
 		SVectorNode *currentNodePtr = prevNodePtr;
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
@@ -868,9 +863,6 @@ void CAirViewDlg::GetTrackData()
 		/************************************************************************/
 		prevNodePtr = GetNextNode(m_hTrainProcess, vectorNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfPrevNode);
 	}
-
-	m_vectSectionInfo.swap(vectSectionInfo);
-	m_backVectSectionInfo.swap(backVectSectionInfo);
 }
 
 void CAirViewDlg::OnSize(UINT nType, int cx, int cy)
@@ -905,17 +897,17 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 {
 	if (zDelta > 0)
 	{
-		m_fDistance /= 1.5;
+		m_fMapSize /= 1.5;
 
-		if (m_fDistance < 200)
-			m_fDistance = 200;
+		if (m_fMapSize < 200)
+			m_fMapSize = 200;
 	}
 	else
 	{
-		m_fDistance *= 1.5;
+		m_fMapSize *= 1.5;
 
-		if (m_fDistance > 400000)
-			m_fDistance = 400000;
+		if (m_fMapSize > 400000)
+			m_fMapSize = 400000;
 	}
 
 	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
