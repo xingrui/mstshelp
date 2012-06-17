@@ -10,7 +10,8 @@
 using std::set;
 using std::queue;
 // CAirViewDlg ¶Ô»°¿ò
-const int TIMES = 100;
+const int TIMES = 4;
+const int META_FILE_SIZE = 2000000;
 struct SLocation
 {
 	double fPointX;
@@ -60,6 +61,7 @@ protected:
 	HICON m_hIcon;
 	STrackInfo m_currentHeadInfo;
 	SLocation m_startLocation;
+	HENHMETAFILE m_EnhMetaFile;
 
 	void InitSavedData()
 	{
@@ -75,11 +77,13 @@ protected:
 	void DrawUnits(CDC *pDC);
 	void DrawAllTracksByTDBFile(CDC *pDC);
 	void GetAllTracksDataByTDBFile();
+	void GetMetaFileHandleByTDBFile();
 	void GetVectorNodeData(const SVectorNode &node, HANDLE handle);
 	void DrawAllAITracks(CDC *pDC);
 	void SetPaintMode(CDC *pDC);
 	void CalculateCurrentLocation(const SVectorNode &node, float fCurrentLocation, HANDLE handle);
 	bool DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle);
+	bool DrawVectorNodeInMetaFile(CDC *pDC, const SVectorNode &node, HANDLE handle);
 	void DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handle, float fLocation, CString strName);
 	void DrawArc(CDC *pDC, double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4);
 	void DrawMoveTo(CDC *pDC, double x1, double y1);

@@ -84,6 +84,9 @@ BOOL CAirViewDlg::GetHandleAndPrepareData()
 					ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
 					m_savedData.vectDrawUnit.clear();
 					GetAllTracksDataByTDBFile();
+					m_startLocation.fPointX = 0;
+					m_startLocation.fPointY = 0;
+					GetMetaFileHandleByTDBFile();
 					return TRUE;
 				}
 			}
@@ -122,6 +125,9 @@ BOOL CAirViewDlg::GetHandleAndPrepareData()
 				ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
 				m_savedData.vectDrawUnit.clear();
 				GetAllTracksDataByTDBFile();
+				m_startLocation.fPointX = 0;
+				m_startLocation.fPointY = 0;
+				GetMetaFileHandleByTDBFile();
 				return TRUE;
 			}
 			else
@@ -157,17 +163,17 @@ void CAirViewDlg::OnPaint()
 	else
 	{
 		CPaintDC dc(this);
-		CRect rect;
-		GetClientRect(&rect);
-		int nWidth = rect.Width();
-		int nHeight = rect.Height();
+		CRect clientRect;
+		GetClientRect(&clientRect);
+		int nWidth = clientRect.Width();
+		int nHeight = clientRect.Height();
 		CDC MemDC;
 		CBitmap MemBitmap;
 		MemDC.CreateCompatibleDC(NULL);
 		MemBitmap.CreateCompatibleBitmap(&dc, nWidth, nHeight);
 		CBitmap *pOldBit = MemDC.SelectObject(&MemBitmap);
 		MemDC.FillSolidRect(0, 0, nWidth, nHeight, ::GetSysColor(COLOR_3DFACE));
-		DrawScale(&MemDC, rect.bottom, m_fMapSize);
+		DrawScale(&MemDC, clientRect.bottom, m_fMapSize);
 		SetPaintMode(&MemDC);
 
 		try
@@ -179,7 +185,31 @@ void CAirViewDlg::OnPaint()
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 				float fDistance = m_currentHeadInfo.fLocationInNode;
 				CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
-				DrawUnits(&MemDC);
+				CRect paintRect;
+				HDC hdcRef = GetDC()->m_hDC;
+				int iWidthMM = GetDeviceCaps(hdcRef, HORZSIZE); // ÆÁÄ»¿í£¨ºÁÃ×£©
+				int iHeightMM = GetDeviceCaps(hdcRef, VERTSIZE);
+				int iWidthPels = GetDeviceCaps(hdcRef, HORZRES); // ÆÁÄ»¿í£¨ÏñËØ£©
+				int iHeightPels = GetDeviceCaps(hdcRef, VERTRES); // ÆÁÄ»¸ß£¨ÏñËØ£©
+				const int DRAW_META_FILE_SIZE = META_FILE_SIZE * iHeightPels / 100 / iHeightMM;
+				int dx =  - m_startLocation.fPointX * TIMES;
+				int dy = - m_startLocation.fPointY * TIMES;
+				double k1 = (double)dy / dx;
+				double k2 = m_startLocation.fPointY / m_startLocation.fPointX;
+				k1 = k1 > 0 ? k1 : -k1;
+				k2 = k2 > 0 ? k2 : -k2;
+
+				if (k1 > k2)
+				{
+					dy > 0 ? dy-- : dy++;
+				}
+
+				paintRect.left = -DRAW_META_FILE_SIZE + dx;
+				paintRect.right = DRAW_META_FILE_SIZE + dx;
+				paintRect.top = -DRAW_META_FILE_SIZE + dy;
+				paintRect.bottom = DRAW_META_FILE_SIZE + dy;
+				PlayEnhMetaFile(MemDC.m_hDC, m_EnhMetaFile, &paintRect);
+				//DrawUnits(&MemDC);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
 				CPen *pOldPen = MemDC.SelectObject(&pen);
 				DrawPathTracks(&MemDC);
@@ -377,6 +407,64 @@ bool CAirViewDlg::DrawVectorNode(CDC *pDC, const SVectorNode &node, HANDLE handl
 			fCurrentY = fCenterY + fRadius * cos(currentAngle);
 			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
 			        fCurrentX, fCurrentY, fPreX, fPreY);
+		}
+	}
+
+	delete []pSectionData;
+	float minDistance = m_fMapSize < 10000 ? 10000 : m_fMapSize;
+	return fCurrentX * fCurrentX + fCurrentY * fCurrentY < 64 * minDistance * minDistance;
+}
+bool CAirViewDlg::DrawVectorNodeInMetaFile(CDC *pDC, const SVectorNode &node, HANDLE handle)
+{
+	int num = node.nSectionNum;
+	SVectorSection *pSectionData = new SVectorSection[num];
+	ReadTrainProcess(handle, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
+	double fCurrentX = 0;
+	double fCurrentY = 0;
+
+	for (int i = 0; i != num; ++i)
+	{
+		fCurrentX = pSectionData[i].TileX2 * 2048 + pSectionData[i].X - m_startLocation.fPointX;
+		fCurrentY = pSectionData[i].TileZ2 * 2048 + pSectionData[i].Z - m_startLocation.fPointY;
+		double currentAngle;
+		currentAngle = pSectionData[i].AY;
+		currentAngle = M_PI_2 - currentAngle;
+		STrackSection *pCurSection = m_savedData.pTrackSectionArray + pSectionData[i].sectionIndex;
+		float fRaidus = pCurSection->fSectionCurveFirstRadius4;
+
+		if (pCurSection->fSectionCurveSecondAngle8 == 0)
+		{
+			float fLength = pCurSection->fSectionSizeSecondLength0;
+			DrawMoveTo(pDC, fCurrentX, fCurrentY);
+			fCurrentX += fLength * cos(currentAngle);
+			fCurrentY += fLength * sin(currentAngle);
+			DrawLineTo(pDC, fCurrentX, fCurrentY);
+		}
+		else if (pCurSection->fSectionCurveSecondAngle8 < 0)
+		{
+			double fRadius = pCurSection->fSectionCurveFirstRadius4;
+			double fCenterX = fCurrentX, fCenterY = fCurrentY;
+			double fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX -= fRadius * sin(currentAngle);
+			fCenterY += fRadius * cos(currentAngle);
+			currentAngle += pCurSection->fSectionSizeSecondLength0 / fRadius;
+			fCurrentX = fCenterX + fRadius * sin(currentAngle);
+			fCurrentY = fCenterY - fRadius * cos(currentAngle);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fCurrentX, fCurrentY, fPreX, fPreY);
+		}
+		else
+		{
+			double fRadius = pCurSection->fSectionCurveFirstRadius4;
+			double fCenterX = fCurrentX, fCenterY = fCurrentY;
+			double fPreX = fCurrentX, fPreY = fCurrentY;
+			fCenterX += fRadius * sin(currentAngle);
+			fCenterY -= fRadius * cos(currentAngle);
+			currentAngle -= pCurSection->fSectionSizeSecondLength0 / fRadius;
+			fCurrentX = fCenterX - fRadius * sin(currentAngle);
+			fCurrentY = fCenterY + fRadius * cos(currentAngle);
+			DrawArc(pDC, fCenterX - fRadius, fCenterY - fRadius, fCenterX + fRadius, fCenterY + fRadius,
+			        fPreX, fPreY, fCurrentX, fCurrentY);
 		}
 	}
 
@@ -631,7 +719,7 @@ void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)ppVectorNode[i], &vectorNode, sizeof(SVectorNode));
 
 		if (vectorNode.data0 == 1)
-			DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
+			DrawVectorNodeInMetaFile(pDC, vectorNode, m_hTrainProcess);
 	}
 
 	delete[] ppVectorNode;
@@ -658,6 +746,24 @@ void CAirViewDlg::GetAllTracksDataByTDBFile()
 	}
 
 	delete[] ppVectorNode;
+}
+void CAirViewDlg::GetMetaFileHandleByTDBFile()
+{
+	if (m_EnhMetaFile)
+	{
+		DeleteEnhMetaFile(m_EnhMetaFile);
+		m_EnhMetaFile = NULL;
+	}
+
+	CRect rect;
+	rect.top = -META_FILE_SIZE;
+	rect.bottom = META_FILE_SIZE;
+	rect.left = -META_FILE_SIZE;
+	rect.right = META_FILE_SIZE;
+	CMetaFileDC dc;
+	dc.CreateEnhanced(NULL, NULL, &rect, NULL);
+	DrawAllTracksByTDBFile(&dc);
+	m_EnhMetaFile = dc.CloseEnhanced();
 }
 void CAirViewDlg::GetVectorNodeData(const SVectorNode &node, HANDLE handle)
 {
