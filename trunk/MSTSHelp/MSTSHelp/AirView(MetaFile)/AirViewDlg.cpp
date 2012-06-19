@@ -16,8 +16,6 @@
 // CAirViewDlg 对话框
 
 
-
-
 CAirViewDlg::CAirViewDlg(CWnd *pParent /*=NULL*/)
 	: CDialog(CAirViewDlg::IDD, pParent)
 {
@@ -56,7 +54,6 @@ BOOL CAirViewDlg::OnInitDialog()
 	InitSavedData();
 	m_savedData.pTrackSectionArray = new STrackSection[0x10000];
 	SetTimer(0, 200, NULL);
-	// TODO: 在此添加额外的初始化代码
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -83,9 +80,6 @@ BOOL CAirViewDlg::GetHandleAndPrepareData()
 					m_savedData.pTrain = pTrain;
 					ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
 					m_savedData.vectDrawUnit.clear();
-					GetAllTracksDataByTDBFile();
-					m_startLocation.fPointX = 0;
-					m_startLocation.fPointY = 0;
 					GetMetaFileHandleByTDBFile();
 					return TRUE;
 				}
@@ -124,9 +118,6 @@ BOOL CAirViewDlg::GetHandleAndPrepareData()
 				m_savedData.pTrain = pTrain;
 				ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A118, m_savedData.pTrackSectionArray, 0x10000 * sizeof(STrackSection), 2, 0xC, 0);
 				m_savedData.vectDrawUnit.clear();
-				GetAllTracksDataByTDBFile();
-				m_startLocation.fPointX = 0;
-				m_startLocation.fPointY = 0;
 				GetMetaFileHandleByTDBFile();
 				return TRUE;
 			}
@@ -185,31 +176,16 @@ void CAirViewDlg::OnPaint()
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 				float fDistance = m_currentHeadInfo.fLocationInNode;
 				CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
-				CRect paintRect;
-				HDC hdcRef = GetDC()->m_hDC;
-				int iWidthMM = GetDeviceCaps(hdcRef, HORZSIZE); // 屏幕宽（毫米）
-				int iHeightMM = GetDeviceCaps(hdcRef, VERTSIZE);
-				int iWidthPels = GetDeviceCaps(hdcRef, HORZRES); // 屏幕宽（像素）
-				int iHeightPels = GetDeviceCaps(hdcRef, VERTRES); // 屏幕高（像素）
-				const int DRAW_META_FILE_SIZE = META_FILE_SIZE * iHeightPels / 100 / iHeightMM;
-				int dx =  - m_startLocation.fPointX * TIMES;
-				int dy = - m_startLocation.fPointY * TIMES;
-				double k1 = (double)dy / dx;
-				double k2 = m_startLocation.fPointY / m_startLocation.fPointX;
-				k1 = k1 > 0 ? k1 : -k1;
-				k2 = k2 > 0 ? k2 : -k2;
-
-				if (k1 > k2)
-				{
-					dy > 0 ? dy-- : dy++;
-				}
-
-				paintRect.left = -DRAW_META_FILE_SIZE + dx;
-				paintRect.right = DRAW_META_FILE_SIZE + dx;
-				paintRect.top = -DRAW_META_FILE_SIZE + dy;
-				paintRect.bottom = DRAW_META_FILE_SIZE + dy;
-				PlayEnhMetaFile(MemDC.m_hDC, m_EnhMetaFile, &paintRect);
-				//DrawUnits(&MemDC);
+				int dx = (m_BaseLocation.fPointX - m_startLocation.fPointX) * TIMES;
+				int dy = (m_BaseLocation.fPointY - m_startLocation.fPointY) * TIMES;
+				RECT paintRect2 = {m_BoundsRect.left, m_BoundsRect.top, m_BoundsRect.right, m_BoundsRect.bottom};
+				CRect cpaintRect2(paintRect2);
+				cpaintRect2.left += dx;
+				cpaintRect2.right += dx;
+				cpaintRect2.top += dy;
+				cpaintRect2.bottom += dy;
+				//PlayEnhMetaFile(MemDC.m_hDC, m_EnhMetaFile, &cpaintRect2);
+				MemDC.PlayMetaFile(m_EnhMetaFile, &cpaintRect2);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
 				CPen *pOldPen = MemDC.SelectObject(&pen);
 				DrawPathTracks(&MemDC);
@@ -755,15 +731,21 @@ void CAirViewDlg::GetMetaFileHandleByTDBFile()
 		m_EnhMetaFile = NULL;
 	}
 
-	CRect rect;
-	rect.top = -META_FILE_SIZE;
-	rect.bottom = META_FILE_SIZE;
-	rect.left = -META_FILE_SIZE;
-	rect.right = META_FILE_SIZE;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+	SVectorNode vectorNode;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	float fDistance = m_currentHeadInfo.fLocationInNode;
+	CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
+	m_BaseLocation = m_startLocation;
 	CMetaFileDC dc;
-	dc.CreateEnhanced(NULL, NULL, &rect, NULL);
+	dc.CreateEnhanced(NULL, NULL, NULL, NULL);
 	DrawAllTracksByTDBFile(&dc);
 	m_EnhMetaFile = dc.CloseEnhanced();
+	UINT size = GetEnhMetaFileHeader(m_EnhMetaFile, 0, NULL);
+	ENHMETAHEADER *emHeader = (ENHMETAHEADER *)malloc(size);
+	GetEnhMetaFileHeader(m_EnhMetaFile, size, emHeader);
+	m_BoundsRect = emHeader->rclBounds; // 边界矩形
+	free(emHeader);
 }
 void CAirViewDlg::GetVectorNodeData(const SVectorNode &node, HANDLE handle)
 {
@@ -1012,8 +994,8 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	{
 		m_fMapSize *= 1.5;
 
-		if (m_fMapSize > 400000)
-			m_fMapSize = 400000;
+		if (m_fMapSize > 1000000)
+			m_fMapSize = 1000000;
 	}
 
 	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
