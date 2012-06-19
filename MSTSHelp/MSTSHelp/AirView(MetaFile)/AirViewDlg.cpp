@@ -176,16 +176,14 @@ void CAirViewDlg::OnPaint()
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
 				float fDistance = m_currentHeadInfo.fLocationInNode;
 				CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
-				int dx = (m_BaseLocation.fPointX - m_startLocation.fPointX) * TIMES;
-				int dy = (m_BaseLocation.fPointY - m_startLocation.fPointY) * TIMES;
-				RECT paintRect2 = {m_BoundsRect.left, m_BoundsRect.top, m_BoundsRect.right, m_BoundsRect.bottom};
-				CRect cpaintRect2(paintRect2);
-				cpaintRect2.left += dx;
-				cpaintRect2.right += dx;
-				cpaintRect2.top += dy;
-				cpaintRect2.bottom += dy;
-				//PlayEnhMetaFile(MemDC.m_hDC, m_EnhMetaFile, &cpaintRect2);
-				MemDC.PlayMetaFile(m_EnhMetaFile, &cpaintRect2);
+				int dx = (int)((m_BaseLocation.fPointX - m_startLocation.fPointX) * TIMES);
+				int dy = (int)((m_BaseLocation.fPointY - m_startLocation.fPointY) * TIMES);
+				CRect paintRect;
+				paintRect.left = m_BoundsRect.left + dx;
+				paintRect.right = m_BoundsRect.right + dx;
+				paintRect.top = m_BoundsRect.top + dy;
+				paintRect.bottom = m_BoundsRect.bottom + dy;
+				MemDC.PlayMetaFile(m_EnhMetaFile, &paintRect);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
 				CPen *pOldPen = MemDC.SelectObject(&pen);
 				DrawPathTracks(&MemDC);
@@ -731,10 +729,11 @@ void CAirViewDlg::GetMetaFileHandleByTDBFile()
 		m_EnhMetaFile = NULL;
 	}
 
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+	STrackInfo trackInfo;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&trackInfo, sizeof(STrackInfo));
 	SVectorNode vectorNode;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	float fDistance = m_currentHeadInfo.fLocationInNode;
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)trackInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+	float fDistance = trackInfo.fLocationInNode;
 	CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
 	m_BaseLocation = m_startLocation;
 	CMetaFileDC dc;
@@ -972,6 +971,12 @@ void CAirViewDlg::OnDestroy()
 	CDialog::OnDestroy();
 	delete[] m_savedData.pTrackSectionArray;
 
+	if (m_EnhMetaFile)
+	{
+		DeleteEnhMetaFile(m_EnhMetaFile);
+		m_EnhMetaFile = NULL;
+	}
+
 	if (m_hTrainProcess)
 		CloseHandle(m_hTrainProcess);
 }
@@ -994,8 +999,8 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 	{
 		m_fMapSize *= 1.5;
 
-		if (m_fMapSize > 1000000)
-			m_fMapSize = 1000000;
+		if (m_fMapSize > 4000000)
+			m_fMapSize = 4000000;
 	}
 
 	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
