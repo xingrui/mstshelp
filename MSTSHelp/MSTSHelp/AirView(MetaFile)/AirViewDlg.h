@@ -11,7 +11,6 @@ using std::set;
 using std::queue;
 // CAirViewDlg ¶Ô»°¿ò
 const int TIMES = 4;
-const int META_FILE_SIZE = 2000000;
 struct SLocation
 {
 	double fPointX;
@@ -61,6 +60,8 @@ protected:
 	HICON m_hIcon;
 	STrackInfo m_currentHeadInfo;
 	SLocation m_startLocation;
+	SLocation m_BaseLocation;
+	RECTL m_BoundsRect;
 	HENHMETAFILE m_EnhMetaFile;
 
 	void InitSavedData()
