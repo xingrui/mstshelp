@@ -12,6 +12,7 @@
 #define new DEBUG_NEW
 #endif
 
+int TIMES = 5;
 
 // CAirViewDlg ¶Ô»°¿ò
 
@@ -675,6 +676,49 @@ void CAirViewDlg::DrawUnits(CDC *pDC)
 		++it;
 	}
 }
+CRect CAirViewDlg::GetTrackBoundRect()
+{
+	SVectorNode vectorNode;
+	struct STDBFilePart
+	{
+		SVectorNode **ppTrackNodePtrArray0;
+		int nTrackNodeNumber4;
+	};
+	STDBFilePart tdbFile;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)0x80A038, &tdbFile, sizeof(STDBFilePart), 2, 0xC, 0);
+	size_t *ppVectorNode = new size_t[tdbFile.nTrackNodeNumber4];
+	ReadTrainProcess(m_hTrainProcess, tdbFile.ppTrackNodePtrArray0, ppVectorNode, 4 * tdbFile.nTrackNodeNumber4);
+	CRect rect(INT_MAX, INT_MAX, INT_MIN, INT_MIN);
+
+	for (int i = 0; i < tdbFile.nTrackNodeNumber4; ++i)
+	{
+		ReadTrainProcess(m_hTrainProcess, (LPCVOID)ppVectorNode[i], &vectorNode, sizeof(SVectorNode));
+
+		if (vectorNode.data0 == 1)
+			UpdateBoundRect(vectorNode, rect);
+	}
+
+	delete[] ppVectorNode;
+	return rect;
+}
+void CAirViewDlg::UpdateBoundRect(const SVectorNode &node, CRect &rect)
+{
+	int num = node.nSectionNum;
+	SVectorSection *pSectionData = new SVectorSection[num];
+	ReadTrainProcess(m_hTrainProcess, (LPCVOID)node.sectionArrayPtr, pSectionData, num * sizeof(SVectorSection));
+
+	for (int i = 0; i != num; ++i)
+	{
+		int x = pSectionData[i].TileX2;
+		int y = pSectionData[i].TileZ2;
+		rect.top = rect.top > y ? y : rect.top;
+		rect.bottom = rect.bottom < y ? y : rect.bottom;
+		rect.left = rect.left > x ? x : rect.left;
+		rect.right = rect.right < x ? x : rect.right;
+	}
+
+	delete []pSectionData;
+}
 void CAirViewDlg::DrawAllTracksByTDBFile(CDC *pDC)
 {
 	SVectorNode vectorNode;
@@ -729,13 +773,23 @@ void CAirViewDlg::GetMetaFileHandleByTDBFile()
 		m_EnhMetaFile = NULL;
 	}
 
-	STrackInfo trackInfo;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&trackInfo, sizeof(STrackInfo));
-	SVectorNode vectorNode;
-	ReadTrainProcess(m_hTrainProcess, (LPCVOID)trackInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
-	float fDistance = trackInfo.fLocationInNode;
-	CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
-	m_BaseLocation = m_startLocation;
+	CRect rect = GetTrackBoundRect();
+	m_BaseLocation.fPointX = (rect.left + rect.right + 1) * 1024;
+	m_BaseLocation.fPointY = (rect.top + rect.bottom + 1) * 1024;
+	m_startLocation = m_BaseLocation;
+	int xDiff = rect.right - rect.left + 1;
+	int yDiff = rect.bottom - rect.top + 1;
+	int diff = xDiff < yDiff ? yDiff : xDiff;
+	int n = diff * 25;
+	int index = 2;
+
+	while (n != 1)
+	{
+		++index;
+		n >>= 1;
+	}
+
+	TIMES = 1 << (19 - index);
 	CMetaFileDC dc;
 	dc.CreateEnhanced(NULL, NULL, NULL, NULL);
 	DrawAllTracksByTDBFile(&dc);

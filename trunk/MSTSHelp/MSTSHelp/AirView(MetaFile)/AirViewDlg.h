@@ -10,7 +10,7 @@
 using std::set;
 using std::queue;
 // CAirViewDlg ¶Ô»°¿ò
-const int TIMES = 4;
+extern int TIMES;
 struct SLocation
 {
 	double fPointX;
@@ -77,6 +77,8 @@ protected:
 	void DrawAllTracks(CDC *pDC);
 	void DrawUnits(CDC *pDC);
 	void DrawAllTracksByTDBFile(CDC *pDC);
+	CRect GetTrackBoundRect();
+	void UpdateBoundRect(const SVectorNode &node, CRect &rect);
 	void GetAllTracksDataByTDBFile();
 	void GetMetaFileHandleByTDBFile();
 	void GetVectorNodeData(const SVectorNode &node, HANDLE handle);
