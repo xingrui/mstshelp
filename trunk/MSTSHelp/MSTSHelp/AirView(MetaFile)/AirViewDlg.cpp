@@ -172,6 +172,7 @@ void CAirViewDlg::OnPaint()
 		{
 			if (GetHandleAndPrepareData())
 			{
+				MemDC.SetWindowExt((int)(m_fMapSize * TIMES), (int)(m_fMapSize * TIMES));
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
 				SVectorNode vectorNode;
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
@@ -528,7 +529,6 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 	pDC->SelectObject(pOldBrush);
 	brush.DeleteObject();
 	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetWindowExt((int)(m_fMapSize * TIMES), (int)(m_fMapSize * TIMES));
 	pDC->SetViewportExt(rect.right, -rect.bottom);
 }
 void CAirViewDlg::DrawAllAITracks(CDC *pDC)
@@ -790,6 +790,10 @@ void CAirViewDlg::GetMetaFileHandleByTDBFile()
 	}
 
 	TIMES = 1 << (19 - index);
+
+	if(TIMES < 4)
+		throw 1;
+
 	CMetaFileDC dc;
 	dc.CreateEnhanced(NULL, NULL, NULL, NULL);
 	DrawAllTracksByTDBFile(&dc);
@@ -1057,6 +1061,7 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 			m_fMapSize = 4000000;
 	}
 
+	Invalidate();
 	return CDialog::OnMouseWheel(nFlags, zDelta, pt);
 }
 
