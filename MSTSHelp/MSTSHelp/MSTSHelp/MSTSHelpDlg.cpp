@@ -258,9 +258,8 @@ void CMSTSHelpDlg::OnTimer(UINT_PTR nIDEvent)
 	case AUTO_ESC_MSG_TIMER:
 	{
 		int nFlag;
-		CHECK(ReadTrainProcess(m_hTrainProcess, (void *)PAUSE_BY_MSG_MEM, (LPVOID)&nFlag, 4))
 
-		if (!nFlag)
+		if (ReadProcessMemory(m_hTrainProcess, (void *)PAUSE_BY_MSG_MEM, (LPVOID)&nFlag, 4, NULL) && !nFlag)
 		{
 			PressKeyToTrainWnd(VK_ESCAPE);
 		}
