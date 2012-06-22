@@ -791,7 +791,7 @@ void CAirViewDlg::GetMetaFileHandleByTDBFile()
 
 	TIMES = 1 << (19 - index);
 
-	if(TIMES < 4)
+	if (TIMES < 4)
 		throw 1;
 
 	CMetaFileDC dc;
