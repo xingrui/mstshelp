@@ -401,6 +401,12 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 			continue;
 		}
 
+		if(ite->m_fDistance > 4000)
+		{
+			++ite;
+			continue;
+		}
+
 		float fSpeedLimit = sqrt(ite->m_fSpeedLimit * ite->m_fSpeedLimit + 2 * m_fExpectedAccerlate * ite->m_fDistance);
 
 		if (fSpeedLimit < 1.0)
