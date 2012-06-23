@@ -186,11 +186,30 @@ void CAirViewDlg::OnPaint()
 				paintRect.top = m_BoundsRect.top + dy;
 				paintRect.bottom = m_BoundsRect.bottom + dy;
 				MemDC.PlayMetaFile(m_EnhMetaFile, &paintRect);
+				// 绘制绿色路径
+				SLocation backUpLocation = m_startLocation;
+				m_startLocation = m_BaseLocation;
+				CMetaFileDC metaFileDC;
+				metaFileDC.CreateEnhanced(NULL, NULL, NULL, NULL);
 				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
-				CPen *pOldPen = MemDC.SelectObject(&pen);
-				DrawPathTracks(&MemDC);
-				MemDC.SelectObject(pOldPen);
+				CPen *pOldPen = metaFileDC.SelectObject(&pen);
+				DrawPathTracks(&metaFileDC);
+				metaFileDC.SelectObject(pOldPen);
 				pen.DeleteObject();
+				HENHMETAFILE HEnHMetaFile = metaFileDC.CloseEnhanced();
+				UINT size = GetEnhMetaFileHeader(HEnHMetaFile, 0, NULL);
+				ENHMETAHEADER *emHeader = (ENHMETAHEADER *)malloc(size);
+				GetEnhMetaFileHeader(HEnHMetaFile, size, emHeader);
+				RECTL BoundsRect = emHeader->rclBounds; // 边界矩形
+				free(emHeader);
+				paintRect.left = BoundsRect.left + dx;
+				paintRect.right = BoundsRect.right + dx;
+				paintRect.top = BoundsRect.top + dy;
+				paintRect.bottom = BoundsRect.bottom + dy;
+				MemDC.PlayMetaFile(HEnHMetaFile, &paintRect);
+				DeleteEnhMetaFile(HEnHMetaFile);
+				// 绘制AI车辆信息
+				m_startLocation = backUpLocation;
 				CBrush brush, *pOldBrush;
 				brush.CreateSolidBrush(RGB(255, 0, 0));
 				pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
@@ -891,7 +910,7 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 		forwardLength = m_currentHeadInfo.fLocationInNode - vectorNode.fTrackNodeLength;
 
 	int nDirectOfNextNode;
-	DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
+	DrawVectorNodeInMetaFile(pDC, vectorNode, m_hTrainProcess);
 	SVectorNode *nextNodePtr = GetNextNode(m_hTrainProcess, vectorNode, m_currentHeadInfo.pVectorNode, nDirectOfHeadNode, nDirectOfNextNode);
 
 	while (forwardLength < 8 * m_fMapSize && nextNodePtr)
@@ -900,7 +919,7 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 		int nDirectOfCurrentNode = nDirectOfNextNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
+		DrawVectorNodeInMetaFile(pDC, vectorNode, m_hTrainProcess);
 		forwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
@@ -925,7 +944,7 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
 		SVectorNode vectorNode;
 		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
-		DrawVectorNode(pDC, vectorNode, m_hTrainProcess);
+		DrawVectorNodeInMetaFile(pDC, vectorNode, m_hTrainProcess);
 		backwardLength += vectorNode.fTrackNodeLength;
 		/************************************************************************/
 		/* Get Next Node Pointer                                                */
