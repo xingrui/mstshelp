@@ -401,7 +401,7 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 			continue;
 		}
 
-		if(ite->m_fDistance > 3000)
+		if (ite->m_fDistance > 3000)
 		{
 			++ite;
 			continue;
