@@ -1,0 +1,5 @@
+This c.l can not processed by the same version of flex tool in unix.
+The reason is because this file uses "\r\n" to indicate new line.
+but the error only occurs at line 
+{L}({L}|{D})*		{ count(); return(check_type()); }
+Oh My God!
