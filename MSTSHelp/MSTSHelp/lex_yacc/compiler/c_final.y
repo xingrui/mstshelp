@@ -248,6 +248,8 @@ struct_declarator_list
   
 struct_declarator 
          : declarator 
+         | ':' constant_expression 
+         | declarator ':' constant_expression 
          ; 
   
 enum_specifier 
@@ -264,7 +266,7 @@ enumerator_list
   
 enumerator 
          : IDENTIFIER 
-         | IDENTIFIER '=' CONSTANT 
+         | IDENTIFIER '=' constant_expression 
          ; 
   
 type_qualifier 
@@ -280,7 +282,7 @@ declarator
 direct_declarator 
          : IDENTIFIER 
          | '(' declarator ')' 
-         | direct_declarator '[' CONSTANT ']' 
+         | direct_declarator '[' constant_expression ']' 
          | direct_declarator '[' ']' 
          | direct_declarator '(' parameter_type_list ')' 
          | direct_declarator '(' identifier_list ')' 
