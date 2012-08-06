@@ -3,3 +3,42 @@ The reason is because this file uses "\r\n" to indicate new line.
 but the error only occurs at line 
 {L}({L}|{D})*		{ count(); return(check_type()); }
 Oh My God!
+
+
+经过测试终于发现了flex生成错误的匹配代码的原因了
+测试的flex源文件如下
+
+D [0-9]
+%%
+{D}+ ECHO;
+. ;
+
+在源文件为unix格式下时
+使用flex -T test.l可以看到对应的词法内容为
+
+%%
+1 ([0-9])+
+2 .
+3 End Marker
+
+而源文件为dos格式下时
+使用flex -T test.l可以看到对应的词法内容竟然为
+
+%%
+1 ([0-9]\015)+
+2 .
+3 End Marker
+
+为什么flex的扫描文件竟然不能够除掉词法规则中的\r(\015)呢？
+这是一个非常诡异的问题啊
+
+问题出现的flex-2.5.4的unix版本当中
+
+flex的2.5.37版本(2012-08-03更新)已经修复了这个诡异的问题
+在他的ChangeLog文件当中是这么写的
+
+2001-09-20 will Estes <wlestes@users.sourceforge.net>
+         * NEWS, scan.l: now flex recognizes \r as an eol character
+
+顺便说一下，这个scan.l本身就是一个编译器的自举过程。
+使用以前的scanner-generator来生成更完善的scanner-generator.
