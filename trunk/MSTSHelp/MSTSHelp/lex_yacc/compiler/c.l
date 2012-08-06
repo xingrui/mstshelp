@@ -10,13 +10,12 @@ IS			(u|U|l|L)*
 #include "c.tab.h"
 int check_type();
 int comment();
-int commentcpp();
 void count();
 %}
 
 %%
 "/*"			{ comment(); }
-"//"			{ commentcpp(); }
+"//".*			/* ignore comments */
 "auto"			{ count(); return(AUTO); }
 "break"			{ count(); return(BREAK); }
 "case"			{ count(); return(CASE); }
@@ -135,13 +134,6 @@ loop:
 		goto loop;
 	}
 }
-
-int commentcpp()
-{
-	char c;
-	while ((c = yyinput()) != '\n' && c != 0);
-}
-
 
 int column = 0;
 
