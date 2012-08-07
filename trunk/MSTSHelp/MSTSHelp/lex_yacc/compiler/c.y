@@ -1,3 +1,4 @@
+/* The TINY Yacc/Bison specification file Of C */
 %{
 #include <iostream>
 extern int yylex();
@@ -19,7 +20,7 @@ extern int column;
 %token CASE DEFAULT IF ELSE SWITCH WHILE DO FOR GOTO CONTINUE BREAK RETURN 
   
 %start translation_unit 
-%% 
+%% /* Grammar for C */
   
 primary_expression 
          : IDENTIFIER 
