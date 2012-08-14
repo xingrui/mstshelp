@@ -78,7 +78,7 @@ BOOL CMSTSHelpDlg::OnInitDialog()
 	//初始化定时器
 	m_nTimerGetData = SetTimer(AUTO_GET_DATA_TIMER, DATA_SPAN, NULL);
 	//初始化手动限速
-	m_strManualLimit = "1000";
+	m_strManualLimit = L"1000";
 	//初始化游戏时间
 	m_fGameTime = -1;
 	m_lastSaveTime = -1;
@@ -558,31 +558,31 @@ CString  CMSTSHelpDlg::changeColorToString(char cLightColor)
 	switch (cLightColor)
 	{
 	case 0:
-		strColor = "红灯";
+		strColor = L"红灯";
 		break;
 	case 2:
-		strColor = "红黄灯";
+		strColor = L"红黄灯";
 		break;
 	case 3:
-		strColor = "双黄灯";
+		strColor = L"双黄灯";
 		break;
 	case 4:
-		strColor = "黄2灯";
+		strColor = L"黄2灯";
 		break;
 	case 5:
-		strColor = "黄灯";
+		strColor = L"黄灯";
 		break;
 	case 6:
-		strColor = "绿黄灯";
+		strColor = L"绿黄灯";
 		break;
 	case 7:
-		strColor = "绿灯";
+		strColor = L"绿灯";
 		break;
 	case 8:
-		strColor = "白灯";
+		strColor = L"白灯";
 		break;
 	default:
-		strColor = "不能识别的车灯";
+		strColor = L"不能识别的车灯";
 		break;
 	}
 
@@ -595,16 +595,16 @@ CString  CMSTSHelpDlg::changeLocoTypeToString(Locomotive loco)
 	switch (loco)
 	{
 	case Steam:
-		strLocoType = "蒸汽机";
+		strLocoType = L"蒸汽机";
 		break;
 	case Diesel:
-		strLocoType = "内燃机";
+		strLocoType = L"内燃机";
 		break;
 	case Electric:
-		strLocoType = "电力机";
+		strLocoType = L"电力机";
 		break;
 	default:
-		strLocoType = "无法识别的车头";
+		strLocoType = L"无法识别的车头";
 		break;
 	}
 
@@ -641,7 +641,7 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	strTime.Format(L"%02d:%02d:%02d", m_sGameTime.m_nHour, m_sGameTime.m_nMinute, m_sGameTime.m_nSecond);
 	CHECK(ReadTrainProcess(hProcess, (void *)LIGHT_COLOR_MEM, (LPVOID)&m_cColor1, 1))
 	strColor = changeColorToString(m_cColor1);
-	strColor += " : ";
+	strColor += L" : ";
 	CHECK(ReadTrainProcess(hProcess, (void *)LIGHT_COLOR_MEM_2, (LPVOID)&m_cColor2, 1))
 	strColor += changeColorToString(m_cColor2);
 	CHECK(ReadTrainProcess(hProcess, (void *)ACCER_MEM, (LPVOID)&m_fAcceleration, 4))
