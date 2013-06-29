@@ -260,7 +260,7 @@ void CSignSpeedLimitDlg::OnGetData()
 		AddSectionInfo(forwardLength, vectorNode, sectionVect, m_hTrainProcess, nDirectOfCurrentNode, !nDirectOfCurrentNode, pSection);
 		CString res;
 		res.Format(L"0X%X 0X%X %.1f %.1f ", currentNodePtr, vectorNode.pPtr44, forwardLength, vectorNode.fTrackNodeLength + forwardLength);
-		m_textContent += res;
+		//m_textContent += res;
 
 		if (vectorNode.pPtr44 != NULL)
 		{
@@ -281,11 +281,11 @@ void CSignSpeedLimitDlg::OnGetData()
 				wchar_t name[0x20];
 				int dest = nCarriageType == 1 ? 0xD4 : 0x94;
 				ReadTrainProcess(m_hTrainProcess, (char *)carriageInTrackNode.pEngineOrWagonInConFile8 + dest, name, 0x40);
-				m_textContent += srvFileName;
+				//m_textContent += srvFileName;
 			}
 		}
 
-		m_textContent += "\r\n";
+		//m_textContent += "\r\n";
 		/*if(node.pointer != node.next)
 		{
 			CString res;
@@ -404,11 +404,11 @@ void CSignSpeedLimitDlg::OnGetData()
 	{
 		m_textContent += L"车站名称\r\n";
 
-		for (size_t i = backStationVect.size() ; i > 0;)
+		/*for (size_t i = backStationVect.size() ; i > 0;)
 		{
 			--i;
 			m_textContent += getStationString(backStationVect[i]);
-		}
+		}*/
 
 		for (size_t i = 0; i < stationVect.size(); ++i)
 		{
@@ -420,13 +420,13 @@ void CSignSpeedLimitDlg::OnGetData()
 
 	if (m_bShowSiding)
 	{
-		m_textContent += L"边线名称\r\n";
+		m_textContent += L"侧线名称\r\n";
 
-		for (size_t i = backSidingVect.size(); i > 0;)
+		/*for (size_t i = backSidingVect.size(); i > 0;)
 		{
 			--i;
 			m_textContent += getStationString(backSidingVect[i]);
-		}
+		}*/
 
 		for (size_t i = 0; i < sidingVect.size(); ++i)
 		{

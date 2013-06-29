@@ -298,7 +298,7 @@ struct SSidingItem
 	int unknown;
 	float fLocationInVectorNode; // 该Item在VectorNode当中的位置
 	int   nTrItemSDataSecond;
-	wchar_t *sidingName;   // 指向边线的名称
+	wchar_t *sidingName;   // 指向侧线的名称
 	int   nSidingTrItemDataFirst;
 	int   nSidingTrItemDataSecond;
 };
