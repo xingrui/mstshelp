@@ -435,4 +435,10 @@ void GetForwardSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitLi
 		/************************************************************************/
 		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfNextNode);
 	}
+
+	if(forwardLength < 4000)
+		if(forwardLength > 50)
+			limitList.push_back(SForwardLimit(forwardLength - 50, 0));
+		else
+			limitList.push_back(SForwardLimit(0, 0));
 }
