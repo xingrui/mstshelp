@@ -296,7 +296,16 @@ void TestAndSetSignalItem(HANDLE handle, const SSignalItem &signalItem, int nVal
 	if (signalItem.dwData1C & 0x2000)
 		nBitSet |= 4;
 
-	if (nBitSet & 2 || !cSignalColor || cSignalColor >= 8)
+	if (nBitSet & 4 && (!nRetValue || nBitSet & 2))
+	{
+		// 任务临时限速的值
+		float *fTempLimitPtr;
+		ReadTrainProcess(handle, (LPCVOID)0x809B48, &fTempLimitPtr, 4);
+		float fTempLimit;
+		ReadTrainProcess(handle, (LPCVOID)(fTempLimitPtr + 23), &fTempLimit, 4);
+		fSignalSpeed = fTempLimit;
+	}
+	else if (nBitSet & 2 || !cSignalColor || cSignalColor >= 8)
 	{
 		fSignalSpeed = 0;
 	}
