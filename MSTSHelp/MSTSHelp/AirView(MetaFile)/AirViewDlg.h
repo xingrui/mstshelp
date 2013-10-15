@@ -61,8 +61,12 @@ protected:
 	STrackInfo m_currentHeadInfo;
 	SLocation m_startLocation;
 	SLocation m_BaseLocation;
+	SLocation m_mapOffset;
+	SLocation m_oldOffset;
 	RECTL m_BoundsRect;
 	HENHMETAFILE m_EnhMetaFile;
+	CPoint m_startPoint;
+	bool m_in_drag;
 
 	void InitSavedData()
 	{
@@ -96,6 +100,7 @@ protected:
 	afx_msg void OnPaint();
 	afx_msg HCURSOR OnQueryDragIcon();
 	DECLARE_MESSAGE_MAP()
+	BOOL PreTranslateMessage(MSG *pMsg);
 public:
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 public:
@@ -108,4 +113,10 @@ public:
 	afx_msg BOOL OnMouseWheel(UINT nFlags, short zDelta, CPoint pt);
 public:
 	afx_msg BOOL OnEraseBkgnd(CDC *pDC);
+public:
+	afx_msg void OnMouseMove(UINT nFlags, CPoint point);
+public:
+	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
+public:
+	afx_msg void OnLButtonUp(UINT nFlags, CPoint point);
 };
