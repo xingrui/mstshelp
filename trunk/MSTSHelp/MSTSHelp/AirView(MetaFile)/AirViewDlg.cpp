@@ -28,6 +28,27 @@ void CAirViewDlg::DoDataExchange(CDataExchange *pDX)
 	CDialog::DoDataExchange(pDX);
 }
 
+BOOL CAirViewDlg::PreTranslateMessage(MSG *pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		switch (pMsg->wParam)
+		{
+		case VK_RETURN:   //屏蔽Enter
+			return true;
+		case VK_ESCAPE:   //屏蔽Esc
+			return true;
+		case VK_SPACE:
+			m_mapOffset.fPointX = 0;
+			m_mapOffset.fPointY = 0;
+			Invalidate();
+			return true;
+		}
+	}
+
+	return CDialog::PreTranslateMessage(pMsg);
+}
+
 BEGIN_MESSAGE_MAP(CAirViewDlg, CDialog)
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
@@ -38,6 +59,9 @@ BEGIN_MESSAGE_MAP(CAirViewDlg, CDialog)
 	ON_BN_CLICKED(IDOK, &CAirViewDlg::OnBnClickedOk)
 	ON_WM_MOUSEWHEEL()
 	ON_WM_ERASEBKGND()
+	ON_WM_MOUSEMOVE()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
 END_MESSAGE_MAP()
 
 
@@ -52,6 +76,9 @@ BOOL CAirViewDlg::OnInitDialog()
 	SetIcon(m_hIcon, FALSE);		// 设置小图标
 	m_hTrainProcess = NULL;
 	m_fMapSize = 4000;
+	m_in_drag = false;
+	m_mapOffset.fPointX = 0;
+	m_mapOffset.fPointY = 0;
 	InitSavedData();
 	m_savedData.pTrackSectionArray = new STrackSection[0x10000];
 	SetTimer(0, 200, NULL);
@@ -172,7 +199,9 @@ void CAirViewDlg::OnPaint()
 		{
 			if (GetHandleAndPrepareData())
 			{
-				MemDC.SetWindowExt((int)(m_fMapSize * TIMES), (int)(m_fMapSize * TIMES));
+				// 将SetWindowExt放在这里而不是放在SetPaintMode中
+				// 是因为如果放在前面会有TIMES与metafile中的TIMES对不上 图形大小不对的问题
+				MemDC.SetWindowExt((int)(m_fMapSize * TIMES), -(int)(m_fMapSize * TIMES));
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
 				SVectorNode vectorNode;
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
@@ -181,10 +210,10 @@ void CAirViewDlg::OnPaint()
 				int dx = (int)((m_BaseLocation.fPointX - m_startLocation.fPointX) * TIMES);
 				int dy = (int)((m_BaseLocation.fPointY - m_startLocation.fPointY) * TIMES);
 				CRect paintRect;
-				paintRect.left = m_BoundsRect.left + dx;
-				paintRect.right = m_BoundsRect.right + dx;
-				paintRect.top = m_BoundsRect.top + dy;
-				paintRect.bottom = m_BoundsRect.bottom + dy;
+				paintRect.left = m_BoundsRect.left + dx + m_mapOffset.fPointX;
+				paintRect.right = m_BoundsRect.right + dx + m_mapOffset.fPointX;
+				paintRect.top = m_BoundsRect.top + dy + m_mapOffset.fPointY;
+				paintRect.bottom = m_BoundsRect.bottom + dy + m_mapOffset.fPointY;
 				MemDC.PlayMetaFile(m_EnhMetaFile, &paintRect);
 				// 绘制绿色路径
 				SLocation backUpLocation = m_startLocation;
@@ -202,26 +231,46 @@ void CAirViewDlg::OnPaint()
 				GetEnhMetaFileHeader(HEnHMetaFile, size, emHeader);
 				RECTL BoundsRect = emHeader->rclBounds; // 边界矩形
 				free(emHeader);
-				paintRect.left = BoundsRect.left + dx;
-				paintRect.right = BoundsRect.right + dx;
-				paintRect.top = BoundsRect.top + dy;
-				paintRect.bottom = BoundsRect.bottom + dy;
+				paintRect.left = BoundsRect.left + dx + m_mapOffset.fPointX;
+				paintRect.right = BoundsRect.right + dx + m_mapOffset.fPointX;
+				paintRect.top = BoundsRect.top + dy + m_mapOffset.fPointY;
+				paintRect.bottom = BoundsRect.bottom + dy + m_mapOffset.fPointY;
 				MemDC.PlayMetaFile(HEnHMetaFile, &paintRect);
 				DeleteEnhMetaFile(HEnHMetaFile);
-				// 绘制AI车辆信息
-				m_startLocation = backUpLocation;
-				CBrush brush, *pOldBrush;
-				brush.CreateSolidBrush(RGB(255, 0, 0));
-				pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-				pOldBrush = MemDC.SelectObject(&brush);
-				pOldPen = MemDC.SelectObject(&pen);
-				CGdiObject *pObject = MemDC.SelectStockObject(ANSI_FIXED_FONT);
-				MemDC.SetBkMode(TRANSPARENT);
-				DrawAllAITracks(&MemDC);
-				MemDC.SelectObject(pOldPen);
-				MemDC.SelectObject(pOldBrush);
-				brush.DeleteObject();
-				pen.DeleteObject();
+				{
+					// 绘制本务车辆信息
+					CBrush brush, *pOldBrush;
+					brush.CreateSolidBrush(RGB(120, 255, 200));
+					pOldBrush = MemDC.SelectObject(&brush);
+					float fCurrentX = m_mapOffset.fPointX / TIMES;
+					float fCurrentY = m_mapOffset.fPointY / TIMES;
+					float fEllipse = 5 * m_fMapSize / nHeight;
+					int nX1 = (int)((fCurrentX - fEllipse) * TIMES);
+					int nY1 = (int)((fCurrentY - fEllipse) * TIMES);
+					int nX2 = (int)((fCurrentX + fEllipse) * TIMES);
+					int nY2 = (int)((fCurrentY + fEllipse) * TIMES);
+					MemDC.Ellipse(nX1, nY1, nX2, nY2);
+					MemDC.SelectObject(pOldBrush);
+					brush.DeleteObject();
+				}
+				{
+					// 绘制AI车辆信息
+					m_startLocation = backUpLocation;
+					m_startLocation.fPointX -= m_mapOffset.fPointX / TIMES;
+					m_startLocation.fPointY -= m_mapOffset.fPointY / TIMES;
+					CBrush brush, *pOldBrush;
+					brush.CreateSolidBrush(RGB(255, 0, 0));
+					pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+					pOldBrush = MemDC.SelectObject(&brush);
+					pOldPen = MemDC.SelectObject(&pen);
+					CGdiObject *pObject = MemDC.SelectStockObject(ANSI_FIXED_FONT);
+					MemDC.SetBkMode(TRANSPARENT);
+					DrawAllAITracks(&MemDC);
+					MemDC.SelectObject(pOldPen);
+					MemDC.SelectObject(pOldBrush);
+					brush.DeleteObject();
+					pen.DeleteObject();
+				}
 			}
 			else
 			{
@@ -539,16 +588,9 @@ void CAirViewDlg::SetPaintMode(CDC *pDC)
 {
 	CRect rect;
 	GetClientRect(&rect);
-	pDC->SetViewportOrg(rect.right / 2, rect.bottom / 2);
-	CBrush brush, *pOldBrush;
-	brush.CreateSolidBrush(RGB(120, 255, 200));
-	pOldBrush = pDC->SelectObject(&brush);
-	int nRadius = 5;
-	pDC->Ellipse(-nRadius, -nRadius, nRadius, nRadius);
-	pDC->SelectObject(pOldBrush);
-	brush.DeleteObject();
 	pDC->SetMapMode(MM_ISOTROPIC);
-	pDC->SetViewportExt(rect.right, -rect.bottom);
+	pDC->SetViewportExt(rect.right, rect.bottom);
+	pDC->SetViewportOrg(rect.right / 2, rect.bottom / 2);
 }
 void CAirViewDlg::DrawAllAITracks(CDC *pDC)
 {
@@ -913,7 +955,7 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 	DrawVectorNodeInMetaFile(pDC, vectorNode, m_hTrainProcess);
 	SVectorNode *nextNodePtr = GetNextNode(m_hTrainProcess, vectorNode, m_currentHeadInfo.pVectorNode, nDirectOfHeadNode, nDirectOfNextNode);
 
-	while (forwardLength < 8 * m_fMapSize && nextNodePtr)
+	while (forwardLength < 8 * 4000000 && nextNodePtr)
 	{
 		SVectorNode *currentNodePtr = nextNodePtr;
 		int nDirectOfCurrentNode = nDirectOfNextNode;
@@ -938,7 +980,7 @@ void CAirViewDlg::DrawPathTracks(CDC *pDC)
 	int nDirectOfPrevNode = nDirectOfHeadNode;
 	SVectorNode *prevNodePtr = GetNextNode(m_hTrainProcess, vectorNode, m_currentHeadInfo.pVectorNode, nDirectOfHeadNode, nDirectOfPrevNode);
 
-	while (backwardLength < 8 * m_fMapSize && prevNodePtr)
+	while (backwardLength < 8 * 4000000 && prevNodePtr)
 	{
 		SVectorNode *currentNodePtr = prevNodePtr;
 		int nDirectOfCurrentNode = nDirectOfPrevNode;
@@ -1087,4 +1129,42 @@ BOOL CAirViewDlg::OnMouseWheel(UINT nFlags, short zDelta, CPoint pt)
 BOOL CAirViewDlg::OnEraseBkgnd(CDC *pDC)
 {
 	return TRUE;
+}
+
+void CAirViewDlg::OnMouseMove(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	if (m_in_drag)
+	{
+		CRect clientRect;
+		GetClientRect(&clientRect);
+		int nWidth = clientRect.Width();
+		int nHeight = clientRect.Height();
+		int x_move = point.x - m_startPoint.x;
+		int y_move = point.y - m_startPoint.y;
+		m_mapOffset.fPointX = m_oldOffset.fPointX + x_move * m_fMapSize / clientRect.bottom * TIMES;
+		m_mapOffset.fPointY = m_oldOffset.fPointY - y_move * m_fMapSize / clientRect.bottom * TIMES;
+		UpdateData(false);
+		Invalidate();
+	}
+
+	CDialog::OnMouseMove(nFlags, point);
+}
+
+void CAirViewDlg::OnLButtonDown(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	m_startPoint = point; //记录开始点
+	m_in_drag = true;
+	m_oldOffset = m_mapOffset;
+	SetCapture();
+	CDialog::OnLButtonDown(nFlags, point);
+}
+
+void CAirViewDlg::OnLButtonUp(UINT nFlags, CPoint point)
+{
+	// TODO: 在此添加消息处理程序代码和/或调用默认值
+	m_in_drag = false;
+	ReleaseCapture();
+	CDialog::OnLButtonUp(nFlags, point);
 }
