@@ -269,11 +269,13 @@ void CSignSpeedLimitDlg::OnGetData()
 
 			if (node.pointer == vectorNode.pPtr44)
 			{
+#if 0
 				ReadTrainProcess(m_hTrainProcess, node.next, &node, sizeof(SNode));
 				SCarriageInTrackNode carriageInTrackNode;
 				ReadTrainProcess(m_hTrainProcess, node.pointer, &carriageInTrackNode, sizeof(SCarriageInTrackNode));
 				wchar_t srvFileName[0x100];
 				wchar_t *pSrvFileName;
+				// pSrvFileC may be NULL pointer.
 				ReadTrainProcess(m_hTrainProcess, (char *)carriageInTrackNode.pSrvFileC + 0x10, &pSrvFileName, 4);
 				ReadTrainProcess(m_hTrainProcess, pSrvFileName, &srvFileName, 0x200);
 				int nCarriageType;
@@ -282,6 +284,7 @@ void CSignSpeedLimitDlg::OnGetData()
 				int dest = nCarriageType == 1 ? 0xD4 : 0x94;
 				ReadTrainProcess(m_hTrainProcess, (char *)carriageInTrackNode.pEngineOrWagonInConFile8 + dest, name, 0x40);
 				//m_textContent += srvFileName;
+#endif
 			}
 		}
 
@@ -403,7 +406,6 @@ void CSignSpeedLimitDlg::OnGetData()
 	if (m_bShowStation)
 	{
 		m_textContent += L"车站名称\r\n";
-
 		/*for (size_t i = backStationVect.size() ; i > 0;)
 		{
 			--i;
@@ -421,7 +423,6 @@ void CSignSpeedLimitDlg::OnGetData()
 	if (m_bShowSiding)
 	{
 		m_textContent += L"侧线名称\r\n";
-
 		/*for (size_t i = backSidingVect.size(); i > 0;)
 		{
 			--i;
