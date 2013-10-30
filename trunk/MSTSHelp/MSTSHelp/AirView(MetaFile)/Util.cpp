@@ -142,8 +142,8 @@ SVectorNode *GetNext(SVectorNode *nodePtr, const SConnectStruct &connectStruct, 
 	{
 		if (nodePtr == connectStruct.subStruct[0].pVectorNode)
 		{
-			nextDirect = connectStruct.subStruct[1 + connectNode.direction80].nDirect;
-			return connectStruct.subStruct[1 + connectNode.direction80].pVectorNode;
+			nextDirect = connectStruct.subStruct[1 + (connectNode.direction80 & 1)].nDirect;
+			return connectStruct.subStruct[1 + (connectNode.direction80 & 1)].pVectorNode;
 		}
 		else if (nodePtr == connectStruct.subStruct[1].pVectorNode)
 		{
