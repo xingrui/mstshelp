@@ -202,43 +202,68 @@ void CAirViewDlg::OnPaint()
 				// 将SetWindowExt放在这里而不是放在SetPaintMode中
 				// 是因为如果放在前面会有TIMES与metafile中的TIMES对不上 图形大小不对的问题
 				MemDC.SetWindowExt((int)(m_fMapSize * m_TIMES), -(int)(m_fMapSize * m_TIMES));
-				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
-				SVectorNode currentVectorNode;
-				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&currentVectorNode, sizeof(SVectorNode));
-				float fDistance = m_currentHeadInfo.fLocationInNode;
-				CalculateCurrentLocation(currentVectorNode, fDistance, m_hTrainProcess);
-				int dx = (int)((m_BaseLocation.fPointX - m_startLocation.fPointX) * m_TIMES);
-				int dy = (int)((m_BaseLocation.fPointY - m_startLocation.fPointY) * m_TIMES);
-				CRect paintRect;
-				paintRect.left = m_BoundsRect.left + dx + (LONG)m_mapOffset.fPointX;
-				paintRect.right = m_BoundsRect.right + dx + (LONG)m_mapOffset.fPointX;
-				paintRect.top = m_BoundsRect.top + dy + (LONG)m_mapOffset.fPointY;
-				paintRect.bottom = m_BoundsRect.bottom + dy + (LONG)m_mapOffset.fPointY;
-				MemDC.PlayMetaFile(m_EnhMetaFile, &paintRect);
-				// 绘制绿色路径
-				SLocation backUpLocation = m_startLocation;
-				m_startLocation = m_BaseLocation;
-				CMetaFileDC metaFileDC;
-				metaFileDC.CreateEnhanced(NULL, NULL, NULL, NULL);
-				CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
-				CPen *pOldPen = metaFileDC.SelectObject(&pen);
-				DrawPathTracks(&metaFileDC);
-				metaFileDC.SelectObject(pOldPen);
-				pen.DeleteObject();
-				HENHMETAFILE HEnHMetaFile = metaFileDC.CloseEnhanced();
-				UINT size = GetEnhMetaFileHeader(HEnHMetaFile, 0, NULL);
-				ENHMETAHEADER *emHeader = (ENHMETAHEADER *)malloc(size);
-				GetEnhMetaFileHeader(HEnHMetaFile, size, emHeader);
-				RECTL BoundsRect = emHeader->rclBounds; // 边界矩形
-				free(emHeader);
-				paintRect.left = BoundsRect.left + dx + (LONG)m_mapOffset.fPointX;
-				paintRect.right = BoundsRect.right + dx + (LONG)m_mapOffset.fPointX;
-				paintRect.top = BoundsRect.top + dy + (LONG)m_mapOffset.fPointY;
-				paintRect.bottom = BoundsRect.bottom + dy + (LONG)m_mapOffset.fPointY;
-				MemDC.PlayMetaFile(HEnHMetaFile, &paintRect);
-				DeleteEnhMetaFile(HEnHMetaFile);
+				LONG final_x_offset = (LONG)m_mapOffset.fPointX;
+				LONG final_y_offset = (LONG)m_mapOffset.fPointY;
 				{
-					// 绘制本务车辆信息
+					// 绘制所有的轨道信息
+					ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
+					SVectorNode currentVectorNode;
+					ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&currentVectorNode, sizeof(SVectorNode));
+					float fDistance = m_currentHeadInfo.fLocationInNode;
+					CalculateCurrentLocation(currentVectorNode, fDistance, m_hTrainProcess);
+					final_x_offset += (int)((m_BaseLocation.fPointX - m_startLocation.fPointX) * m_TIMES);
+					final_y_offset += (int)((m_BaseLocation.fPointY - m_startLocation.fPointY) * m_TIMES);
+					CRect paintRect;
+					paintRect.left = m_BoundsRect.left + final_x_offset;
+					paintRect.right = m_BoundsRect.right + final_x_offset;
+					paintRect.top = m_BoundsRect.top + final_y_offset;
+					paintRect.bottom = m_BoundsRect.bottom + final_y_offset;
+					MemDC.PlayMetaFile(m_EnhMetaFile, &paintRect);
+				}
+				{
+					// 绘制AI车辆信息
+					m_startLocation.fPointX -= m_mapOffset.fPointX / m_TIMES;
+					m_startLocation.fPointY -= m_mapOffset.fPointY / m_TIMES;
+					CBrush brush, *pOldBrush;
+					CPen red_pen, *pOldPen;
+					brush.CreateSolidBrush(RGB(255, 0, 0));
+					red_pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
+					pOldBrush = MemDC.SelectObject(&brush);
+					pOldPen = MemDC.SelectObject(&red_pen);
+					CGdiObject *pObject = MemDC.SelectStockObject(ANSI_FIXED_FONT);
+					MemDC.SetBkMode(TRANSPARENT);
+					DrawAllAITracks(&MemDC);
+					MemDC.SelectObject(pOldPen);
+					MemDC.SelectObject(pOldBrush);
+					brush.DeleteObject();
+					red_pen.DeleteObject();
+				}
+				{
+					// 绘制当前车辆所在路径
+					m_startLocation = m_BaseLocation;
+					CMetaFileDC metaFileDC;
+					metaFileDC.CreateEnhanced(NULL, NULL, NULL, NULL);
+					CPen pen(PS_SOLID, 1, RGB(0, 255, 0));
+					CPen *pOldPen = metaFileDC.SelectObject(&pen);
+					DrawPathTracks(&metaFileDC);
+					metaFileDC.SelectObject(pOldPen);
+					pen.DeleteObject();
+					HENHMETAFILE HEnHMetaFile = metaFileDC.CloseEnhanced();
+					UINT size = GetEnhMetaFileHeader(HEnHMetaFile, 0, NULL);
+					ENHMETAHEADER *emHeader = (ENHMETAHEADER *)malloc(size);
+					GetEnhMetaFileHeader(HEnHMetaFile, size, emHeader);
+					RECTL BoundsRect = emHeader->rclBounds; // 边界矩形
+					free(emHeader);
+					CRect paintRect;
+					paintRect.left = BoundsRect.left + final_x_offset;
+					paintRect.right = BoundsRect.right + final_x_offset;
+					paintRect.top = BoundsRect.top + final_y_offset;
+					paintRect.bottom = BoundsRect.bottom + final_y_offset;
+					MemDC.PlayMetaFile(HEnHMetaFile, &paintRect);
+					DeleteEnhMetaFile(HEnHMetaFile);
+				}
+				{
+					// 绘制本务车辆位置信息
 					CBrush brush, *pOldBrush;
 					brush.CreateSolidBrush(RGB(120, 255, 200));
 					pOldBrush = MemDC.SelectObject(&brush);
@@ -252,24 +277,6 @@ void CAirViewDlg::OnPaint()
 					MemDC.Ellipse(nX1, nY1, nX2, nY2);
 					MemDC.SelectObject(pOldBrush);
 					brush.DeleteObject();
-				}
-				{
-					// 绘制AI车辆信息
-					m_startLocation = backUpLocation;
-					m_startLocation.fPointX -= m_mapOffset.fPointX / m_TIMES;
-					m_startLocation.fPointY -= m_mapOffset.fPointY / m_TIMES;
-					CBrush brush, *pOldBrush;
-					brush.CreateSolidBrush(RGB(255, 0, 0));
-					pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
-					pOldBrush = MemDC.SelectObject(&brush);
-					pOldPen = MemDC.SelectObject(&pen);
-					CGdiObject *pObject = MemDC.SelectStockObject(ANSI_FIXED_FONT);
-					MemDC.SetBkMode(TRANSPARENT);
-					DrawAllAITracks(&MemDC);
-					MemDC.SelectObject(pOldPen);
-					MemDC.SelectObject(pOldBrush);
-					brush.DeleteObject();
-					pen.DeleteObject();
 				}
 			}
 			else
