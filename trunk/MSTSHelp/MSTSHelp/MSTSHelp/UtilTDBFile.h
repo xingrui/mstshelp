@@ -5,6 +5,17 @@
 using std::vector;
 struct SVectorNode;
 struct STDBFile;
+#define TRAIN_INFO_MEM 0x809890
+// 火车车头的一些信息值的存放地方
+
+#define HEAD_TRACK_MEM 0x8098DC
+// 车头所在的TrackNode的地址
+
+
+#define TAIL_TRACK_MEM 0x809944
+// 车尾所在的TrackNode的地址
+#define TASK_LIMIT_HEAD_MEM 0x809B38
+const float LONG_DISTANCE = 100000.0;
 struct SVectorSection
 {
 	unsigned short       sectionIndex;//179
@@ -141,6 +152,36 @@ struct SSpeedPostItem
 	float fAngle; // 这个是该标志限速相对于原始坐标系在XZ平面上面旋转的角度
 	DWORD fData;//0
 };
+enum ItemType
+{
+	EmptyOrSignalItem = 0,
+	PickupItem = 2,
+	PlatFormItem = 3,
+	SidingItem = 6,
+	LevelCtItem = 7,
+	SpeedPostItem = 8,
+	SoundRegionItem = 10,
+	CrossOverItem = 11,
+};
+struct SPlatformItem
+{
+	ItemType nType;//3
+	int nTrItemIndexInTrackNode;
+	int nData8;
+	float fLocationInVectorNode; // 该Item在VectorNode当中的位置
+	int   nTrItemSDataSecond;   // TrItemSData的第二个数据
+	float fTrItemRDataFirst;    // 同上面的，顾名思义吧
+	float fTrItemRDataThird;
+	int   nTrItemRDataFourth;
+	int   nTrItemRDataFifth;
+	DWORD data;
+	wchar_t *wcpPlatformName28;      // 指向站台名称
+	wchar_t *wcpStationName2C;       // 指向车站名称
+	DWORD dwPlatformTrItemDataFirst30;
+	int nPlatformAnotherSideIndex34;
+	int nPlatformMinWaitingTime38;
+	int nPlatformNumPassengersWaiting3C;
+};
 struct STrackInfo
 {
 	SVectorNode     *vectorNodePtr;
@@ -227,4 +268,8 @@ struct SSignalItem
 	DWORD dwData2C;
 };
 void GetForwardSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitList, float);
+void GetConnectSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitList, BOOL stationStop, CString &stationName);
+int GetCarriageCount(HANDLE handle, void *pSrvFile);
+float GetConnectDistance(HANDLE m_hTrainProcess, float fDistance);
+CString AddStationItem(float currentDistance, const SVectorNode &node, vector<SForwardLimit>& limitList, HANDLE handle, int nDirection);
 #endif

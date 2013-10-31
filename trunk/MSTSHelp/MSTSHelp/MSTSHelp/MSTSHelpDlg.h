@@ -81,8 +81,8 @@ public:
 	void PrepareDataAndControlTrain(HANDLE hProcess);
 private:
 	void GetTrainData(HANDLE hProcess);
-	BOOL IsTaskMode(HANDLE hProcess);
-	void UpdateScheduleInfo(float &fNextStationDistance);
+	static BOOL IsTaskMode(HANDLE hProcess);
+	bool UpdateScheduleInfo(float &fNextStationDistance);
 	void ShowScheduleInfo(const SSchedule &schedule, float fCurrentTime, float fDistance);
 private:
 	void clearControlList();
@@ -96,7 +96,7 @@ public:
 	static void StopAndPressEnter(void *pThis);
 	static bool GetCurrentSchedule(HANDLE hProcess, SSchedule **pSchedule, SSchedule &schedule);
 	static bool MakePowered(HANDLE hProcess, bool isPowered);
-	static bool lessThan(float a, float b);
+	static float timeMinus(float a, float b);
 private:
 	//Game Data
 	float m_fCurrentSpeed;
@@ -118,8 +118,11 @@ private:
 	SSchedule *m_pCurrentSchedule;
 	SSchedule m_currentSchedule;
 	float m_lastSaveTime;
+	int m_carriage_count;
 public:
 	bool m_bInStopThread;
+	void *m_last_vectorNodePtr;
+	int m_last_nSignalItemIndexInTrackNode8;
 private:
 	HANDLE m_hTrainProcess;
 private:
@@ -146,6 +149,9 @@ private:
 	float m_fCurrentPower;
 	BOOL m_isConnectMode;
 	afx_msg void OnIsConnectMode();
+	BOOL m_station_stop;
+	CString m_station_name;
+	BOOL m_bDownFloatLimit;
 };
 
 #define CHECK(A) if(!A){CLogger::Log("Read Memory Failed in %s line:%d", __FUNCTION__, __LINE__);}
