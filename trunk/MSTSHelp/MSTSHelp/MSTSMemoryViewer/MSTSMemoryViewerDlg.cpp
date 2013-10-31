@@ -86,10 +86,28 @@ HCURSOR CMSTSMemoryViewerDlg::OnQueryDragIcon()
 	return static_cast<HCURSOR>(m_hIcon);
 }
 
+int GetCarriageCount(HANDLE handle, void *pSrvFile)
+{
+	int carriage_count = 0;
+	SNode *head;
+	SNode iteNode;
+	ReadTrainProcess(handle, (char *)pSrvFile + 0x12C, &head, 4);
+	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
+
+	while (iteNode.next != head)
+	{
+		SNode *next = iteNode.next;
+		ReadTrainProcess(handle, next, &iteNode, sizeof(SNode));
+		++carriage_count;
+	}
+
+	return carriage_count;
+}
 CString AITrainHandle(HANDLE handle, void *pointer)
 {
 	size_t pWagFile;
 	wchar_t name[0x20];
+	int carriage_count = GetCarriageCount(handle, pointer);
 	ReadTrainProcess(handle, (char *)pointer + 0x11C, &pWagFile, 4);
 	ReadTrainProcess(handle, (LPCVOID)(pWagFile + 8), name, 0x40);
 	size_t pVectorNode;
@@ -99,11 +117,12 @@ CString AITrainHandle(HANDLE handle, void *pointer)
 	ReadTrainProcess(handle, (char *)pointer + 0x10, &pWCTrain_Config, 4);
 	ReadTrainProcess(handle, (LPCVOID)pWCTrain_Config, trainTrips, 0x40);
 	CString result;
-	result.Format(L"0x%X %s %s\r\n", pVectorNode, name, trainTrips);
+	result.Format(L"0x%X %s %s carriage_count:%d\r\n", pVectorNode, name, trainTrips, carriage_count);
 
 	if (pVectorNode == NULL)
 	{
 		return CString();
+		//return result;
 	}
 	else
 	{
@@ -119,7 +138,7 @@ CString CarriageHandle(HANDLE handle, void *pointer)
 	SWagFile wagFile;
 	ReadTrainProcess(handle, (LPCVOID)((size_t)pointer + 0x10), &mem, 4);
 	ReadTrainProcess(handle, (LPCVOID)(mem + 0x94), &wagFilePtr, 4);
-	result.Format(L"0x%08X 0x%08X Wag File Pointer : 0x%08X\r\n", pointer, mem, wagFilePtr);
+	result.Format(L"SCarriageInVectorNode:0x%08X SCarriage:0x%08X Wag File Pointer : 0x%08X\r\n", pointer, mem, wagFilePtr);
 	ReadTrainProcess(handle, (LPCVOID)wagFilePtr, &wagFile, sizeof(SWagFile));
 	/*for(int i = 0; i < sizeof(SWagFile); i += 4)
 	{
@@ -239,6 +258,27 @@ CString GetStringMap(HANDLE handle)
 	return strResult;
 }
 
+CString NewHandle(HANDLE handle, void *pointer)
+{
+	CString result;
+	SCarriageInTrackNode carriageInTrackNode;
+	int tmp;
+	ReadTrainProcess(handle, (char *)pointer, &carriageInTrackNode, sizeof(carriageInTrackNode));
+	ReadTrainProcess(handle, (char *)carriageInTrackNode.pCarriage10 + 0x98, &tmp, sizeof(tmp));
+	SWagFile *wagFilePtr;
+	SWagFile wagFile;
+	ReadTrainProcess(handle, (LPCVOID)((char *)carriageInTrackNode.pCarriage10 + 0x94), &wagFilePtr, 4);
+	ReadTrainProcess(handle, (LPCVOID)wagFilePtr, &wagFile, sizeof(SWagFile));
+	float carriageSize;
+	ReadPointerMemory(handle, (char *)carriageInTrackNode.pCarriage10 + 0x94, &carriageSize, sizeof(carriageSize),
+	                  1, 0x400);
+	result.Format(L"content:location:%f, train:0x%x, 0x%X, %s\r\n", carriageInTrackNode.fLocationInVectorNode4,
+	              tmp, carriageInTrackNode.pCarriage10, wagFile.nameExceptExtendedName8);
+	result.AppendFormat(L"carriage length:%f\r\n", carriageSize);
+	//result.AppendFormat(L"x:%f, y:%f, z:%f\r\n", location.x, location.y, location.z);
+	return result;
+}
+
 void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 {
 	// TODO: 在此添加控件通知处理程序代码
@@ -271,13 +311,23 @@ void CMSTSMemoryViewerDlg::OnBnClickedButton1()
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)0x8099B0, &mem, 4);
 		ReadTrainProcess(m_hTrainProcess, (LPCVOID)(mem + 8), tailName, 200);
 		m_textContent.Format(L"headName : %s\r\ntailName : %s\r\n", headName, tailName);
-		//m_textContent += showAllCarriage(m_hTrainProcess);
+		m_textContent += showAllCarriage(m_hTrainProcess);
+		int carriage_count = GetCarriageCount(m_hTrainProcess, (LPVOID)0x809890);
+		m_textContent.AppendFormat(L"current train carriage count:%d\r\n", carriage_count);
 		m_textContent += showAllAITrain(m_hTrainProcess);
 		//m_textContent += showAllTaskLimit(m_hTrainProcess);
 		//m_textContent += showContentIn80A038(m_hTrainProcess);
 		//m_textContent = showWagEngConFiles(m_hTrainProcess);
 		void *InputMem = NULL;
 		swscanf_s(m_strDBListHead, L"%x", &InputMem);
+		STrackInfo headInfo;
+		ReadTrainProcess(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
+		m_textContent += IteratorList(m_hTrainProcess, (char *)headInfo.vectorNodePtr + 44, NewHandle);
+		//float carriageSize;
+		//ReadPointerMemory(m_hTrainProcess, (char *)0x809810 + 0x80 + 0x11C, &carriageSize, sizeof(carriageSize),
+		//                  1, 0x400);
+		//m_textContent.AppendFormat(L"current location:%lf carriageSize:%lf\r\n",
+		//                           headInfo.fLocationInNode, carriageSize);
 
 		if (InputMem != NULL)
 			m_textContent = IteratorList(m_hTrainProcess, (LPVOID)InputMem, DefaultHandle);
