@@ -10,7 +10,6 @@
 using std::set;
 using std::queue;
 // CAirViewDlg ¶Ô»°¿ò
-extern int TIMES;
 struct SLocation
 {
 	double fPointX;
@@ -67,6 +66,7 @@ protected:
 	HENHMETAFILE m_EnhMetaFile;
 	CPoint m_startPoint;
 	bool m_in_drag;
+	int m_TIMES;
 
 	void InitSavedData()
 	{
