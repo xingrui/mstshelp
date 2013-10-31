@@ -14,7 +14,8 @@ string CLogger::s_logFile;
 
 void CLogger::Log(char *format, ...)
 {
-	/*FILE *fp;
+#ifdef PRINT_LOG
+	FILE *fp;
 
 	if (s_logFile.empty())
 	{
@@ -35,5 +36,6 @@ void CLogger::Log(char *format, ...)
 	char buffer[100];
 	ctime_s(buffer, 100, &t2);
 	fprintf(fp, " %s", buffer);
-	fclose(fp);*/
+	fclose(fp);
+#endif
 }
