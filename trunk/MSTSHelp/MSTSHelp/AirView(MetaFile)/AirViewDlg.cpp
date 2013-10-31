@@ -12,7 +12,6 @@
 #define new DEBUG_NEW
 #endif
 
-int TIMES = 5;
 
 // CAirViewDlg 对话框
 
@@ -79,6 +78,7 @@ BOOL CAirViewDlg::OnInitDialog()
 	m_in_drag = false;
 	m_mapOffset.fPointX = 0;
 	m_mapOffset.fPointY = 0;
+	m_TIMES = 5;
 	InitSavedData();
 	m_savedData.pTrackSectionArray = new STrackSection[0x10000];
 	SetTimer(0, 200, NULL);
@@ -201,19 +201,19 @@ void CAirViewDlg::OnPaint()
 			{
 				// 将SetWindowExt放在这里而不是放在SetPaintMode中
 				// 是因为如果放在前面会有TIMES与metafile中的TIMES对不上 图形大小不对的问题
-				MemDC.SetWindowExt((int)(m_fMapSize * TIMES), -(int)(m_fMapSize * TIMES));
+				MemDC.SetWindowExt((int)(m_fMapSize * m_TIMES), -(int)(m_fMapSize * m_TIMES));
 				ReadTrainProcess(m_hTrainProcess, (LPCVOID)HEAD_TRACK_MEM, (LPVOID)&m_currentHeadInfo, sizeof(STrackInfo));
-				SVectorNode vectorNode;
-				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&vectorNode, sizeof(SVectorNode));
+				SVectorNode currentVectorNode;
+				ReadTrainProcess(m_hTrainProcess, (LPCVOID)m_currentHeadInfo.pVectorNode, (LPVOID)&currentVectorNode, sizeof(SVectorNode));
 				float fDistance = m_currentHeadInfo.fLocationInNode;
-				CalculateCurrentLocation(vectorNode, fDistance, m_hTrainProcess);
-				int dx = (int)((m_BaseLocation.fPointX - m_startLocation.fPointX) * TIMES);
-				int dy = (int)((m_BaseLocation.fPointY - m_startLocation.fPointY) * TIMES);
+				CalculateCurrentLocation(currentVectorNode, fDistance, m_hTrainProcess);
+				int dx = (int)((m_BaseLocation.fPointX - m_startLocation.fPointX) * m_TIMES);
+				int dy = (int)((m_BaseLocation.fPointY - m_startLocation.fPointY) * m_TIMES);
 				CRect paintRect;
-				paintRect.left = m_BoundsRect.left + dx + m_mapOffset.fPointX;
-				paintRect.right = m_BoundsRect.right + dx + m_mapOffset.fPointX;
-				paintRect.top = m_BoundsRect.top + dy + m_mapOffset.fPointY;
-				paintRect.bottom = m_BoundsRect.bottom + dy + m_mapOffset.fPointY;
+				paintRect.left = m_BoundsRect.left + dx + (LONG)m_mapOffset.fPointX;
+				paintRect.right = m_BoundsRect.right + dx + (LONG)m_mapOffset.fPointX;
+				paintRect.top = m_BoundsRect.top + dy + (LONG)m_mapOffset.fPointY;
+				paintRect.bottom = m_BoundsRect.bottom + dy + (LONG)m_mapOffset.fPointY;
 				MemDC.PlayMetaFile(m_EnhMetaFile, &paintRect);
 				// 绘制绿色路径
 				SLocation backUpLocation = m_startLocation;
@@ -231,10 +231,10 @@ void CAirViewDlg::OnPaint()
 				GetEnhMetaFileHeader(HEnHMetaFile, size, emHeader);
 				RECTL BoundsRect = emHeader->rclBounds; // 边界矩形
 				free(emHeader);
-				paintRect.left = BoundsRect.left + dx + m_mapOffset.fPointX;
-				paintRect.right = BoundsRect.right + dx + m_mapOffset.fPointX;
-				paintRect.top = BoundsRect.top + dy + m_mapOffset.fPointY;
-				paintRect.bottom = BoundsRect.bottom + dy + m_mapOffset.fPointY;
+				paintRect.left = BoundsRect.left + dx + (LONG)m_mapOffset.fPointX;
+				paintRect.right = BoundsRect.right + dx + (LONG)m_mapOffset.fPointX;
+				paintRect.top = BoundsRect.top + dy + (LONG)m_mapOffset.fPointY;
+				paintRect.bottom = BoundsRect.bottom + dy + (LONG)m_mapOffset.fPointY;
 				MemDC.PlayMetaFile(HEnHMetaFile, &paintRect);
 				DeleteEnhMetaFile(HEnHMetaFile);
 				{
@@ -242,13 +242,13 @@ void CAirViewDlg::OnPaint()
 					CBrush brush, *pOldBrush;
 					brush.CreateSolidBrush(RGB(120, 255, 200));
 					pOldBrush = MemDC.SelectObject(&brush);
-					float fCurrentX = m_mapOffset.fPointX / TIMES;
-					float fCurrentY = m_mapOffset.fPointY / TIMES;
+					double fCurrentX = m_mapOffset.fPointX / m_TIMES;
+					double fCurrentY = m_mapOffset.fPointY / m_TIMES;
 					float fEllipse = 5 * m_fMapSize / nHeight;
-					int nX1 = (int)((fCurrentX - fEllipse) * TIMES);
-					int nY1 = (int)((fCurrentY - fEllipse) * TIMES);
-					int nX2 = (int)((fCurrentX + fEllipse) * TIMES);
-					int nY2 = (int)((fCurrentY + fEllipse) * TIMES);
+					int nX1 = (int)((fCurrentX - fEllipse) * m_TIMES);
+					int nY1 = (int)((fCurrentY - fEllipse) * m_TIMES);
+					int nX2 = (int)((fCurrentX + fEllipse) * m_TIMES);
+					int nY2 = (int)((fCurrentY + fEllipse) * m_TIMES);
 					MemDC.Ellipse(nX1, nY1, nX2, nY2);
 					MemDC.SelectObject(pOldBrush);
 					brush.DeleteObject();
@@ -256,8 +256,8 @@ void CAirViewDlg::OnPaint()
 				{
 					// 绘制AI车辆信息
 					m_startLocation = backUpLocation;
-					m_startLocation.fPointX -= m_mapOffset.fPointX / TIMES;
-					m_startLocation.fPointY -= m_mapOffset.fPointY / TIMES;
+					m_startLocation.fPointX -= m_mapOffset.fPointX / m_TIMES;
+					m_startLocation.fPointY -= m_mapOffset.fPointY / m_TIMES;
 					CBrush brush, *pOldBrush;
 					brush.CreateSolidBrush(RGB(255, 0, 0));
 					pen.CreatePen(PS_SOLID, 1, RGB(255, 0, 0));
@@ -297,26 +297,26 @@ HCURSOR CAirViewDlg::OnQueryDragIcon()
 }
 void CAirViewDlg::DrawArc(CDC *pDC, double x1, double y1, double x2, double y2, double x3, double y3, double x4, double y4)
 {
-	int nX1 = (int)(TIMES * x1);
-	int nY1 = (int)(TIMES * y1);
-	int nX2 = (int)(TIMES * x2);
-	int nY2 = (int)(TIMES * y2);
-	int nX3 = (int)(TIMES * x3);
-	int nY3 = (int)(TIMES * y3);
-	int nX4 = (int)(TIMES * x4);
-	int nY4 = (int)(TIMES * y4);
+	int nX1 = (int)(m_TIMES * x1);
+	int nY1 = (int)(m_TIMES * y1);
+	int nX2 = (int)(m_TIMES * x2);
+	int nY2 = (int)(m_TIMES * y2);
+	int nX3 = (int)(m_TIMES * x3);
+	int nY3 = (int)(m_TIMES * y3);
+	int nX4 = (int)(m_TIMES * x4);
+	int nY4 = (int)(m_TIMES * y4);
 	pDC->Arc(nX1, nY1 , nX2, nY2, nX3, nY3, nX4, nY4);
 }
 void CAirViewDlg::DrawMoveTo(CDC *pDC, double x1, double y1)
 {
-	int nX1 = (int)(TIMES * x1);
-	int nY1 = (int)(TIMES * y1);
+	int nX1 = (int)(m_TIMES * x1);
+	int nY1 = (int)(m_TIMES * y1);
 	pDC->MoveTo(nX1, nY1);
 }
 void CAirViewDlg::DrawLineTo(CDC *pDC, double x1, double y1)
 {
-	int nX1 = (int)(TIMES * x1);
-	int nY1 = (int)(TIMES * y1);
+	int nX1 = (int)(m_TIMES * x1);
+	int nY1 = (int)(m_TIMES * y1);
 	pDC->LineTo(nX1, nY1);
 }
 // 绘制比例尺
@@ -572,10 +572,10 @@ void CAirViewDlg::DrawPointInVectorNode(CDC *pDC, const SVectorNode &node, HANDL
 			CRect rect;
 			GetClientRect(&rect);
 			float fEllipse = 5 * m_fMapSize / rect.Height();
-			int nX1 = (int)((fCurrentX - fEllipse) * TIMES);
-			int nY1 = (int)((fCurrentY - fEllipse) * TIMES);
-			int nX2 = (int)((fCurrentX + fEllipse) * TIMES);
-			int nY2 = (int)((fCurrentY + fEllipse) * TIMES);
+			int nX1 = (int)((fCurrentX - fEllipse) * m_TIMES);
+			int nY1 = (int)((fCurrentY - fEllipse) * m_TIMES);
+			int nX2 = (int)((fCurrentX + fEllipse) * m_TIMES);
+			int nY2 = (int)((fCurrentY + fEllipse) * m_TIMES);
 			pDC->Ellipse(nX1, nY1, nX2, nY2);
 			pDC->TextOut(nX2, nY2, strName);
 			break;
@@ -850,9 +850,9 @@ void CAirViewDlg::GetMetaFileHandleByTDBFile()
 		n >>= 1;
 	}
 
-	TIMES = 1 << (19 - index);
+	m_TIMES = 1 << (19 - index);
 
-	if (TIMES < 4)
+	if (m_TIMES < 4)
 		throw 1;
 
 	CMetaFileDC dc;
@@ -1142,8 +1142,8 @@ void CAirViewDlg::OnMouseMove(UINT nFlags, CPoint point)
 		int nHeight = clientRect.Height();
 		int x_move = point.x - m_startPoint.x;
 		int y_move = point.y - m_startPoint.y;
-		m_mapOffset.fPointX = m_oldOffset.fPointX + x_move * m_fMapSize / clientRect.bottom * TIMES;
-		m_mapOffset.fPointY = m_oldOffset.fPointY - y_move * m_fMapSize / clientRect.bottom * TIMES;
+		m_mapOffset.fPointX = m_oldOffset.fPointX + x_move * m_fMapSize / clientRect.bottom * m_TIMES;
+		m_mapOffset.fPointY = m_oldOffset.fPointY - y_move * m_fMapSize / clientRect.bottom * m_TIMES;
 		UpdateData(false);
 		Invalidate();
 	}
