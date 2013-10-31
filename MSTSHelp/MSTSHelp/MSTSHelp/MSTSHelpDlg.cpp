@@ -30,6 +30,9 @@ CMSTSHelpDlg::CMSTSHelpDlg(CWnd *pParent /*=NULL*/)
 	, m_strManualLimit(_T(""))
 	, m_bAutoSave(FALSE)
 	, m_isConnectMode(FALSE)
+	, m_station_stop(FALSE)
+	, m_station_name(_T(""))
+	, m_bDownFloatLimit(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -47,6 +50,9 @@ void CMSTSHelpDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Check(pDX, IDC_CHECK7, m_bAutoSave);
 	DDX_Text(pDX, IDC_EDIT3, m_strManualLimit);
 	DDX_Check(pDX, IDC_CHECK8, m_isConnectMode);
+	DDX_Check(pDX, IDC_CHECK9, m_station_stop);
+	DDX_Text(pDX, IDC_EDIT1, m_station_name);
+	DDX_Check(pDX, IDC_CHECK10, m_bDownFloatLimit);
 }
 
 BEGIN_MESSAGE_MAP(CMSTSHelpDlg, CDialog)
@@ -82,6 +88,7 @@ BOOL CMSTSHelpDlg::OnInitDialog()
 	//初始化游戏时间
 	m_fGameTime = -1;
 	m_lastSaveTime = -1;
+	m_carriage_count = 0;
 	//初始化显示列表
 	initControlList();
 	UpdateData(false);
@@ -89,6 +96,9 @@ BOOL CMSTSHelpDlg::OnInitDialog()
 	m_hTrainProcess = NULL;
 	m_bInStopThread = false;
 	m_bIsProcessing = false;
+	m_last_vectorNodePtr = NULL;
+	m_last_nSignalItemIndexInTrackNode8 = 0;
+	m_bDownFloatLimit = FALSE;
 	return TRUE;  // 除非将焦点设置到控件，否则返回 TRUE
 }
 
@@ -151,6 +161,23 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 {
 	UpdateData();
 
+	if (m_bTopMost)
+	{
+		CWnd *train_wnd = FindWindow(L"TrainSim", NULL);
+
+		if (NULL != train_wnd)
+		{
+			WINDOWPLACEMENT placement;
+			train_wnd->GetWindowPlacement(&placement);
+
+			if (placement.showCmd != SW_SHOWMINIMIZED)
+			{
+				train_wnd->BringWindowToTop();
+				train_wnd->SetForegroundWindow();
+			}
+		}
+	}
+
 	if (!GetTrainHandle(m_hTrainProcess))
 	{
 		//获取不到MSTS进程,m_hTrainProcess会被自动置空，因为传递的是一个引用
@@ -209,28 +236,121 @@ void CMSTSHelpDlg::OnBnClickedButton1()
 		if (!m_bIsProcessing)
 		{
 			m_bIsProcessing = true;
-			m_vectLimit.clear();
-			float fTrainBreak;
-			ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&fTrainBreak, 4, 4, 0, 0x8, 0x10, 0x442);
-
-			if (fTrainBreak != 0)
-				PressKeyToTrainWnd(VK_OEM_4);
-
-			if (m_fCurrentSpeedLimit == 0 || m_cColor1 == 8 && m_cColor2 == 8)
+			__try
 			{
-				//限速为0，或者白灯无码
-				if (m_fCurrentSpeed > 1E-3 || m_fCurrentSpeed < -1E-3)
+				m_vectLimit.clear();
+				float fTrainBreak;
+				ReadPointerMemory(m_hTrainProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&fTrainBreak, 4, 4, 0, 0x8, 0x10, 0x442);
+
+				if (fTrainBreak != 0)
 				{
-					m_bInStopThread = true;
-					_beginthread(StopAndPressEnter, NULL, this);
+					PressKeyToTrainWnd(VK_OEM_4);
+				}
+
+				if (m_fCurrentSpeedLimit == 0)
+				{
+					//限速为0
+					// 此处删除了白灯无码，因为已经添加了铁轨末端自动停车的方法
+					if (m_fCurrentSpeed > 1E-3 || m_fCurrentSpeed < -1E-3)
+					{
+						m_bInStopThread = true;
+						_beginthread(StopAndPressEnter, NULL, this);
+					}
+				}
+				else{
+					HWND hWnd = ::FindWindow(L"TrainSim", NULL);
+					HWND hForeGroundWindow = ::GetForegroundWindow();
+
+					// 如果当前窗口不是MSTS，那么就不进行任何操作
+					if (hWnd != hForeGroundWindow)
+					{
+						return;
+					}
+
+					if (m_isConnectMode)
+					{
+						int carriage_count = GetCarriageCount(m_hTrainProcess, (LPVOID)TRAIN_INFO_MEM);
+
+						if (0 == m_carriage_count)
+						{
+							m_carriage_count = carriage_count;
+						}
+						else if (carriage_count != m_carriage_count)
+						{
+							m_isConnectMode = FALSE;
+							m_bAutoDrive = FALSE;
+							UpdateData(FALSE);
+							float fZero = 0;
+							WritePointerMemory(m_hTrainProcess, (LPVOID)POWER_INFO_MEM, &fZero, 4, 1, 0x8C);
+
+							for (int i = 0; i < 10; ++i)
+							{
+								ApplyBreak();
+								Sleep(100);
+							}
+
+							return;
+						}
+
+						if (0 == m_fForwardSignalLimit)
+						{
+							void *vectorNodePtr;
+							int nSignalItemIndexInTrackNode8;
+							CHECK(ReadTrainProcess(m_hTrainProcess, (void *)0x809AC4, (LPVOID)&vectorNodePtr, 4))
+							CHECK(ReadTrainProcess(m_hTrainProcess, (void *)0x809ACC, (LPVOID)&nSignalItemIndexInTrackNode8, 4))
+
+							if (m_last_vectorNodePtr != vectorNodePtr || m_last_nSignalItemIndexInTrackNode8 != nSignalItemIndexInTrackNode8)
+							{
+								m_last_vectorNodePtr = vectorNodePtr;
+								m_last_nSignalItemIndexInTrackNode8 = nSignalItemIndexInTrackNode8;
+								PressKeyToTrainWnd(VK_TAB);
+							}
+							else
+							{
+								if (m_sGameTime.m_nSecond % 6 == 0)
+								{
+									PressKeyToTrainWnd(VK_TAB);
+								}
+
+								float distance = m_fForwardSignalDistance - 40;
+
+								if (distance < 0)
+								{
+									distance = 0;
+								}
+
+								m_vectLimit.push_back(SForwardLimit(distance, 0));
+							}
+						}
+						else if (m_fForwardSignalLimit > 0 && m_fForwardSignalDistance != 0)
+						{
+							SForwardLimit limit;
+							limit.m_fDistance = m_fForwardSignalDistance;
+							limit.m_fSpeedLimit = m_fForwardSignalLimit;
+							m_vectLimit.push_back(limit);
+						}
+
+						GetConnectSpeedLimit(m_hTrainProcess, m_vectLimit, m_station_stop, m_station_name);
+						UpdateData(FALSE);
+						AutoConnectTrain(m_hTrainProcess);
+						return;
+					}
+
+					if (IsTaskMode(m_hTrainProcess))
+					{
+						AutoDriveTask(m_hTrainProcess);
+					}
+					else
+					{
+						AutoDrive(m_hTrainProcess);
+					}
+
 				}
 			}
-			else if (IsTaskMode(m_hTrainProcess))
-				AutoDriveTask(m_hTrainProcess);
-			else
-				AutoDrive(m_hTrainProcess);
-
-			m_bIsProcessing = false;
+			__finally
+			{
+				m_bIsProcessing = false;
+			}
 		}
 	}
 }
@@ -301,6 +421,9 @@ void CMSTSHelpDlg::clearControlList()
 	{
 		m_listCtrl.SetItemText(i, 1, L"");
 	}
+
+	m_station_name.Empty();
+	UpdateData(FALSE);
 }
 void CMSTSHelpDlg::initControlList()
 {
@@ -358,15 +481,17 @@ void CMSTSHelpDlg::StopAndPressEnter(void *pThis)
 	for ( int i = 0; i < 14; ++i)
 	{
 		SSchedule schedule;
-		Sleep(500);
 
-		if (GetCurrentSchedule(pDlg->m_hTrainProcess, NULL, schedule))
-		{
-			if (schedule.m_fActualArrivalTime == 0)
-				PressKeyToTrainWnd(VK_RETURN);
-			else
-				break;
-		}
+		// 不是任务模式(或者是任务模式 没有前方到站信息) 退出循环
+		if (!GetCurrentSchedule(pDlg->m_hTrainProcess, NULL, schedule))
+			break;
+
+		// 列车已经到站 退出循环
+		if (schedule.m_fActualArrivalTime != 0)
+			break;
+
+		PressKeyToTrainWnd(VK_RETURN);
+		Sleep(500);
 	}
 
 	pDlg->m_bInStopThread = false;
@@ -379,6 +504,17 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 {
 	CString str;
 	float fCalculatedSpeedLimit = m_fCurrentSpeedLimit;
+
+	if (m_bDownFloatLimit)
+	{
+		fCalculatedSpeedLimit -= 0.3f;
+	}
+
+	if (fCalculatedSpeedLimit < 0)
+	{
+		fCalculatedSpeedLimit = 0;
+	}
+
 	vector<SForwardLimit>::iterator ite = m_vectLimit.begin();
 	bool bInBreaking = false;
 
@@ -432,7 +568,7 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 	if (fCalculatedSpeedLimit * 3.6 > fManualSpeedLimit)
 		fCalculatedSpeedLimit = fManualSpeedLimit / 3.6F;
 
-	str.Format(L"%.1f", fCalculatedSpeedLimit * 3.6F);
+	str.Format(L"%.3f", fCalculatedSpeedLimit * 3.6F);
 	m_listCtrl.SetItemText(CALCULATED_SPEED_LIMIT, 1, str);
 
 	//根据当前速度和算出来的限速速度调整功率和制动的值
@@ -457,10 +593,9 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 			}
 		}
 
-		float fZero = 0;
-
 		if (m_fCurrentSpeed > fCalculatedSpeedLimit + 2 / 3.6f)
 		{
+			float fZero = 0;
 			WritePointerMemory(m_hTrainProcess, (LPVOID)POWER_INFO_MEM, &fZero, 4, 1, 0x8C);
 		}
 
@@ -611,15 +746,15 @@ CString  CMSTSHelpDlg::changeLocoTypeToString(Locomotive loco)
 	return strLocoType;
 }
 
-bool CMSTSHelpDlg::lessThan(float a, float b)
+float CMSTSHelpDlg::timeMinus(float a, float b)
 {
 	float result = a - b;
 
 	if (result < -12 * 3600)
-		return false;
+		return result + 24 * 3600;
 	else if (result > 12 * 3600)
-		return true;
-	else return result < 0;
+		return result - 24 * 3600;
+	else return result;
 }
 
 void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
@@ -631,10 +766,19 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	CHECK(ReadTrainProcess(hProcess, (void *)CUR_SPEED_MEM, (LPVOID)&m_fCurrentSpeed, 4))
 	CHECK(ReadTrainProcess(hProcess, (void *)SPEED_LIMIT_MEM, (LPVOID)&m_fCurrentSpeedLimit, 4))
 	BOOL bIsInTaskLimit;
-	ReadTrainProcess(hProcess, (void *)0x809AAC, (LPVOID)&bIsInTaskLimit, 4);
+	CHECK(ReadTrainProcess(hProcess, (void *)0x809AAC, (LPVOID)&bIsInTaskLimit, 4))
 	m_fCurrentSpeedLimit = bIsInTaskLimit ? m_fTaskTempSpeedLimit : m_fCurrentSpeedLimit;
 	CHECK(ReadTrainProcess(hProcess, (void *)FOWARD_LIMIT_MEM, (LPVOID)&m_fForwardSignalLimit, 4))
 	CHECK(ReadTrainProcess(hProcess, (void *)SIG_DISTANT_MEM, (LPVOID)&m_fForwardSignalDistance, 4))
+	void *signal_pointer;
+	CHECK(ReadTrainProcess(hProcess, (void *)0x809AC4, (LPVOID)&signal_pointer, 4))
+
+	if (NULL == signal_pointer)
+	{
+		// 没有前方信号 为了方便处理，直接将前方信号灯限速置为-1
+		m_fForwardSignalLimit = -1;
+	}
+
 	CHECK(ReadTrainProcess(hProcess, (void *)S_GAME_TIME_MEM, (LPVOID)&m_sGameTime, 12))
 	CHECK(ReadTrainProcess(hProcess, (void *)F_GAME_TIME_MEM, (LPVOID)&m_fGameTime, 4));
 	CString strTime;
@@ -649,9 +793,9 @@ void CMSTSHelpDlg::GetTrainData(HANDLE hProcess)
 	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&m_fBreakNum, 4, 4, 0, 0x8, 0x10, 0x24C))
 	CHECK(ReadPointerMemory(hProcess, (LPCVOID)BREAK_INFO_MEM, (LPVOID)&nLevelBit, 4, 4, 0, 0x8, 0x10, 0x248))
 	CString str;
-	str.Format(L"%.1f", m_fCurrentSpeed * 3.6F);
+	str.Format(L"%.3f", m_fCurrentSpeed * 3.6F);
 	m_listCtrl.SetItemText(CURRENT_SPEED_ITEM, 1, str);
-	str.Format(L"%.1f", m_fCurrentSpeedLimit * 3.6F);
+	str.Format(L"%.3f", m_fCurrentSpeedLimit * 3.6F);
 	m_listCtrl.SetItemText(CURRENT_LIMIT_ITEM, 1, str);
 	str.Format(L"%.1f", m_fForwardSignalDistance);
 	m_listCtrl.SetItemText(SIGNAL_DISTANCE_ITEM, 1, str);
@@ -711,13 +855,13 @@ void CMSTSHelpDlg::ShowScheduleInfo(const SSchedule &schedule, float fCurrentTim
 {
 	CString str;
 	wchar_t stationName[30];
-	ReadPointerMemory(m_hTrainProcess, (LPCVOID)TR_ITEM_ARRAY_MEM, stationName, 30, 6, 0xC, 0x20, 0, 4 * schedule.m_nPlatformStartID, 0x28, 0);
+	CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)TR_ITEM_ARRAY_MEM, stationName, 30, 6, 0xC, 0x20, 0, 4 * schedule.m_nPlatformStartID, 0x28, 0))
 	m_listCtrl.SetItemText(FOWARD_STATION_NAME, 1, stationName);
 
 	if (schedule.m_fActualArrivalTime != 0)
-		str.Format(L"%.1f 秒后出发", schedule.m_fDepartTime - fCurrentTime);
+		str.Format(L"%.1f 秒后出发", timeMinus(schedule.m_fDepartTime, fCurrentTime));
 	else
-		str.Format(L"%.0f米 %.1f秒", fDistance, schedule.m_fArrivalTime - fCurrentTime);
+		str.Format(L"%.0f米 %.1f秒", fDistance, timeMinus(schedule.m_fArrivalTime, fCurrentTime));
 
 	m_listCtrl.SetItemText(SCHEDULE_INFO_ITEM, 1, str);
 }
@@ -819,11 +963,13 @@ bool CMSTSHelpDlg::MakePowered(HANDLE hProcess, bool bIsPowered)
 	return false;
 }
 
-void CMSTSHelpDlg::UpdateScheduleInfo(float &fNextStationDistance)
+bool CMSTSHelpDlg::UpdateScheduleInfo(float &fNextStationDistance)
 {
 	SSchedule schedule;
 	SSchedule *pSchedule;
-	GetCurrentSchedule(m_hTrainProcess, &pSchedule, schedule);
+
+	if (!GetCurrentSchedule(m_hTrainProcess, &pSchedule, schedule))
+		return false;
 
 	if (NULL == m_pCurrentSchedule)
 	{
@@ -840,7 +986,7 @@ void CMSTSHelpDlg::UpdateScheduleInfo(float &fNextStationDistance)
 	else
 	{
 		//时刻表发生了变化，需要考虑是否使用新的时刻表
-		if (lessThan(m_currentSchedule.m_fDepartTime, m_fGameTime))
+		if (timeMinus(m_currentSchedule.m_fDepartTime, m_fGameTime) < 0)
 		{
 			//当前时刻表出发时间已过
 			if (m_currentSchedule.m_fActualArrivalTime != 0)
@@ -862,6 +1008,8 @@ void CMSTSHelpDlg::UpdateScheduleInfo(float &fNextStationDistance)
 			fNextStationDistance = 0;
 		}
 	}
+
+	return true;
 }
 
 void CMSTSHelpDlg::PrepareDataAndControlTrain(HANDLE hProcess)
@@ -922,106 +1070,134 @@ void CMSTSHelpDlg::PrepareDataAndControlTrain(HANDLE hProcess)
 	}
 
 	GetForwardSpeedLimit(m_hTrainProcess, m_vectLimit, m_fTaskTempSpeedLimit);
+
+	if (m_bDownFloatLimit)
+	{
+		for (size_t i = 0; i < m_vectLimit.size(); ++i)
+		{
+			if (m_vectLimit[i].m_fSpeedLimit > 0.3f)
+			{
+				m_vectLimit[i].m_fSpeedLimit -= 0.3f;
+			}
+		}
+	}
+
 	AdjustPowerAndBreak();
 }
 
 void CMSTSHelpDlg::AutoConnectTrain(HANDLE hProcess)
 {
-	PressKeyToTrainWnd('6');
-	int mode;
-	CHECK(ReadTrainProcess(hProcess, (void *)VIEW_MODE_MEM, (LPVOID)&mode, 4))
+	//GetConnectDistance(hProcess, 1000);
+	//PressKeyToTrainWnd('6');
+	//int mode;
+	//CHECK(ReadTrainProcess(hProcess, (void *)VIEW_MODE_MEM, (LPVOID)&mode, 4))
+	//if (mode == 8)
+	//{
+	float distance = GetConnectDistance(hProcess, 1000);
 
-	if (mode == 8)
+	if (distance < 0)
 	{
-		float distance;
-		CHECK(ReadTrainProcess(hProcess, (void *)CONNECT_DIS_MEM, (LPVOID)&distance, 4))
+		SForwardLimit limit;
+		limit.m_fDistance = 20;
+		limit.m_fSpeedLimit = 1.0;
+		m_vectLimit.push_back(limit);
+	}
+	else
+	{
+		SForwardLimit limit;
 
-		if (distance < 0)
+		if (distance < 10)
 		{
-			SForwardLimit limit;
-			limit.m_fDistance = 20;
-			limit.m_fSpeedLimit = 1.0;
-			m_vectLimit.push_back(limit);
+			limit.m_fDistance = 0;
+		}
+		else if (distance < 60)
+		{
+			limit.m_fDistance = distance  / 2;
+		}
+		else if (distance < 260)
+		{
+			float scale = (distance - 60) / 200;
+			limit.m_fDistance = distance  / (2 - scale);
 		}
 		else
 		{
-			SForwardLimit limit;
-
-			if (distance < 10)
-				limit.m_fDistance = 0;
-			else
-				limit.m_fDistance = distance  / 3;
-
-			limit.m_fSpeedLimit = 1.0;
-			m_vectLimit.push_back(limit);
+			limit.m_fDistance = distance;
 		}
 
-		if (MakePowered(hProcess, true))
-		{
-			// 电源状况发生了变化，需要更新数据
-			return;
-		}
-
-		//此处的代码并没有区分向前和向后的情况，因为想实现向后挂车
-
-		if (m_fCurrentSpeed < 0)
-		{
-			m_fCurrentSpeed = -m_fCurrentSpeed;
-			m_fAcceleration = -m_fAcceleration;
-		}
-
-		AdjustPowerAndBreak();
+		limit.m_fSpeedLimit = 1.0;
+		m_vectLimit.push_back(limit);
 	}
+
+	Direction currentDirection = GetDirection(m_loco, hProcess);
+
+	if (Middle == currentDirection)
+	{
+		changeDirection(hProcess, Forward);
+		// 改变前进方向，此时的列车数据是已经发生了变化，因此继续执行没有什么意义。
+		return;
+	}
+
+	if (MakePowered(hProcess, true))
+	{
+		// 电源状况发生了变化，需要更新数据
+		return;
+	}
+
+	//此处的代码并没有区分向前和向后的情况，因为想实现向后挂车
+
+	if (m_fCurrentSpeed < 0)
+	{
+		m_fCurrentSpeed = -m_fCurrentSpeed;
+		m_fAcceleration = -m_fAcceleration;
+	}
+
+	AdjustPowerAndBreak();
+	//}
 }
 
 void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 {
-	HWND hWnd = ::FindWindow(L"TrainSim", NULL);
-	HWND hForeGroundWindow = ::GetForegroundWindow();
-
-	// 如果当前窗口不是MSTS，那么就不进行任何操作
-	if (hWnd != hForeGroundWindow)
-		return;
-
-	if (m_isConnectMode)
-	{
-		AutoConnectTrain(hProcess);
-		return;
-	}
-
 	///////////////////////////////////////////////////////////////////////////////
 	//如果是任务模式，需要得知前方到站的信息
 	float fNextStationDistance;
 	CHECK(ReadTrainProcess(hProcess, (void *)FOWARD_STATION_DIS_MEM, (LPVOID)&fNextStationDistance, 4))
-	UpdateScheduleInfo(fNextStationDistance);
-	ShowScheduleInfo(m_currentSchedule, m_fGameTime, fNextStationDistance);
-	//在这里根据时刻表直接进行一次筛选
 
-	if (m_currentSchedule.m_fActualArrivalTime == 0)
+	if (UpdateScheduleInfo(fNextStationDistance))
 	{
-		//处理没有到达前方站台的情况
-		SForwardLimit limit;
-		limit.m_fDistance = fNextStationDistance;
-		limit.m_fSpeedLimit = 0;
-		m_vectLimit.push_back(limit);
-	}
-	else if (m_currentSchedule.m_fActualArrivalTime != 0 && lessThan(m_fGameTime, m_currentSchedule.m_fDepartTime))
-	{
-		//处理已经到达站台但还没有到出发时间的情况
-		if (m_fCurrentSpeed > 1E-3)
-			ApplyBreak();
-		else if (m_fCurrentPower != 0)
-			for (int i = 0; i < 10; ++i)
-				PressKeyToTrainWnd('A');
-		else if (m_currentSchedule.m_fDepartTime - m_fGameTime < 20)
-			for (int i = 0; i < 30; ++i)
-				ReleaseBreak();
+		// 是任务模式 而且前方有合法的到站信息
+		ShowScheduleInfo(m_currentSchedule, m_fGameTime, fNextStationDistance);
+		//在这里根据时刻表直接进行一次筛选
 
-		return;
+		if (m_currentSchedule.m_fActualArrivalTime == 0)
+		{
+			//处理没有到达前方站台的情况
+			SForwardLimit limit;
+			limit.m_fDistance = fNextStationDistance;
+			limit.m_fSpeedLimit = 0;
+			m_vectLimit.push_back(limit);
+		}
+		else if (m_currentSchedule.m_fActualArrivalTime != 0 && timeMinus(m_fGameTime, m_currentSchedule.m_fDepartTime) < 0)
+		{
+			//处理已经到达站台但还没有到出发时间的情况
+			if (m_fCurrentSpeed > 1E-3)
+				ApplyBreak();
+			else if (m_fCurrentPower != 0)
+				for (int i = 0; i < 10; ++i)
+					PressKeyToTrainWnd('A');
+			else if (timeMinus(m_currentSchedule.m_fDepartTime, m_fGameTime) < 20)
+				for (int i = 0; i < 30; ++i)
+					ReleaseBreak();
+
+			return;
+		}
+		else
+		{
+			//已经到达站台而且也已经到达出发的时间
+		}
 	}
 	else
 	{
-		//已经到达站台而且也已经到达出发的时间
+		CLogger::Log("task mode but no valid forward station info.");
 	}
 
 	PrepareDataAndControlTrain(hProcess);
@@ -1029,19 +1205,6 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 
 void CMSTSHelpDlg::AutoDrive(HANDLE hProcess)
 {
-	HWND hWnd = ::FindWindow(L"TrainSim", NULL);
-	HWND hForeGroundWindow = ::GetForegroundWindow();
-
-	// 如果当前窗口不是MSTS，那么就不进行任何操作
-	if (hWnd != hForeGroundWindow)
-		return;
-
-	if (m_isConnectMode)
-	{
-		AutoConnectTrain(hProcess);
-		return;
-	}
-
 	PrepareDataAndControlTrain(hProcess);
 }
 
@@ -1079,7 +1242,7 @@ void CMSTSHelpDlg::ReleaseElectricBreak()
 
 		for (int i = 0; i < 20; ++i)
 		{
-			ReadPointerMemory(m_hTrainProcess, (LPCVOID)POWER_INFO_MEM, &fBreak, 4, 1, 0x32C);
+			CHECK(ReadPointerMemory(m_hTrainProcess, (LPCVOID)POWER_INFO_MEM, &fBreak, 4, 1, 0x32C))
 
 			if (fBreak == 0)
 				break;
@@ -1126,6 +1289,11 @@ void CMSTSHelpDlg::OnAutoDriveChanged()
 		m_bAutoGetData = true;
 		UpdateData(false);
 	}
+	else
+	{
+		m_isConnectMode = FALSE;
+		UpdateData(false);
+	}
 }
 
 void CMSTSHelpDlg::OnAutoGetDataChanged()
@@ -1135,6 +1303,7 @@ void CMSTSHelpDlg::OnAutoGetDataChanged()
 	if (m_bAutoDrive)
 	{
 		m_bAutoDrive = false;
+		m_isConnectMode = FALSE;
 		UpdateData(false);
 	}
 }
@@ -1142,15 +1311,14 @@ void CMSTSHelpDlg::OnAutoGetDataChanged()
 void CMSTSHelpDlg::OnTopMostChanged()
 {
 	UpdateData();
-
-	if (m_bTopMost)
+	/*if (m_bTopMost)
 	{
 		SetWindowPos(&wndTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
 	}
 	else
 	{
 		SetWindowPos(&wndNoTopMost, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE);
-	}
+	}*/
 }
 
 void CMSTSHelpDlg::OnAutoAdjustChanged()
@@ -1196,4 +1364,12 @@ void CMSTSHelpDlg::OnIsConnectMode()
 {
 	// TODO: 在此添加控件通知处理程序代码
 	UpdateData();
+
+	if (m_isConnectMode)
+	{
+		m_bAutoDrive = TRUE;
+		m_bAutoGetData = TRUE;
+		UpdateData(FALSE);
+		m_carriage_count = 0;
+	}
 }

@@ -1,14 +1,5 @@
 #include "stdafx.h"
 #include "UtilTDBFile.h"
-#define TRAIN_INFO_MEM 0x809890
-// 火车车头的一些信息值的存放地方
-
-#define HEAD_TRACK_MEM 0x8098DC
-// 车头所在的TrackNode的地址
-
-#define TAIL_TRACK_MEM 0x809944
-// 车尾所在的TrackNode的地址
-#define TASK_LIMIT_HEAD_MEM 0x809B38
 #include <cmath>
 void process_AX(float *fArray, float AX)
 {
@@ -373,7 +364,7 @@ void AddSignalItem(float currentDistance, const SVectorNode &node, vector<SForwa
 						TestAndSetSignalItem(handle, savedSignalItem, savedSignalState.SIGASPF_flags, savedSignalState.fSpeedLimit);
 
 						if (fSavedDistanceToTrackStart + currentDistance - fCarriageLength > 0 && savedSignalState.fSpeedLimit >= 0)
-							limitVect.push_back(SForwardLimit(fSavedDistanceToTrackStart + currentDistance - fCarriageLength  , savedSignalState.fSpeedLimit));
+							limitVect.push_back(SForwardLimit(fSavedDistanceToTrackStart + currentDistance - fCarriageLength, savedSignalState.fSpeedLimit));
 					}
 
 					savedSignalState = signalState;
@@ -391,6 +382,276 @@ void AddSignalItem(float currentDistance, const SVectorNode &node, vector<SForwa
 
 		delete[]memory;
 	}
+}
+struct SCarriageInTrackNode
+{
+	SVectorNode *pVectorNode0; // 所在的TrackNode指针
+	float fLocationInVectorNode4; // 在TrackNode当中的位置
+	void *pEngineOrWagonInConFile8;
+	void *pSrvFileC;
+	void *pCarriage10; // 另一个非常重要的指针，内有制动数据等重要信息
+	int nCarriageMemoryIndex14; // *(*828108 + 8 * nIndexInMemory) == pCarriage10
+	BYTE cDirection18; // 铁轨方向
+	BYTE cData19[3];
+};
+
+int GetCarriageCount(HANDLE handle, void *pSrvFile)
+{
+	int carriage_count = 0;
+	SNode *head;
+	SNode iteNode;
+	ReadTrainProcess(handle, (char *)pSrvFile + 0x12C, &head, 4);
+	ReadTrainProcess(handle, head, &iteNode, sizeof(SNode));
+
+	while (iteNode.next != head)
+	{
+		SNode *next = iteNode.next;
+		ReadTrainProcess(handle, next, &iteNode, sizeof(SNode));
+		++carriage_count;
+	}
+
+	return carriage_count;
+}
+
+float GetConnectDistance(float currentDistance, const SVectorNode &node, HANDLE handle, int nDirection, SVectorNode *nodePtr, void *pTrain)
+{
+	// currentDistance is the location add half carriage.
+	SNode *head = (SNode *)node.pPtr44;
+	SNode ite;
+	float distance = LONG_DISTANCE;
+
+	if (NULL == head)
+	{
+		return distance;
+	}
+
+	ReadTrainProcess(handle, (LPCVOID)head, &ite, sizeof(SNode));
+	float carriageSize;
+
+	while (ite.next != head)
+	{
+		SNode *next = ite.next;
+		ReadTrainProcess(handle, next, &ite, sizeof(SNode));
+		SCarriageInTrackNode carriageInTrackNode;
+		memset(&carriageInTrackNode, '\0', sizeof(carriageInTrackNode));
+		ReadTrainProcess(handle, (char *)ite.pointer, &carriageInTrackNode, sizeof(SCarriageInTrackNode));
+
+		if (carriageInTrackNode.pSrvFileC == (void *)TRAIN_INFO_MEM)
+		{
+			// This carriage is belongs to this train.
+			continue;
+		}
+
+		float distanceToTrackStart = nDirection ? carriageInTrackNode.fLocationInVectorNode4 : node.fTrackNodeLength - carriageInTrackNode.fLocationInVectorNode4;
+		float tmp_distance = distanceToTrackStart + currentDistance;
+		struct SEngineOrWagonInConFile
+		{
+			void *pWagFile0;
+			void *pEngFile4;
+			int nCarriageType8; // 1 Eng 3 Wag
+			int nWagNameHashValueC; // 0
+			int nEngNamehashValue10;
+			wchar_t wcDirectoryName14[0x20];
+			wchar_t wcUnknown54[0x20];
+			wchar_t wcWagonDataFirst94[0x20];
+			wchar_t wcEngineDataFirstD4[0x20];
+		};
+		SEngineOrWagonInConFile engine;
+		ReadTrainProcess(handle, (char *)carriageInTrackNode.pEngineOrWagonInConFile8, &engine, sizeof(engine));
+		void *pBase = NULL != engine.pWagFile0 ? carriageInTrackNode.pEngineOrWagonInConFile8 : (char *)carriageInTrackNode.pCarriage10 + 0x94;
+		ReadPointerMemory(handle, pBase, &carriageSize, sizeof(carriageSize),
+		                  1, 0x400);
+
+		if (tmp_distance < distance && tmp_distance > 0)
+		{
+			distance = tmp_distance - carriageSize / 2;
+		}
+	}
+
+	return distance;
+}
+
+float GetConnectDistance(HANDLE m_hTrainProcess, float fDistance)
+{
+	float res_distance = LONG_DISTANCE;
+	STrackInfo headInfo;
+	//headInfo is the information of the head of the train.
+	size_t trainInfo;
+	ReadTrainProcess(m_hTrainProcess, (void *)TRAIN_INFO_MEM, (LPVOID)&trainInfo, 4);
+	BOOL bIsForward;
+
+	if (trainInfo & 0x80) // Forward Or Backward
+	{
+		ReadTrainProcess(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
+		bIsForward = FALSE;
+	}
+	else
+	{
+		ReadTrainProcess(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
+		bIsForward = TRUE;
+	}
+
+	float forwardLength;
+	SVectorNode vectorNode;
+	int nDirectOfHeadNode = headInfo.nDirection == bIsForward;
+	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.vectorNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
+
+	if (nDirectOfHeadNode)
+		forwardLength = - headInfo.fLocationInNode;
+	else
+		forwardLength = headInfo.fLocationInNode - vectorNode.fTrackNodeLength;
+
+	int nOffset = bIsForward ? 0x62 : 0x66;
+	float fCarriageLength;
+	void *pTrain;
+	ReadProcessMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &pTrain, sizeof(void *), NULL);
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
+	fCarriageLength /= 2;
+	int nDirectOfNextNode = nDirectOfHeadNode;
+	SVectorNode *nextNodePtr = headInfo.vectorNodePtr;
+
+	while (forwardLength < fDistance && nextNodePtr)
+	{
+		SVectorNode *currentNodePtr = nextNodePtr;
+		int nDirectOfCurrentNode = nDirectOfNextNode;
+		SVectorNode trackNode;
+		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(SVectorNode));
+		float ret = GetConnectDistance(forwardLength, trackNode, m_hTrainProcess, nDirectOfCurrentNode, currentNodePtr, pTrain);
+
+		if (ret < LONG_DISTANCE)
+		{
+			res_distance = ret - fCarriageLength;
+			break;
+		}
+
+		forwardLength += trackNode.fTrackNodeLength;
+		/************************************************************************/
+		/* Get Next Node Pointer                                                */
+		/************************************************************************/
+		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfNextNode);
+	}
+
+	return res_distance;
+}
+
+CString AddStationItem(float currentDistance, const SVectorNode &node, vector<SForwardLimit>& limitList, HANDLE handle, int nDirection)
+{
+	CString stationName;
+	int num = node.nTrItemNum;
+
+	if (num > 0)
+	{
+		size_t *memory = new size_t[num];
+		ReadTrainProcess(handle, (LPCVOID)node.trItemArrayPtr, (LPVOID)memory, num * 4);
+		int start = !nDirection ? 0 : num - 1;
+		int end = !nDirection ? num : -1;
+		int delta = !nDirection ? 1 : -1;
+
+		for (int i = start; i != end; i += delta)
+		{
+			int type;
+			ReadTrainProcess(handle, (LPCVOID)(*(memory + i)), (LPVOID)&type, 4);
+
+			if (type == PlatFormItem)
+			{
+				SPlatformItem platformItem;
+				const void *address = (LPCVOID) * (memory + i);
+				ReadTrainProcess(handle, address, (LPVOID)&platformItem, sizeof(SPlatformItem));
+				wchar_t tmp_stationName[0x400];
+				ReadTrainProcess(handle, platformItem.wcpPlatformName28, (LPVOID)tmp_stationName, 0x800);
+				float distanceToTrackStart = nDirection ? platformItem.fLocationInVectorNode : node.fTrackNodeLength - platformItem.fLocationInVectorNode;
+				SForwardLimit limit;
+				limit.m_fDistance = distanceToTrackStart + currentDistance;
+				limit.m_fSpeedLimit = 0;
+				limitList.push_back(limit);
+				stationName.AppendFormat(L"%.1f:", limit.m_fDistance);
+				stationName += tmp_stationName;
+				break;
+				//if (distanceToTrackStart + currentDistance > 0)
+				//{
+				//	float fEndPosition;
+				//	ReadPointerMemory(handle, (LPCVOID)0x80A038, &fEndPosition, 4, 5, 0xC, 0x20, 0, 4 * platformItem.nPlatformAnotherSideIndex34, 0xC);
+				//	int nStationNum;
+				//	ReadPointerMemory(handle, (LPCVOID)0x80A038, &nStationNum, 4, 5, 0xC, 0x20, 0, 4 * platformItem.nPlatformAnotherSideIndex34, 0x34);
+				//	float fEndPositionToTrackStart = nDirection ? fEndPosition : node.fTrackNodeLength - fEndPosition;
+				//
+				//}
+			}
+		}
+
+		delete[]memory;
+	}
+
+	return stationName;
+}
+
+void GetConnectSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitList, BOOL stationStop, CString &stationName)
+{
+	stationName.Empty();
+	STrackInfo headInfo;
+	//headInfo is the information of the head of the train.
+	size_t trainInfo;
+	ReadTrainProcess(m_hTrainProcess, (void *)TRAIN_INFO_MEM, (LPVOID)&trainInfo, 4);
+	BOOL bIsForward;
+
+	if (trainInfo & 0x80) // Forward Or Backward
+	{
+		ReadTrainProcess(m_hTrainProcess, (void *)TAIL_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
+		bIsForward = FALSE;
+	}
+	else
+	{
+		ReadTrainProcess(m_hTrainProcess, (void *)HEAD_TRACK_MEM, (LPVOID)&headInfo, sizeof(STrackInfo));
+		bIsForward = TRUE;
+	}
+
+	float forwardLength;
+	SVectorNode vectorNode;
+	int nDirectOfHeadNode = headInfo.nDirection == bIsForward;
+	ReadTrainProcess(m_hTrainProcess, (void *)headInfo.vectorNodePtr, (LPVOID)&vectorNode, sizeof(SVectorNode));
+
+	if (nDirectOfHeadNode)
+		forwardLength = - headInfo.fLocationInNode;
+	else
+		forwardLength = headInfo.fLocationInNode - vectorNode.fTrackNodeLength;
+
+	int nOffset = bIsForward ? 0x62 : 0x66;
+	float fCarriageLength;
+	ReadPointerMemory(m_hTrainProcess, (LPCVOID)THIS_POINTER_MEM, &fCarriageLength, 4, 3, nOffset, 0x94, 0x400);
+	fCarriageLength /= 2;
+	int nDirectOfNextNode = nDirectOfHeadNode;
+	SVectorNode *nextNodePtr = headInfo.vectorNodePtr;
+	vector<SForwardLimit> station_limit;
+
+	while (forwardLength < 4000 && nextNodePtr)
+	{
+		SVectorNode *currentNodePtr = nextNodePtr;
+		int nDirectOfCurrentNode = nDirectOfNextNode;
+		SVectorNode trackNode;
+		ReadTrainProcess(m_hTrainProcess, (void *)currentNodePtr, (LPVOID)&trackNode, sizeof(SVectorNode));
+
+		if (stationName.IsEmpty())
+		{
+			stationName = AddStationItem(forwardLength, trackNode, station_limit, m_hTrainProcess, nDirectOfCurrentNode);
+		}
+
+		forwardLength += trackNode.fTrackNodeLength;
+		/************************************************************************/
+		/* Get Next Node Pointer                                                */
+		/************************************************************************/
+		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfNextNode);
+	}
+
+	if (stationStop)
+	{
+		limitList.insert(limitList.end(), station_limit.begin(), station_limit.end());
+	}
+
+	if (forwardLength < 4000)
+		if (forwardLength > 20)
+			limitList.push_back(SForwardLimit(forwardLength - 20, 0));
+		else
+			limitList.push_back(SForwardLimit(0, 0));
 }
 
 void GetForwardSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitList, float fTempLimit)
@@ -445,8 +706,8 @@ void GetForwardSpeedLimit(HANDLE m_hTrainProcess, vector<SForwardLimit>& limitLi
 		nextNodePtr = GetNextNode(m_hTrainProcess, trackNode, currentNodePtr, nDirectOfCurrentNode, nDirectOfNextNode);
 	}
 
-	if(forwardLength < 4000)
-		if(forwardLength > 50)
+	if (forwardLength < 4000)
+		if (forwardLength > 50)
 			limitList.push_back(SForwardLimit(forwardLength - 50, 0));
 		else
 			limitList.push_back(SForwardLimit(0, 0));
