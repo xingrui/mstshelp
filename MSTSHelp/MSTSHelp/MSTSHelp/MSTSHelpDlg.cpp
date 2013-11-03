@@ -379,7 +379,8 @@ void CMSTSHelpDlg::OnTimer(UINT_PTR nIDEvent)
 	{
 		int nFlag;
 
-		if (ReadProcessMemory(m_hTrainProcess, (void *)PAUSE_BY_MSG_MEM, (LPVOID)&nFlag, 4, NULL) && !nFlag)
+		if (ReadProcessMemory(m_hTrainProcess, (void *)PAUSE_BY_MSG_MEM, (LPVOID)&nFlag, 4, NULL) && !nFlag
+		        && NULL != GetTrainPointer(m_hTrainProcess))
 		{
 			PressKeyToTrainWnd(VK_ESCAPE);
 		}
@@ -488,6 +489,9 @@ void CMSTSHelpDlg::StopAndPressEnter(void *pThis)
 
 		// 列车已经到站 退出循环
 		if (schedule.m_fActualArrivalTime != 0)
+			break;
+
+		if (timeMinus(schedule.m_fArrivalTime, pDlg->m_fGameTime) > 10)
 			break;
 
 		PressKeyToTrainWnd(VK_RETURN);
@@ -861,7 +865,7 @@ void CMSTSHelpDlg::ShowScheduleInfo(const SSchedule &schedule, float fCurrentTim
 	if (schedule.m_fActualArrivalTime != 0)
 		str.Format(L"%.1f 秒后出发", timeMinus(schedule.m_fDepartTime, fCurrentTime));
 	else
-		str.Format(L"%.0f米 %.1f秒", fDistance, timeMinus(schedule.m_fArrivalTime, fCurrentTime));
+		str.Format(L"%.1f米 %.1f秒", fDistance, timeMinus(schedule.m_fArrivalTime, fCurrentTime));
 
 	m_listCtrl.SetItemText(SCHEDULE_INFO_ITEM, 1, str);
 }
@@ -982,6 +986,9 @@ bool CMSTSHelpDlg::UpdateScheduleInfo(float &fNextStationDistance)
 	{
 		//时刻表未发生变化，更新数据内容
 		m_currentSchedule = schedule;
+
+		if (m_currentSchedule.m_fActualArrivalTime == 0 && timeMinus(schedule.m_fArrivalTime, m_fGameTime) < 10)
+			PressKeyToTrainWnd(VK_RETURN);
 	}
 	else
 	{
@@ -1238,7 +1245,9 @@ void CMSTSHelpDlg::ReleaseElectricBreak()
 {
 	if (m_loco == Electric)
 	{
-		float fBreak;
+		float fBreak = 0;
+		CHECK(WritePointerMemory(m_hTrainProcess, (LPVOID)POWER_INFO_MEM, &fBreak, 4, 1, 0x32C))
+#if 0
 
 		for (int i = 0; i < 20; ++i)
 		{
@@ -1250,6 +1259,8 @@ void CMSTSHelpDlg::ReleaseElectricBreak()
 			PressKeyToTrainWnd('D');
 			Sleep(100);
 		}
+
+#endif
 	}
 }
 
