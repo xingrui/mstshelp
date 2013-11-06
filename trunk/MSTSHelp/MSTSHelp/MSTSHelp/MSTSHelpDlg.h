@@ -42,6 +42,7 @@ public:
 	} TIMER_TYPE;
 
 	static const int DATA_SPAN = 1000;
+	static const float DOWN_FLOAT_LIMIT;
 	float m_fExpectedAccerlate;
 protected:
 	virtual void DoDataExchange(CDataExchange *pDX);	// DDX/DDV Ö§³Ö
@@ -152,6 +153,7 @@ private:
 	BOOL m_station_stop;
 	CString m_station_name;
 	BOOL m_bDownFloatLimit;
+	BOOL m_bUseSuggestedSpeed;
 };
 
 #define CHECK(A) if(!A){CLogger::Log("Read Memory Failed in %s line:%d", __FUNCTION__, __LINE__);}
