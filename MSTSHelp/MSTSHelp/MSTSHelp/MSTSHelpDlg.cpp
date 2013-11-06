@@ -14,7 +14,7 @@
 #define new DEBUG_NEW
 #endif
 // CMSTSHelpDlg 对话框
-
+const float CMSTSHelpDlg::DOWN_FLOAT_LIMIT = 0.3f;
 CMSTSHelpDlg::CMSTSHelpDlg(CWnd *pParent /*=NULL*/)
 	: CDialog(CMSTSHelpDlg::IDD, pParent)
 	, m_fCurrentSpeed(0)
@@ -33,6 +33,7 @@ CMSTSHelpDlg::CMSTSHelpDlg(CWnd *pParent /*=NULL*/)
 	, m_station_stop(FALSE)
 	, m_station_name(_T(""))
 	, m_bDownFloatLimit(FALSE)
+	, m_bUseSuggestedSpeed(FALSE)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 }
@@ -53,6 +54,7 @@ void CMSTSHelpDlg::DoDataExchange(CDataExchange *pDX)
 	DDX_Check(pDX, IDC_CHECK9, m_station_stop);
 	DDX_Text(pDX, IDC_EDIT1, m_station_name);
 	DDX_Check(pDX, IDC_CHECK10, m_bDownFloatLimit);
+	DDX_Check(pDX, IDC_CHECK11, m_bUseSuggestedSpeed);
 }
 
 BEGIN_MESSAGE_MAP(CMSTSHelpDlg, CDialog)
@@ -472,33 +474,37 @@ void CMSTSHelpDlg::StopAndPressEnter(void *pThis)
 {
 	CMSTSHelpDlg *pDlg = (CMSTSHelpDlg *)pThis;
 	pDlg->m_bInStopThread = true;
-
-	for ( int i = 0; i < 25; ++i)
+	__try
 	{
-		pDlg->ApplyBreak();
-		Sleep(100);
-	}
+		for ( int i = 0; i < 25; ++i)
+		{
+			pDlg->ApplyBreak();
+			Sleep(100);
+		}
 
-	for ( int i = 0; i < 14; ++i)
+		for ( int i = 0; i < 14; ++i)
+		{
+			SSchedule schedule;
+
+			// 不是任务模式(或者是任务模式 没有前方到站信息) 退出循环
+			if (!GetCurrentSchedule(pDlg->m_hTrainProcess, NULL, schedule))
+				break;
+
+			// 列车已经到站 退出循环
+			if (schedule.m_fActualArrivalTime != 0)
+				break;
+
+			if (timeMinus(schedule.m_fArrivalTime, pDlg->m_fGameTime) > 10)
+				break;
+
+			PressKeyToTrainWnd(VK_RETURN);
+			Sleep(500);
+		}
+	}
+	__finally
 	{
-		SSchedule schedule;
-
-		// 不是任务模式(或者是任务模式 没有前方到站信息) 退出循环
-		if (!GetCurrentSchedule(pDlg->m_hTrainProcess, NULL, schedule))
-			break;
-
-		// 列车已经到站 退出循环
-		if (schedule.m_fActualArrivalTime != 0)
-			break;
-
-		if (timeMinus(schedule.m_fArrivalTime, pDlg->m_fGameTime) > 10)
-			break;
-
-		PressKeyToTrainWnd(VK_RETURN);
-		Sleep(500);
+		pDlg->m_bInStopThread = false;
 	}
-
-	pDlg->m_bInStopThread = false;
 	return;
 }
 
@@ -511,7 +517,7 @@ void CMSTSHelpDlg::AdjustPowerAndBreak()
 
 	if (m_bDownFloatLimit)
 	{
-		fCalculatedSpeedLimit -= 0.3f;
+		fCalculatedSpeedLimit -= DOWN_FLOAT_LIMIT;
 	}
 
 	if (fCalculatedSpeedLimit < 0)
@@ -865,7 +871,16 @@ void CMSTSHelpDlg::ShowScheduleInfo(const SSchedule &schedule, float fCurrentTim
 	if (schedule.m_fActualArrivalTime != 0)
 		str.Format(L"%.1f 秒后出发", timeMinus(schedule.m_fDepartTime, fCurrentTime));
 	else
-		str.Format(L"%.1f米 %.1f秒", fDistance, timeMinus(schedule.m_fArrivalTime, fCurrentTime));
+	{
+		float time_span = timeMinus(schedule.m_fArrivalTime, fCurrentTime);
+
+		if (fDistance > 1000000 && time_span < 0)
+		{
+			time_span += 24 * 3600;
+		}
+
+		str.Format(L"%.1f米 %.1f秒", fDistance, time_span);
+	}
 
 	m_listCtrl.SetItemText(SCHEDULE_INFO_ITEM, 1, str);
 }
@@ -1082,9 +1097,9 @@ void CMSTSHelpDlg::PrepareDataAndControlTrain(HANDLE hProcess)
 	{
 		for (size_t i = 0; i < m_vectLimit.size(); ++i)
 		{
-			if (m_vectLimit[i].m_fSpeedLimit > 0.3f)
+			if (m_vectLimit[i].m_fSpeedLimit > DOWN_FLOAT_LIMIT)
 			{
-				m_vectLimit[i].m_fSpeedLimit -= 0.3f;
+				m_vectLimit[i].m_fSpeedLimit -= DOWN_FLOAT_LIMIT;
 			}
 		}
 	}
@@ -1179,9 +1194,32 @@ void CMSTSHelpDlg::AutoDriveTask(HANDLE hProcess)
 		{
 			//处理没有到达前方站台的情况
 			SForwardLimit limit;
-			limit.m_fDistance = fNextStationDistance;
+			limit.m_fDistance = fNextStationDistance - 2;
 			limit.m_fSpeedLimit = 0;
 			m_vectLimit.push_back(limit);
+			float calc_distance = fNextStationDistance - 2000;
+			float calc_time = timeMinus(m_currentSchedule.m_fArrivalTime, m_fGameTime) - 200.0f;
+
+			if (calc_distance > 1000000 && calc_time < 0)
+			{
+				calc_time += 24 * 3600;
+			}
+
+			if (calc_distance > 50 && calc_time > 0)
+			{
+				limit.m_fDistance = 0;
+				limit.m_fSpeedLimit = calc_distance / calc_time;
+
+				if (m_bDownFloatLimit)
+				{
+					limit.m_fSpeedLimit += DOWN_FLOAT_LIMIT;
+				}
+
+				if (m_bUseSuggestedSpeed)
+				{
+					m_vectLimit.push_back(limit);
+				}
+			}
 		}
 		else if (m_currentSchedule.m_fActualArrivalTime != 0 && timeMinus(m_fGameTime, m_currentSchedule.m_fDepartTime) < 0)
 		{
